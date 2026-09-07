@@ -36,12 +36,12 @@
 این افزونه فعلاً به‌صورت Unpacked (بارگذاری دستی) روی Chrome/Chromium نصب می‌شه:
 
 ```bash
-git clone https://github.com/<your-username>/subify.git
+git clone https://github.com/mobinbiback/Subify.git
 ```
 
 1. آدرس `chrome://extensions` رو باز کن
 2. گزینهٔ **Developer mode** رو از گوشهٔ بالا سمت راست فعال کن
-3. روی **Load unpacked** بزن و پوشهٔ کلون‌شدهٔ `subify` رو انتخاب کن
+3. روی **Load unpacked** بزن و پوشهٔ کلون‌شدهٔ `Subify` رو انتخاب کن
 4. آیکون Subify رو کنار نوار آدرس پین کن و از یک ویدیوی یوتیوب شروع کن 🎉
 
 > نیازمند Chrome (یا مرورگر مبتنی بر Chromium) نسخهٔ ۱۱۶ به بالا.
@@ -73,7 +73,7 @@ git clone https://github.com/<your-username>/subify.git
 ## 🛠️ ساختار پروژه
 
 ```
-subify/
+Subify/
 ├── manifest.json          # پیکربندی Manifest V3
 ├── popup.html / popup.js  # رابط اصلی افزونه
 ├── options.html / options.js  # تنظیمات پیشرفتهٔ دوبله
