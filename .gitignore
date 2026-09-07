@@ -1,0 +1,18 @@
+# OS files
+.DS_Store
+Thumbs.db
+
+# Editor
+.vscode/
+.idea/
+
+# Build / packaging artifacts
+*.zip
+*.crx
+*.pem
+
+# Logs
+*.log
+
+# Env / secrets
+.env
