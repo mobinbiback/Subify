@@ -1,11 +1,4 @@
 
-const __sby_p = (() => {
-  const a = [77,111,98,105,110,98,105,98,97,107];
-  return Object.freeze({
-    id: a.map((n,i) => String.fromCharCode(n ^ 0)).join(''),
-    stamp: 'subify-provenance-v2416'
-  });
-})();
 // Subify — background service worker
 // Pipeline: offscreen capture -> WAV chunk -> Gemini (transcribe + detect language
 // + detect speaker gender + translate to Persian) -> Gemini TTS with a gender-matched
@@ -14,6 +7,15 @@ const __sby_p = (() => {
 const GEMINI_BASE = "https://generativelanguage.googleapis.com/v1beta/models";
 const OPENROUTER_BASE = "https://openrouter.ai/api/v1";
 
+// Show a short "what's new" page after an update (not on a fresh install —
+// there's nothing to compare a first install against).
+browser.runtime.onInstalled.addListener((details) => {
+  if (details.reason === "update") {
+    browser.tabs.create({ url: browser.runtime.getURL("whatsnew.html") }).catch(() => {});
+  }
+});
+
+
 const DEFAULT_SETTINGS = {
   apiKey: "",
   openRouterKey: "",
@@ -21,6 +23,8 @@ const DEFAULT_SETTINGS = {
   subtitleProvider: "auto", // "auto" prefers OpenRouter, then OpenAI, then Gemini when keys exist
   openRouterModel: "openrouter/free",
   openaiModel: "gpt-5.6-luna",
+  customProviders: [],
+  customProviderId: "",
   sttModel: "gemini-3.5-flash",
   ttsModel: "gemini-3.1-flash-tts-preview",
   autoVoiceByGender: true,
@@ -82,6 +86,28 @@ function subifyDb(){
 async function vocabGet(key){const d=await subifyDb();return new Promise((res,rej)=>{const r=d.transaction("vocab","readonly").objectStore("vocab").get(key);r.onsuccess=()=>res(r.result||null);r.onerror=()=>rej(r.error);});}
 async function vocabPut(key,val){const d=await subifyDb();return new Promise((res,rej)=>{const r=d.transaction("vocab","readwrite").objectStore("vocab").put(val,key);r.onsuccess=()=>res();r.onerror=()=>rej(r.error);});}
 async function vocabList(){const d=await subifyDb();return new Promise(res=>{const st=d.transaction("vocab","readonly").objectStore("vocab"),out=[];st.openCursor().onsuccess=e=>{const c=e.target.result;if(!c)return res(out);out.push({key:String(c.key),value:c.value});c.continue();};});}
+
+// "Clear all data" — see PRIVACY.md. This wipes everything the extension
+// stores under its own origin (settings incl. API keys, stats, vocab/shots/
+// storyboards IndexedDB). It also asks any open YouTube tabs to wipe their
+// own on-page translation cache — that IndexedDB lives under youtube.com's
+// origin (content scripts see the page's storage, not the extension's), so
+// it can't be reached from here directly. A pending-clear flag covers tabs
+// that aren't open right now; subtitle-overlay.js checks it on load.
+const LOCAL_KEYS_TO_CLEAR = ["pd_models","pd_settings","pd_stats","subify_dubbing_enabled","subify_last_shot","subify_settings","subify_subtitle_enabled"];
+async function clearAllLocalData(){
+  try{
+    const tabs=await browser.tabs.query({url:["https://www.youtube.com/*","https://www.youtube-nocookie.com/*","https://vimeo.com/*","https://*.vimeo.com/*","https://player.vimeo.com/*","https://www.aparat.com/*","https://aparat.com/*","https://www.coursera.org/*"]});
+    await Promise.all(tabs.map(t=>browser.tabs.sendMessage(t.id,{type:"subify-clear-local-cache"}).catch(()=>{})));
+  }catch(e){}
+  if(_subifyDbPromise){ try{ (await _subifyDbPromise).close(); }catch(e){} }
+  _subifyDbPromise=null;
+  await new Promise(resolve=>{ const req=indexedDB.deleteDatabase("subify-local"); req.onsuccess=req.onerror=req.onblocked=()=>resolve(); });
+  await browser.storage.local.remove(LOCAL_KEYS_TO_CLEAR);
+  await browser.storage.session.clear();
+  await browser.storage.local.set({ subify_pending_clear: true });
+  await log("All local Subify data cleared by the user.", "warn");
+}
 async function enrichWord(settings,word,sentence){
   const prompt=`Translate and explain the vocabulary item for a Persian learner. Return ONLY JSON: {"word":"","meaning":"","example":"","pos":"","level":""}. Word: ${word}\nSentence: ${sentence}\nMeaning must be concise natural Persian. Example must be a short Persian sentence.`;
   if((settings.subtitleProvider||"auto")!=="openrouter" && settings.apiKey){
@@ -104,51 +130,51 @@ const BLANK = {
 };
 
 async function getState() {
-  const { pd_state } = await chrome.storage.session.get("pd_state");
+  const { pd_state } = await browser.storage.session.get("pd_state");
   return { ...BLANK, ...(pd_state || {}) };
 }
 async function setState(patch) {
   const s = { ...(await getState()), ...patch };
-  await chrome.storage.session.set({ pd_state: s });
-  chrome.runtime.sendMessage({ type: "status", state: s }).catch(() => {});
+  await browser.storage.session.set({ pd_state: s });
+  browser.runtime.sendMessage({ type: "status", state: s }).catch(() => {});
   return s;
 }
 
 // ---------- subtitle cues (for the SRT export) ----------
 
 async function addCue(start, end, text) {
-  const { pd_cues } = await chrome.storage.session.get("pd_cues");
+  const { pd_cues } = await browser.storage.session.get("pd_cues");
   const cues = pd_cues || [];
   cues.push({ start, end, text });
-  await chrome.storage.session.set({ pd_cues: cues });
+  await browser.storage.session.set({ pd_cues: cues });
 }
 
 // ---------- diagnostics log ----------
 
 async function log(msg, level = "info") {
-  const { pd_log } = await chrome.storage.session.get("pd_log");
+  const { pd_log } = await browser.storage.session.get("pd_log");
   const arr = pd_log || [];
   arr.push({ t: Date.now(), level, msg: String(msg).slice(0, 300) });
   while (arr.length > 250) arr.shift();
-  await chrome.storage.session.set({ pd_log: arr });
-  chrome.runtime.sendMessage({ type: "log-updated" }).catch(() => {});
+  await browser.storage.session.set({ pd_log: arr });
+  browser.runtime.sendMessage({ type: "log-updated" }).catch(() => {});
 }
 
 // ---------- settings ----------
 
 async function getSettings() {
-  const { pd_settings } = await chrome.storage.local.get("pd_settings");
+  const { pd_settings } = await browser.storage.local.get("pd_settings");
   const s = { ...DEFAULT_SETTINGS, ...(pd_settings || {}) };
   let changed = false;
   if (MODEL_MIGRATIONS[s.sttModel]) { s.sttModel = MODEL_MIGRATIONS[s.sttModel]; changed = true; }
   if (MODEL_MIGRATIONS[s.ttsModel]) { s.ttsModel = MODEL_MIGRATIONS[s.ttsModel]; changed = true; }
-  if (changed) await chrome.storage.local.set({ pd_settings: s });
+  if (changed) await browser.storage.local.set({ pd_settings: s });
   return s;
 }
 
 async function persistModel(field, model) {
-  const { pd_settings } = await chrome.storage.local.get("pd_settings");
-  await chrome.storage.local.set({ pd_settings: { ...(pd_settings || {}), [field]: model } });
+  const { pd_settings } = await browser.storage.local.get("pd_settings");
+  await browser.storage.local.set({ pd_settings: { ...(pd_settings || {}), [field]: model } });
 }
 
 // ---------- model discovery (ask the key what it actually has) ----------
@@ -192,23 +218,24 @@ async function discoverModels() {
   if (!settings.apiKey) throw new Error("No API key saved");
   const models = await listModels(settings.apiKey);
   const c = classifyModels(models);
-  await chrome.storage.local.set({
+  await browser.storage.local.set({
     pd_models: {
       fetchedAt: Date.now(),
       tts: c.tts.map(m => m.id),
-      stt: c.stt.map(m => m.id)
+      stt: c.stt.map(m => m.id),
+      all: c.all.map(m => ({ id: m.id, methods: m.methods, display: m.display }))
     }
   });
   await log(`Your key exposes ${c.all.length} generateContent models — ${c.tts.length} speech, ${c.stt.length} usable for recognition`, "ok");
   if (c.tts.length) await log("Speech models available: " + c.tts.map(m => m.id).join(", "));
   else await log("No speech-capable model found on this key — TTS will not work", "error");
-  chrome.runtime.sendMessage({ type: "models-updated" }).catch(() => {});
+  browser.runtime.sendMessage({ type: "models-updated" }).catch(() => {});
   return c;
 }
 
 // If every hardcoded fallback 404s, ask the API what exists and use that.
 async function discoveredTtsModels() {
-  const { pd_models } = await chrome.storage.local.get("pd_models");
+  const { pd_models } = await browser.storage.local.get("pd_models");
   if (pd_models && pd_models.tts && pd_models.tts.length) return pd_models.tts;
   try {
     const c = await discoverModels();
@@ -247,15 +274,27 @@ async function withModelFallback(settings, field, fallbacks, fn) {
 const dayKey = (d = new Date()) => d.toISOString().slice(0, 10);
 
 async function recordStats(patch) {
-  const { pd_stats } = await chrome.storage.local.get("pd_stats");
-  const s = pd_stats || { totals: {}, days: {}, domains: {}, langs: {}, genders: {} };
+  const { pd_stats } = await browser.storage.local.get("pd_stats");
+  const s = pd_stats || { totals: {}, days: {}, domains: {}, langs: {}, genders: {}, providers: {} };
   s.genders = s.genders || {};
+  s.providers = s.providers || {};
   const add = (o, k, v) => { o[k] = (o[k] || 0) + v; };
   const day = (s.days[dayKey()] = s.days[dayKey()] || {});
   for (const [k, v] of Object.entries(patch)) {
     if (typeof v !== "number") continue;
     add(s.totals, k, v);
     add(day, k, v);
+  }
+  // Per-provider breakdown (subtitle translation only, so far — dubbing always
+  // uses the user's Gemini key/models regardless of subtitleProvider). Feeds
+  // the usage/cost dashboard in options.html, which multiplies these by a
+  // rate the user enters themselves rather than us guessing current pricing.
+  if (patch.provider) {
+    const bucket = (s.providers[patch.provider] = s.providers[patch.provider] || {});
+    for (const [k, v] of Object.entries(patch)) {
+      if (typeof v !== "number") continue;
+      add(bucket, k, v);
+    }
   }
   const st = await getState();
   if (st.host) {
@@ -265,15 +304,15 @@ async function recordStats(patch) {
   }
   if (patch.lang) add(s.langs, patch.lang, 1);
   if (patch.gender) add(s.genders, patch.gender, 1);
-  await chrome.storage.local.set({ pd_stats: s });
+  await browser.storage.local.set({ pd_stats: s });
 }
 
 // ---------- offscreen document (with readiness handshake) ----------
 
 async function ensureOffscreen() {
-  if (!(await chrome.offscreen.hasDocument())) {
+  if (!(await browser.offscreen.hasDocument())) {
     await log("Creating offscreen document…");
-    await chrome.offscreen.createDocument({
+    await browser.offscreen.createDocument({
       url: "offscreen.html",
       reasons: ["USER_MEDIA", "AUDIO_PLAYBACK"],
       justification: "Capture tab audio and play back the Persian dub."
@@ -282,7 +321,7 @@ async function ensureOffscreen() {
   // createDocument can resolve before the page's listeners exist — poll for them.
   for (let i = 0; i < 50; i++) {
     try {
-      const r = await chrome.runtime.sendMessage({ type: "offscreen-ping" });
+      const r = await browser.runtime.sendMessage({ type: "offscreen-ping" });
       if (r && r.ok) return true;
     } catch (e) { /* not listening yet */ }
     await sleep(100);
@@ -294,16 +333,16 @@ async function ensureOffscreen() {
 
 async function startDubbing(tabId) {
   try {
-    await chrome.storage.session.set({ pd_log: [], pd_cues: [] });
+    await browser.storage.session.set({ pd_log: [], pd_cues: [] });
     const settings = { ...(await getSettings()), dubbingEnabled: true };
     if (!settings.apiKey) {
       await setState({ error: "No API key — add your Gemini key in Settings." });
       await log("No API key configured", "error");
-      chrome.runtime.openOptionsPage();
+      browser.runtime.openOptionsPage();
       return;
     }
 
-    const tab = await chrome.tabs.get(tabId);
+    const tab = await browser.tabs.get(tabId);
     let host = "";
     try { host = new URL(tab.url).hostname.replace(/^www\./, ""); } catch (e) {}
     await setState({ tabId, host, title: tab.title || "", error: "", startedAt: Date.now(),
@@ -320,33 +359,33 @@ async function startDubbing(tabId) {
       await log("Engine: chunked REST pipeline");
     }
 
-    const streamId = await chrome.tabCapture.getMediaStreamId({ targetTabId: tabId });
+    const streamId = await browser.tabCapture.getMediaStreamId({ targetTabId: tabId });
     await log("Got media stream id");
 
     await ensureOffscreen();
     await log("Offscreen ready — sending start command");
 
-    const res = await chrome.runtime.sendMessage({ type: "offscreen-start", streamId, settings });
+    const res = await browser.runtime.sendMessage({ type: "offscreen-start", streamId, settings });
     if (!res || !res.ok) throw new Error((res && res.error) || "Offscreen did not confirm capture");
 
-    await chrome.storage.local.set({ subify_dubbing_enabled: true });
+    await browser.storage.local.set({ subify_dubbing_enabled: true });
     await setState({ active: true });
-    chrome.action.setBadgeText({ text: "فا" });
-    chrome.action.setBadgeBackgroundColor({ color: "#0e7a5f" });
+    browser.action.setBadgeText({ text: "فا" });
+    browser.action.setBadgeBackgroundColor({ color: "#0e7a5f" });
     await recordStats({ sessions: 1 });
   } catch (e) {
     await log("Start failed: " + (e.message || e), "error");
-    await chrome.storage.local.set({ subify_dubbing_enabled: false });
+    await browser.storage.local.set({ subify_dubbing_enabled: false });
     await setState({ active: false, error: String(e.message || e) });
-    chrome.action.setBadgeText({ text: "" });
+    browser.action.setBadgeText({ text: "" });
   }
 }
 
 async function stopDubbing(reason) {
-  await chrome.storage.local.set({ subify_dubbing_enabled: false });
+  await browser.storage.local.set({ subify_dubbing_enabled: false });
   await setState({ active: false, queueDepth: 0, level: 0 });
-  chrome.action.setBadgeText({ text: "" });
-  chrome.runtime.sendMessage({ type: "offscreen-stop" }).catch(() => {});
+  browser.action.setBadgeText({ text: "" });
+  browser.runtime.sendMessage({ type: "offscreen-stop" }).catch(() => {});
   if (reason) await log("Stopped: " + reason);
 }
 
@@ -393,13 +432,23 @@ async function transcribeAndTranslate(wavB64, settings, model) {
   };
 }
 
+function cleanSubtitleText(text) {
+  return String(text || "")
+    .replace(/\[(music|muzik|müzik|applause|laughter|laughing|sound effects?|موسیقی|تشویق|خنده)\]/gi, "")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
 function subtitleItemsAndPrompt(cues) {
-  const items = cues.map(c => ({ id: String(c.id), text: String(c.text || '').trim() })).filter(x => x.text);
+  const items = cues.map(c => ({ id: String(c.id), text: cleanSubtitleText(c.text) })).filter(x => x.text);
   const prompt =
-    "Translate each YouTube subtitle into natural, colloquial Persian (Iranian Farsi).\n" +
-    "Return one result per item, preserving every id and item order. Never omit, merge, or invent items.\n" +
-    "Translate the FULL meaning including verbs, tense/aspect, pronouns, negation, phrasal verbs, idioms, and technical terms. Use everyday spoken Persian, not literary/bookish or word-for-word Persian.\n" +
-    "Keep names, numbers, units, URLs, code, and domain terminology accurate. Use nearby items as context when a sentence is split across cues. Output only JSON: {\"results\":[{\"id\":\"original-id\",\"fa\":\"translation\"}]}.\n" +
+    "You are a professional Persian subtitle translator. Translate into natural spoken Persian used in Iran.\n" +
+    "Do NOT translate word-by-word or like a book. Make it sound like a real person speaking.\n" +
+    "Use correct Persian verbs, tenses and natural expressions. Keep technical terms accurate.\n" +
+    "Examples: 'Stop being stubborn' = 'لجبازی رو بس کن' not 'لجبازی را متوقف کن'.\n" +
+    "Remove non-speech labels like music, applause, laughter and sound descriptions.\n" +
+    "Keep names, numbers, units, code and URLs unchanged. Output ONLY compact JSON.\n" +
+    "Format: {\"results\":[{\"id\":\"original-id\",\"fa\":\"translation\"}]}\n" +
     JSON.stringify(items);
   return { items, prompt };
 }
@@ -425,7 +474,11 @@ async function translateSubtitleCuesGemini(cues, settings, model) {
   const { prompt } = subtitleItemsAndPrompt(cues);
   const body = {
     contents: [{ role: "user", parts: [{ text: prompt }] }],
-    generationConfig: { temperature: 0.15, maxOutputTokens: 4096 }
+    // NOTE: batches can carry up to 24 cues (see "subify-translate" below) and Persian
+    // JSON output runs heavier on tokens than the source text — 2048 was clipping
+    // longer batches mid-JSON and breaking parseSubtitleResults(). Matched to the
+    // 4096 ceiling already used by the OpenRouter/OpenAI/Custom code paths.
+    generationConfig: { temperature: 0.1, maxOutputTokens: 4096 }
   };
   const res = await fetch(url, {
     method: "POST",
@@ -495,6 +548,55 @@ async function translateSubtitleCuesOpenAI(cues, settings) {
   return parseSubtitleResults(text, "OpenAI");
 }
 
+
+function normalizeCustomBaseUrl(url){
+  let u=String(url||"").trim().replace(/\/+$/,'');
+  if(!u) throw new Error("Custom API Base URL خالی است");
+  if(!/^https?:\/\//i.test(u)) u="https://"+u;
+  return u;
+}
+function getCustomProvider(settings, id){
+  const list=Array.isArray(settings.customProviders)?settings.customProviders:[];
+  return list.find(p=>String(p.id||"")===String(id||settings.customProviderId||""))||null;
+}
+async function translateSubtitleCuesCustom(cues, settings){
+  const provider=getCustomProvider(settings);
+  if(!provider) throw new Error("Custom API انتخاب شده، اما سرویسی تنظیم نشده است");
+  if(!provider.apiKey) throw new Error(`برای ${provider.name||'Custom API'} کلید API ذخیره نشده است`);
+  if(!provider.model) throw new Error(`برای ${provider.name||'Custom API'} شناسه مدل ترجمه وارد نشده است`);
+  const {prompt}=subtitleItemsAndPrompt(cues);
+  const base=normalizeCustomBaseUrl(provider.baseUrl);
+  const url=/\/chat\/completions$/i.test(base)?base:`${base}/chat/completions`;
+  const res=await fetch(url,{method:"POST",headers:{"Authorization":`Bearer ${provider.apiKey}`,"Content-Type":"application/json","X-Title":"Subify YouTube Persian subtitles"},body:JSON.stringify({model:provider.model,messages:[{role:"user",content:prompt}],temperature:0.15,max_tokens:4096})});
+  const raw=await res.text();
+  if(!res.ok) throw new Error(`Custom API ${res.status}: ${raw.slice(0,260)}`);
+  let data; try{data=JSON.parse(raw)}catch(_){throw new Error("Custom API پاسخ JSON معتبر نداد")}
+  const text=data.choices?.[0]?.message?.content||data.output_text||"";
+  return parseSubtitleResults(String(text),provider.name||"Custom API");
+}
+async function listCustomModels(provider){
+  if(!provider?.apiKey) throw new Error("کلید Custom API وارد نشده است");
+  const base=normalizeCustomBaseUrl(provider.baseUrl);
+  const url=/\/models$/i.test(base)?base:`${base}/models`;
+  const res=await fetch(url,{headers:{"Authorization":`Bearer ${provider.apiKey}`}});
+  const raw=await res.text();
+  if(!res.ok) throw new Error(`Model list ${res.status}: ${raw.slice(0,220)}`);
+  const data=JSON.parse(raw);
+  return Array.isArray(data.data)?data.data.map(x=>String(x.id||x.name||"")).filter(Boolean):[];
+}
+async function testCustomProvider(settings,id){
+  const provider=getCustomProvider(settings,id);
+  if(!provider) throw new Error("Custom API پیدا نشد");
+  if(!provider.apiKey) throw new Error("کلید API وارد نشده است");
+  if(!provider.model) throw new Error("Model ID وارد نشده است");
+  const base=normalizeCustomBaseUrl(provider.baseUrl);
+  const url=/\/chat\/completions$/i.test(base)?base:`${base}/chat/completions`;
+  const res=await fetch(url,{method:"POST",headers:{"Authorization":`Bearer ${provider.apiKey}`,"Content-Type":"application/json"},body:JSON.stringify({model:provider.model,messages:[{role:"user",content:"Reply with exactly: OK"}],temperature:0,max_tokens:8})});
+  const raw=await res.text();
+  if(!res.ok) throw new Error(`Custom API ${res.status}: ${raw.slice(0,260)}`);
+  return {ok:true,name:provider.name||"Custom API",model:provider.model};
+}
+
 function isQuotaOrTransientError(error) {
   const e = String(error?.message || error || "");
   return /\b(429|500|502|503|504)\b|quota|rate.?limit|temporarily unavailable|resource exhausted/i.test(e);
@@ -504,6 +606,7 @@ async function translateSubtitleCues(cues, settings, model) {
   const provider = settings.subtitleProvider || "auto";
   if (provider === "openrouter") return translateSubtitleCuesOpenRouter(cues, settings);
   if (provider === "openai") return translateSubtitleCuesOpenAI(cues, settings);
+  if (provider === "custom") return translateSubtitleCuesCustom(cues, settings);
   if (provider === "gemini") return translateSubtitleCuesGemini(cues, settings, model);
 
   // Auto: keep Gemini as the first choice, but do not let a Gemini quota error
@@ -525,16 +628,19 @@ async function translateSubtitleCues(cues, settings, model) {
 
 async function testGeminiKey(settings) {
   if (!settings.apiKey) throw new Error("No Gemini API key saved");
-  const models = await listModels(settings.apiKey);
-  const usable = models.filter(m => m.methods.includes("generateContent"));
-  if (!usable.length) throw new Error("Gemini accepted the key but exposes no generateContent model");
-  // Make a real, tiny generateContent request so the button tests the key itself,
-  // not merely permission to list models.
-  const preferred = [settings.sttModel, ...STT_FALLBACKS, ...usable.map(m => m.id)]
-    .filter(Boolean);
+
+  // Do not use /models as the key test. Some valid Gemini API keys can call
+  // generateContent while model listing is restricted and returns 403.
+  const preferred = [
+    settings.geminiSubtitleModel,
+    settings.sttModel,
+    "gemini-3.1-flash-lite",
+    "gemini-3.5-flash",
+    "gemini-3-flash"
+  ].filter(Boolean);
+
   let last = null;
   for (const model of [...new Set(preferred)]) {
-    if (!usable.some(m => m.id === model)) continue;
     try {
       const res = await fetch(`${GEMINI_BASE}/${model}:generateContent?key=${encodeURIComponent(settings.apiKey)}`, {
         method: "POST",
@@ -548,7 +654,7 @@ async function testGeminiKey(settings) {
       if (!res.ok) { last = new Error(`Gemini ${res.status}: ${raw.slice(0, 280)}`); continue; }
       const data = JSON.parse(raw);
       const text = (data.candidates?.[0]?.content?.parts || []).map(p => p.text || "").join("").trim();
-      if (text) return { ok: true, model, count: usable.length, total: models.length };
+      if (text) return { ok: true, model, discovery: "optional" };
       last = new Error("Gemini accepted the key but returned no text from the test request");
     } catch (e) { last = e; }
   }
@@ -736,7 +842,7 @@ async function handleChunk(msg) {
 
     const voice = pickVoice(settings, gender);
     await log(`Synthesizing with ${voice} (${gender})…`);
-    const emit = (pcmB64) => chrome.runtime.sendMessage({
+    const emit = (pcmB64) => browser.runtime.sendMessage({
       type: "offscreen-play",
       chunkId: msg.chunkId,
       pcmB64,
@@ -766,7 +872,7 @@ async function handleChunk(msg) {
 // ---------- self-test ----------
 
 async function selfTest() {
-  await chrome.storage.session.set({ pd_log: [] });
+  await browser.storage.session.set({ pd_log: [] });
   await log("Self-test started");
   try {
     const settings = await getSettings();
@@ -788,7 +894,7 @@ async function selfTest() {
       pcmB64 = await withModelFallback(settings, "ttsModel", found, speak);
     }
     await log("TTS returned audio — playing now", "ok");
-    chrome.runtime.sendMessage({
+    browser.runtime.sendMessage({
       type: "offscreen-play", pcmB64, sampleRate: 24000, playbackRate: 1, duckLevel: 1
     }).catch(() => {});
     await log("Self-test passed — if you heard Persian speech, key, model and playback all work.", "ok");
@@ -799,7 +905,7 @@ async function selfTest() {
 
 // ---------- messaging ----------
 
-chrome.runtime.onConnect.addListener((p) => {
+browser.runtime.onConnect.addListener((p) => {
   if (p.name === "subify-keepalive") p.onMessage.addListener(() => {});
 });
 
@@ -819,24 +925,37 @@ async function testOpenAI(settings) {
   return { ok: true, model: data.model || settings.openaiModel || "gpt-5.6-luna" };
 }
 
-chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
+browser.runtime.onMessage.addListener((msg, sender, sendResponse) => {
   (async () => {
     switch (msg.type) {
       case "subify-translate": {
         try {
           const settings = await getSettings();
-          const cues = Array.isArray(msg.cues) ? msg.cues.slice(0, 12) : [];
+          const cues = Array.isArray(msg.cues) ? msg.cues.slice(0, 24) : [];
           if (!cues.length) { sendResponse({ ok: true, results: [] }); break; }
           const provider = settings.subtitleProvider || "auto";
+          const recordUsage = (usedProvider, results) => {
+            const charsIn = cues.reduce((n, c) => n + String(c?.text || "").length, 0);
+            const charsOut = (results || []).reduce((n, r) => n + String(r?.fa || "").length, 0);
+            return recordStats({ subtitleCues: cues.length, subtitleCharsIn: charsIn, subtitleCharsOut: charsOut, provider: usedProvider }).catch(() => {});
+          };
           if (provider === "openrouter") {
             if (!settings.openRouterKey) throw new Error("OpenRouter is selected, but no OpenRouter API key is saved");
             const results = await translateSubtitleCuesOpenRouter(cues, settings);
+            await recordUsage("openrouter", results);
             sendResponse({ ok: true, provider: "openrouter", results });
+            break;
+          }
+          if (provider === "custom") {
+            const results = await translateSubtitleCuesCustom(cues, settings);
+            await recordUsage("custom", results);
+            sendResponse({ ok: true, provider: "custom", results });
             break;
           }
           if (provider === "openai") {
             if (!settings.openaiKey) throw new Error("OpenAI is selected, but no OpenAI API key is saved");
             const results = await translateSubtitleCuesOpenAI(cues, settings);
+            await recordUsage("openai", results);
             sendResponse({ ok: true, provider: "openai", results });
             break;
           }
@@ -862,9 +981,25 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
             }
             usedProvider = provider;
           }
+          await recordUsage(usedProvider, results);
           sendResponse({ ok: true, provider: usedProvider, results });
         } catch (e) {
           await log("Subtitle translation failed: " + (e.message || e), "error");
+          sendResponse({ ok: false, error: String(e.message || e) });
+        }
+        break;
+      }
+      case "subify-clear-all-data": {
+        try { await clearAllLocalData(); sendResponse({ ok: true }); }
+        catch (e) { sendResponse({ ok: false, error: String(e.message || e) }); }
+        break;
+      }
+      case "subify-discover-models": {
+        try {
+          const result = await discoverModels();
+          sendResponse({ ok: true, models: result.all.map(m=>m.id) });
+        } catch (e) {
+          await log("Model discovery failed: " + (e.message || e), "error");
           sendResponse({ ok: false, error: String(e.message || e) });
         }
         break;
@@ -905,13 +1040,23 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
         }
         break;
       }
+      case "subify-test-custom": {
+        try { const settings=await getSettings(); const result=await testCustomProvider(settings,msg.id); await log(`Custom API valid — ${result.name} • model: ${result.model}`,"ok"); sendResponse(result); }
+        catch(e){ await log("Custom API test failed: "+(e.message||e),"error"); sendResponse({ok:false,error:String(e.message||e)}); }
+        break;
+      }
+      case "subify-list-custom-models": {
+        try { const settings=await getSettings(); const p=getCustomProvider(settings,msg.id); const models=await listCustomModels(p); sendResponse({ok:true,models}); }
+        catch(e){ sendResponse({ok:false,error:String(e.message||e)}); }
+        break;
+      }
       case "subify-capture-shot": {
         try {
-          const tabId=Number(msg.tabId); const tab=await chrome.tabs.get(tabId);
-          const dataUrl=await chrome.tabs.captureVisibleTab(tab.windowId,{format:"png"});
+          const tabId=Number(msg.tabId); const tab=await browser.tabs.get(tabId);
+          const dataUrl=await browser.tabs.captureVisibleTab(tab.windowId,{format:"png"});
           const id=`shot_${Date.now()}`;
-          await chrome.storage.session.set({subify_last_shot:{id,dataUrl,title:tab.title||"Subify",url:tab.url||"",createdAt:Date.now()}});
-          if(msg.download!==false) await chrome.downloads.download({url:dataUrl,filename:`Subify-${Date.now()}.png`,saveAs:true});
+          await browser.storage.session.set({subify_last_shot:{id,dataUrl,title:tab.title||"Subify",url:tab.url||"",createdAt:Date.now()}});
+          if(msg.download!==false) await browser.downloads.download({url:dataUrl,filename:`Subify-${Date.now()}.png`,saveAs:true});
           sendResponse({ok:true,id,dataUrl});
         } catch(e){sendResponse({ok:false,error:String(e.message||e)});} break;
       }
@@ -923,15 +1068,15 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
       case "popup-start": {
         // Master button starts only the subtitle engine. Subtitle extraction
         // reads YouTube's timed caption track and does NOT capture tab audio.
-        await chrome.storage.local.set({ subify_subtitle_enabled: true });
-        try { await chrome.tabs.sendMessage(msg.tabId, { type: "subify-enable-subtitles" }); } catch (_) {}
+        await browser.storage.local.set({ subify_subtitle_enabled: true });
+        try { await browser.tabs.sendMessage(msg.tabId, { type: "subify-enable-subtitles" }); } catch (_) {}
         await setState({ error: "" });
         break;
       }
       case "popup-stop": {
-        await chrome.storage.local.set({ subify_subtitle_enabled: false, subify_dubbing_enabled: false });
+        await browser.storage.local.set({ subify_subtitle_enabled: false, subify_dubbing_enabled: false });
         await stopDubbing("stopped by user");
-        try { await chrome.tabs.sendMessage(msg.tabId, { type: "subify-disable-subtitles" }); } catch (_) {}
+        try { await browser.tabs.sendMessage(msg.tabId, { type: "subify-disable-subtitles" }); } catch (_) {}
         break;
       }
       case "popup-get-status": {
@@ -940,21 +1085,34 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
         break;
       }
       case "subify-set-dubbing": {
-        const enabled = Boolean(msg.enabled);
-        await chrome.storage.local.set({ subify_dubbing_enabled: enabled });
-        if (enabled) await startDubbing(msg.tabId);
-        else await stopDubbing("dubbing disabled");
+        const tabId = Number(msg.tabId);
+        if (!Number.isInteger(tabId)) throw new Error("تب فعال پیدا نشد");
+        if (msg.enabled) {
+          await startDubbing(tabId);
+          const st = await getState();
+          sendResponse({ ok: st.active, state: st, error: st.error || "" });
+        } else {
+          await stopDubbing("dubbing disabled by user");
+          sendResponse({ ok: true, state: await getState() });
+        }
         break;
       }
-      case "popup-self-test": await selfTest(); break;
+      case "popup-self-test":
+        await selfTest();
+        sendResponse({ ok: true });
+        break;
       case "popup-test-live": {
-        await chrome.storage.session.set({ pd_log: [] });
+        await browser.storage.session.set({ pd_log: [] });
         try {
-          const s = await getSettings();
-          if (!s.apiKey) { await log("No API key saved", "error"); break; }
+          const settings = await getSettings();
+          if (!settings.apiKey) throw new Error("کلید Gemini ذخیره نشده است");
           await ensureOffscreen();
-          await chrome.runtime.sendMessage({ type: "offscreen-test-live", settings: s });
-        } catch (e) { await log("Live test failed: " + (e.message || e), "error"); }
+          const r = await browser.runtime.sendMessage({ type: "offscreen-test-live", settings });
+          sendResponse(r || { ok: false, error: "Live test returned no result" });
+        } catch (e) {
+          await log("Live test failed: " + (e.message || e), "error");
+          sendResponse({ ok: false, error: String(e.message || e) });
+        }
         break;
       }
       case "popup-discover-models":
@@ -973,17 +1131,21 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
       case "popup-export": {
         try {
           await ensureOffscreen();
-          const r = await chrome.runtime.sendMessage({ type: "offscreen-export", mode: msg.mode });
+          const r = await browser.runtime.sendMessage({ type: "offscreen-export", mode: msg.mode, format: msg.format });
           if (!r || !r.ok || !r.url) {
-            await log("Export failed: " + ((r && r.error) || "nothing to export"), "error");
+            const error = (r && r.error) || "nothing to export";
+            await log("Export failed: " + error, "error");
+            sendResponse({ ok: false, error });
             break;
           }
-          if (!chrome.downloads || !chrome.downloads.download) {
-            await log("Downloads permission missing — reload the extension after updating.", "error");
+          if (!browser.downloads || !browser.downloads.download) {
+            const error = "Downloads permission missing — reload the extension after updating.";
+            await log(error, "error");
+            sendResponse({ ok: false, error });
             break;
           }
           try {
-            const id = await chrome.downloads.download({
+            const id = await browser.downloads.download({
               url: r.url, filename: msg.filename, saveAs: true
             });
             await log(`Saving ${msg.filename} — ${(r.bytes / 1048576).toFixed(1)} MB (download ${id})`, "ok");
@@ -991,13 +1153,16 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
             // Some Chrome builds reject cross-context blob URLs here; let the
             // page that asked for the export save it directly instead.
             await log("Downloads API refused the blob — saving from the page instead", "warn");
-            chrome.runtime.sendMessage({
+            browser.runtime.sendMessage({
               type: "export-fallback", url: r.url, filename: msg.filename
             }).catch(() => {});
           }
-          await recordStats({ exports: 1 });
+          await recordStats({ exports: 1, [msg.format === "mp3" ? "exportsMp3" : "exportsWav"]: 1 });
+          sendResponse({ ok: true, bytes: r.bytes, seconds: r.seconds, filename: msg.filename });
         } catch (e) {
-          await log("Export failed: " + (e.message || e), "error");
+          const error = String(e.message || e);
+          await log("Export failed: " + error, "error");
+          sendResponse({ ok: false, error });
         }
         break;
       }
@@ -1008,7 +1173,7 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
         if (Number.isInteger(msg.schemaVariant)) {
           const s = await getSettings();
           if (s.liveSetupVariant !== msg.schemaVariant) {
-            await chrome.storage.local.set({
+            await browser.storage.local.set({
               pd_settings: { ...s, liveSetupVariant: msg.schemaVariant }
             });
             await log(`Remembered working setup schema (variant ${msg.schemaVariant}) — next session connects straight away`);
@@ -1028,7 +1193,7 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
           break;
         }
         await log("Falling back to the chunked engine so you still get audio…", "warn");
-        await chrome.storage.local.set({ pd_settings: { ...s, engine: "chunked" } });
+        await browser.storage.local.set({ pd_settings: { ...s, engine: "chunked" } });
         const tabId = st.tabId;
         await stopDubbing("switching engine");
         if (tabId != null) {
@@ -1069,7 +1234,7 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
   return true;
 });
 
-chrome.tabs.onRemoved.addListener(async (tabId) => {
+browser.tabs.onRemoved.addListener(async (tabId) => {
   const s = await getState();
   if (s.active && tabId === s.tabId) stopDubbing("tab closed");
 });

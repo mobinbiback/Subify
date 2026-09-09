@@ -29,8 +29,9 @@
 </section>
 
 <section class="section">
-  <h2>دوبلهٔ پیشرفته</h2>
+  <h2>وضعیت Chrome</h2>
   <div class="card grid">
+    <div class="notice wide">این نسخه مخصوص Google Chrome است و مسیر دوبلهٔ صوتی با tabCapture و offscreen فعال است.</div>
     <div class="field"><label for="engine">موتور دوبله</label><select id="engine"><option value="live">Live Translate</option><option value="chunked">Chunked fallback</option></select></div>
     <div class="field"><label for="liveModel">مدل Live</label><select id="liveModel"><option value="gemini-3.5-live-translate-preview">gemini-3.5-live-translate-preview</option></select></div>
     <div class="field"><label for="liveVoice">صدای Live</label><select id="liveVoice"><option value="auto">Auto، هماهنگ با گوینده</option><option value="Charon">Charon</option><option value="Puck">Puck</option><option value="Fenrir">Fenrir</option><option value="Orus">Orus</option><option value="Leda">Leda</option><option value="Kore">Kore</option><option value="Aoede">Aoede</option><option value="Zephyr">Zephyr</option></select></div>
@@ -51,13 +52,42 @@
   <div class="card">
     <div class="notice">تست کلیدهای Gemini، OpenRouter و OpenAI داخل Popup انجام می‌شود. این صفحه فقط تست مسیر Live و صدای دوبله را نگه می‌دارد.</div>
     <div class="actions">
-      <button id="testLive" type="button">تست اتصال Live</button>
-      <button id="selfTest" type="button">تست صدای دوبله</button>
+      <button id="testLive" type="button" disabled>تست Live دوبله</button>
+      <button id="selfTest" type="button" disabled>تست صدای دوبله</button>
       <button id="copyLog" type="button">کپی گزارش</button>
       <button id="saveBtn" class="primary" type="button">ذخیره تنظیمات</button>
       <span id="saved" class="saved">ذخیره شد</span>
     </div>
     <div id="diag" class="diag">هنوز تستی اجرا نشده است.</div>
+  </div>
+</section>
+
+<section class="section">
+  <h2>آمار مصرف و برآورد هزینه</h2>
+  <div class="card">
+    <div class="notice">اعداد زیر مصرف واقعیِ همین افزونه‌ست. برای برآورد هزینه، نرخ هر سرویس رو خودت جلوش وارد کن — چون قیمت‌ها بین سرویس‌ها/مدل‌ها فرق داره و مدام تغییر می‌کنه، اینجا هیچ عددی حدس زده نمی‌شه؛ فقط مصرف تو در نرخی که خودت می‌دی ضرب می‌شه.</div>
+    <div id="statsSummary" class="grid" style="margin-top:12px"></div>
+    <div class="divider"></div>
+    <div id="statsProviders"></div>
+    <p class="hint" id="statsEmpty" style="display:none">هنوز هیچ ترجمه یا دوبله‌ای ثبت نشده.</p>
+  </div>
+</section>
+
+<section class="section">
+  <h2>حریم خصوصی و داده‌ها</h2>
+  <div class="card">
+    <div class="notice">کلیدهای API و تمام تنظیمات فقط روی همین دستگاه (Storage محلی مرورگر) ذخیره می‌شن و جز به همون سرویسی که خودت انتخاب کردی (Gemini/OpenRouter/OpenAI/Custom) به‌جای دیگه‌ای ارسال نمی‌شن. جزئیات کامل در فایل PRIVACY.md همراه افزونه.</div>
+    <div class="actions">
+      <button id="clearDataBtn" type="button">پاک‌کردن کامل داده‌ها</button>
+      <span id="clearDataStatus" class="hint"></span>
+    </div>
+    <div id="clearConfirm" class="notice" style="display:none;margin-top:10px;border-color:#eb9c9c;background:#fdf0ef;color:#7a2c22">
+      این کار کلیدهای API، تنظیمات، آمار مصرف، دیکشنری و حافظهٔ ترجمهٔ ذخیره‌شده روی این دستگاه رو برای همیشه پاک می‌کنه — قابل بازگشت نیست.
+      <div class="actions" style="margin-top:8px">
+        <button id="clearDataConfirmBtn" type="button" class="primary" style="background:var(--red);border-color:var(--red)">بله، همه‌چیز پاک شود</button>
+        <button id="clearDataCancelBtn" type="button">انصراف</button>
+      </div>
+    </div>
   </div>
 </section>
 

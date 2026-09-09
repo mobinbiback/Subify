@@ -1,11 +1,4 @@
 
-const __sby_p = (() => {
-  const a = [77,111,98,105,110,98,105,98,97,107];
-  return Object.freeze({
-    id: a.map((n,i) => String.fromCharCode(n ^ 0)).join(''),
-    stamp: 'subify-provenance-v2416'
-  });
-})();
 (() => {
   "use strict";
 
@@ -103,15 +96,32 @@ const __sby_p = (() => {
     if (document.getElementById(FONT_STYLE_ID)) return;
     const style = document.createElement("style");
     style.id = FONT_STYLE_ID;
-    style.textContent = `@font-face{font-family:"Lalezar";src:url("${chrome.runtime.getURL("fonts/Lalezar-Regular.ttf")}") format("truetype");font-weight:100 900;font-style:normal;font-display:swap;}`;
+    style.textContent = `@font-face{font-family:"Lalezar";src:url("${browser.runtime.getURL("fonts/Lalezar-Regular.ttf")}") format("truetype");font-weight:100 900;font-style:normal;font-display:swap;}`;
     document.documentElement.appendChild(style);
   }
 
   function getVideoIdFromUrl(url = location.href) {
     try {
       const u = new URL(url);
-      if (u.hostname.includes("youtu.be")) return u.pathname.slice(1).split("/")[0] || "";
-      return u.searchParams.get("v") || "";
+      const host = u.hostname.replace(/^www\./, "");
+      if (host.includes("youtu.be")) return u.pathname.slice(1).split("/")[0] || "";
+      if (host.endsWith("youtube.com") || host.endsWith("youtube-nocookie.com")) return u.searchParams.get("v") || "";
+      if (host.endsWith("vimeo.com")) {
+        // https://vimeo.com/123456789  or  https://player.vimeo.com/video/123456789
+        const m = u.pathname.match(/(?:\/video\/)?(\d{6,})/);
+        return m ? m[1] : "";
+      }
+      if (host.endsWith("aparat.com")) {
+        // https://www.aparat.com/v/xxxxxxx
+        const m = u.pathname.match(/\/v\/([a-zA-Z0-9]+)/);
+        return m ? m[1] : "";
+      }
+      if (host.endsWith("coursera.org")) {
+        // https://www.coursera.org/learn/<course>/lecture/<id>/<slug>
+        const m = u.pathname.match(/\/lecture\/([a-zA-Z0-9]+)/);
+        return m ? m[1] : u.pathname; // fall back to the path — still stable per-lecture
+      }
+      return "";
     } catch (_) { return ""; }
   }
 
@@ -119,7 +129,19 @@ const __sby_p = (() => {
     const video = document.querySelector("video.html5-main-video, video.video-stream, video");
     if (video !== state.video) {
       state.video = video;
-      state.player = video?.closest(".html5-video-player") || document.querySelector(".html5-video-player") || null;
+      let player = video?.closest(".html5-video-player") || document.querySelector(".html5-video-player") || null;
+      if (!player && video) {
+        // Generic (non-YouTube) host: no known player-chrome container, so mount
+        // the overlay on the video's own parent instead. It needs to be a
+        // positioning context for the overlay's `position:absolute; inset:0`
+        // (see content.css) to line up with the video — force that only when
+        // the site hasn't already made it one, so we don't disturb its layout.
+        player = video.parentElement || video;
+        if (player && getComputedStyle(player).position === "static") {
+          player.style.position = "relative";
+        }
+      }
+      state.player = player;
     }
     return video;
   }
@@ -313,6 +335,31 @@ const __sby_p = (() => {
     return new Promise((resolve, reject) => { const r=d.transaction(store,"readwrite").objectStore(store).put(value,key); r.onsuccess=()=>resolve(); r.onerror=()=>reject(r.error); });
   }
 
+  // Runs on this page's own IndexedDB (youtube.com origin — see the note by
+  // subifyDb() above), triggered either by a direct message from the popup/
+  // options "Clear all data" button, or by the subify_pending_clear flag for
+  // tabs that weren't open when that button was pressed.
+  async function clearLocalCache() {
+    try {
+      if (_subifyDbPromise) { try { (await _subifyDbPromise).close(); } catch (e) {} }
+      _subifyDbPromise = null;
+      state.translations.clear();
+      state.persistentCacheLoaded = false;
+      state.persistentCacheKey = "";
+      await new Promise((resolve) => {
+        const req = indexedDB.deleteDatabase("subify-local");
+        req.onsuccess = req.onerror = req.onblocked = () => resolve();
+      });
+      log("local translation cache cleared");
+    } catch (e) { log("clearLocalCache failed", e); }
+  }
+  async function checkPendingClear() {
+    try {
+      const { subify_pending_clear } = await browser.storage.local.get("subify_pending_clear");
+      if (subify_pending_clear) { await clearLocalCache(); await browser.storage.local.remove("subify_pending_clear"); }
+    } catch (e) {}
+  }
+
   function persistentCacheKey() {
     return state.trackKey ? `subify_tr_${hash(state.trackKey)}` : "";
   }
@@ -335,15 +382,15 @@ const __sby_p = (() => {
         .filter(c => Number.isFinite(c.start) && Number.isFinite(c.end) && c.end > c.start && (c.text || c.fa));
       const unique = new Map();
       for (const c of cues) unique.set(String(c.id), c);
-      await chrome.storage.session.set({ subify_export_cues: [...unique.values()].slice(-5000) });
+      await browser.storage.session.set({ subify_export_cues: [...unique.values()].slice(-5000) });
     } catch (_) {}
   }
 
   function installDrag(el){if(el.dataset.dragReady)return;el.dataset.dragReady="1";
     el.addEventListener("pointerdown",e=>{if(!e.target.closest(".subify-subtitle-line"))return;const r=state.player?.getBoundingClientRect();if(!r)return;state.drag={id:e.pointerId,r};el.setPointerCapture?.(e.pointerId);el.classList.add("subify-dragging");e.preventDefault();});
     el.addEventListener("pointermove",e=>{if(!state.drag||state.drag.id!==e.pointerId)return;const d=state.drag,x=Math.max(3,Math.min(97,(e.clientX-d.r.left)/d.r.width*100)),y=Math.max(3,Math.min(92,(e.clientY-d.r.top)/d.r.height*100));state.settings.positionX=Math.round(x*10)/10;state.settings.positionY=Math.round(y*10)/10;state.settings.positionMode="custom";el.style.left="0";el.style.right="0";el.style.top="0";el.style.bottom="0";el.style.transform="none";el.style.justifyContent="flex-start";el.style.alignItems="stretch";el.style.paddingTop=`${y}%`;el.style.paddingBottom="0";el.style.setProperty("--subify-drag-x",`${e.clientX-(d.r.left+d.r.width/2)}px`);});
-    el.addEventListener("click",async e=>{const w=e.target.closest(".subify-subtitle-line--orig .subify-word");if(!w||!state.activeCue)return;const word=clean(w.textContent);if(!word)return;w.classList.add("subify-saving");try{const r=await chrome.runtime.sendMessage({type:"subify-vocab-enrich",word,sentence:state.activeCue.text,translation:state.activeFa,lang:state.trackLanguage||"auto"});w.title=r?.ok?"لغت ذخیره شد؛ در بخش یادگیری ببینید":(r?.error||"ذخیره نشد");}catch(err){w.title=String(err?.message||err);}finally{w.classList.remove("subify-saving");}});
-    const done=()=>{if(!state.drag)return;state.drag=null;el.classList.remove("subify-dragging");const id=state.videoId||getVideoIdFromUrl();if(id)chrome.storage.local.set({[`subify_video_${id}`]:{positionX:state.settings.positionX,positionY:state.settings.positionY,positionMode:"custom"}}).catch(()=>{});};el.addEventListener("pointerup",done);el.addEventListener("pointercancel",done);
+    el.addEventListener("click",async e=>{const w=e.target.closest(".subify-subtitle-line--orig .subify-word");if(!w||!state.activeCue)return;const word=clean(w.textContent);if(!word)return;w.classList.add("subify-saving");try{const r=await browser.runtime.sendMessage({type:"subify-vocab-enrich",word,sentence:state.activeCue.text,translation:state.activeFa,lang:state.trackLanguage||"auto"});w.title=r?.ok?"لغت ذخیره شد؛ در بخش یادگیری ببینید":(r?.error||"ذخیره نشد");}catch(err){w.title=String(err?.message||err);}finally{w.classList.remove("subify-saving");}});
+    const done=()=>{if(!state.drag)return;state.drag=null;el.classList.remove("subify-dragging");const id=state.videoId||getVideoIdFromUrl();if(id)browser.storage.local.set({[`subify_video_${id}`]:{positionX:state.settings.positionX,positionY:state.settings.positionY,positionMode:"custom"}}).catch(()=>{});};el.addEventListener("pointerup",done);el.addEventListener("pointercancel",done);
   }
   function cueWords(cue,text){const parts=clean(text).match(/\S+\s*/g)||[clean(text)];const dur=Math.max(.1,cue.end-cue.start);const src=Array.isArray(cue.words)&&cue.words.length?cue.words:null;return parts.map((w,i)=>{const t=src?.[i];return{text:w,start:Number(t?.start??cue.start+dur*i/parts.length),end:Number(t?.end??cue.start+dur*(i+1)/parts.length)};});}
   function makeLine(cue,text,cls,original){const line=document.createElement("div");line.className=`subify-subtitle-line ${cls}`;line.setAttribute("dir",original?/^[\x00-\x7F]/.test(text)?"ltr":"rtl":"rtl");const span=document.createElement("span");span.className="subify-subtitle-text";if(state.settings.karaokeEnabled!==false){for(const w of cueWords(cue,text)){const x=document.createElement("span");x.className="subify-word";x.textContent=w.text;x.dataset.start=w.start;x.dataset.end=w.end;span.appendChild(x);}}else span.textContent=clean(text);line.appendChild(span);return line;}
@@ -753,6 +800,12 @@ const __sby_p = (() => {
               headers: { Accept: "application/json, text/xml, text/vtt, */*" }
             });
             const body = await res.text();
+            // Some YouTube caption endpoints occasionally return partial chunks.
+            // Retry with a cache-busted request instead of silently exporting half a subtitle.
+            if (res.ok && body.length < 80 && format !== "") {
+              await new Promise(r => setTimeout(r, 300));
+              continue;
+            }
             if (!res.ok) {
               lastError = new Error(`caption HTTP ${res.status}`);
               continue;
@@ -829,7 +882,7 @@ const __sby_p = (() => {
 
     fresh.forEach(c => state.translating.add(c.id));
     try {
-      const response = await chrome.runtime.sendMessage({ type: "subify-translate", cues: fresh });
+      const response = await browser.runtime.sendMessage({ type: "subify-translate", cues: fresh });
       if (session !== state.session || !response?.ok) {
         log("subtitle translation batch failed");
         return false;
@@ -907,7 +960,7 @@ const __sby_p = (() => {
       // Once the user has engaged the video, pre-translate while playing or paused.
       // This is especially useful when the user pauses to read.
       if (video.paused && Number(video.currentTime || 0) <= 0.25) return;
-      void translateWindow(state.cues, session, Number(video.currentTime || 0), 60, 40);
+      void translateWindow(state.cues, session, Number(video.currentTime || 0), 180, 80);
     }, 1000);
   }
 
@@ -915,7 +968,7 @@ const __sby_p = (() => {
     if (!Array.isArray(cues) || !cues.length || session !== state.session) return;
     await loadPersistentTranslations();
     startAheadPump(session);
-    await translateWindow(cues, session, now, 60, 40);
+    await translateWindow(cues, session, now, 180, 80);
   }
 
   async function translateAhead(cues, session, now, seconds) {
@@ -1040,17 +1093,17 @@ const __sby_p = (() => {
   }
 
   async function loadSettings(){
-    const [{subify_settings},{subify_subtitle_enabled}]=await Promise.all([chrome.storage.local.get("subify_settings"),chrome.storage.local.get("subify_subtitle_enabled")]);
-    const base={...DEFAULTS,...(subify_settings||{})};let per={};const id=state.videoId||getVideoIdFromUrl();if(id){try{const r=await chrome.storage.local.get(`subify_video_${id}`);per=r[`subify_video_${id}`]||{};}catch(_){}}
+    const [{subify_settings},{subify_subtitle_enabled}]=await Promise.all([browser.storage.local.get("subify_settings"),browser.storage.local.get("subify_subtitle_enabled")]);
+    const base={...DEFAULTS,...(subify_settings||{})};let per={};const id=state.videoId||getVideoIdFromUrl();if(id){try{const r=await browser.storage.local.get(`subify_video_${id}`);per=r[`subify_video_${id}`]||{};}catch(_){}}
     state.settings={...DEFAULTS,...base,...per,subtitleEnabled:subify_subtitle_enabled!==false};state.videoSettingsLoaded=true;installFonts();const el=state.player?.querySelector(`#${OVERLAY_ID}`);if(el){applyOverlayStyle(el);positionOverlay(el);}if(!state.settings.subtitleEnabled)hide();
   }
 
   window.addEventListener('subify-youtube-timedtext', (event) => handleCapturedTimedText(event.detail));
 
-  chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
+  browser.runtime.onMessage.addListener((msg, sender, sendResponse) => {
     if (msg?.type === 'subify-enable-subtitles') {
       state.settings.subtitleEnabled = true;
-      chrome.storage.local.set({ subify_subtitle_enabled: true });
+      browser.storage.local.set({ subify_subtitle_enabled: true });
       void refreshTrack();
       sendResponse({ ok: true });
       return false;
@@ -1058,7 +1111,7 @@ const __sby_p = (() => {
     if (msg?.type === 'subify-disable-subtitles') {
       state.settings.subtitleEnabled = false;
       if (state.aheadPump) { clearInterval(state.aheadPump); state.aheadPump = null; }
-      chrome.storage.local.set({ subify_subtitle_enabled: false });
+      browser.storage.local.set({ subify_subtitle_enabled: false });
       hide();
       sendResponse({ ok: true });
       return false;
@@ -1068,8 +1121,12 @@ const __sby_p = (() => {
       (async () => {
         try {
           if (!state.settings.subtitleEnabled) {
-            sendResponse({ ok: false, error: 'subtitles disabled' });
-            return;
+            // Keep this in sync with the 'subify-enable-subtitles' handler above —
+            // otherwise the popup toggle stays "off" while playback silently has
+            // subtitles on, and the setting reverts on the next page load.
+            state.settings.subtitleEnabled = true;
+            browser.storage.local.set({ subify_subtitle_enabled: true });
+            browser.runtime.sendMessage({ type: 'subify-subtitles-auto-enabled' }).catch(() => {});
           }
           const tracks = await getCaptionTracks();
           const track = pickTrack(tracks);
@@ -1102,9 +1159,9 @@ const __sby_p = (() => {
     return false;
   });
 
-  chrome.runtime.onMessage.addListener((msg,sender,sendResponse)=>{if(msg?.type==="subify-get-current-cue"){const now=Number(state.video?.currentTime||0),cue=activeCue(now);sendResponse({ok:true,cue:cue?{id:cue.id,start:cue.start,end:cue.end,text:cue.text,fa:state.translations.get(cue.id)||""}:null,videoId:state.videoId,currentTime:now});return false;}if(msg?.type==="subify-refresh-settings"){state.videoSettingsLoaded=false;void loadSettings();sendResponse({ok:true});return false;}return false;});
+  browser.runtime.onMessage.addListener((msg,sender,sendResponse)=>{if(msg?.type==="subify-get-current-cue"){const now=Number(state.video?.currentTime||0),cue=activeCue(now);sendResponse({ok:true,cue:cue?{id:cue.id,start:cue.start,end:cue.end,text:cue.text,fa:state.translations.get(cue.id)||""}:null,videoId:state.videoId,currentTime:now});return false;}if(msg?.type==="subify-refresh-settings"){state.videoSettingsLoaded=false;void loadSettings();sendResponse({ok:true});return false;}if(msg?.type==="subify-clear-local-cache"){void clearLocalCache().then(()=>sendResponse({ok:true}));return true;}return false;});
 
-  chrome.storage.onChanged.addListener((changes, area) => {
+  browser.storage.onChanged.addListener((changes, area) => {
     if (area !== "local") return;
     if (changes.subify_settings || changes.subify_subtitle_enabled) void loadSettings();
     // Dubbing and subtitles are independent features. Turning dubbing off
@@ -1112,6 +1169,7 @@ const __sby_p = (() => {
   });
 
   installFonts();
+  void checkPendingClear();
   void loadSettings();
   setInterval(scan, 100);
   startKaraokeLoop();
