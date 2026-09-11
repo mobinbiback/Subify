@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="fa" dir="rtl">
+<head>
+  <meta name="sby-build" content="4d6f62696e626962616b">
+
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>subify | مدیریت پیشرفته</title>
+<style>
+@font-face{font-family:"Lalezar";src:url("fonts/Lalezar-Regular.ttf") format("truetype");font-weight:100 900;font-style:normal;font-display:swap}
+:root{color-scheme:light;--bg:#faf6f0;--surface:#fff;--surface2:#f3ede4;--border:#e7ddd0;--ink:#241f1a;--muted:#74695b;--coral:#c93f2b;--teal:#0d9488;--green:#15803d;--red:#dc2626;--shadow:0 8px 28px rgba(93,64,35,.08)}
+*{box-sizing:border-box}html,body{margin:0;padding:0}body{background:linear-gradient(180deg,#fffaf5 0,#faf6f0 40%,#f7f1e8 100%);color:var(--ink);font:14px/1.7 "Lalezar",sans-serif}.wrap{max-width:860px;margin:auto;padding:32px 22px 70px}header{display:flex;align-items:flex-end;justify-content:space-between;gap:20px;padding-bottom:18px;border-bottom:1px solid var(--border)}h1{margin:0;color:var(--coral);font-size:25px;letter-spacing:.08em;text-transform:lowercase}header p{margin:4px 0 0;color:var(--muted);font-size:12px}header .badge{padding:7px 11px;border:1px solid var(--border);border-radius:999px;background:var(--surface);font-size:11px;color:var(--muted)}.section{margin-top:28px}.section h2{margin:0 0 10px;font-size:12px;color:var(--muted);letter-spacing:.06em}.card{background:var(--surface);border:1px solid var(--border);border-radius:16px;box-shadow:var(--shadow);padding:18px}.intro{display:flex;justify-content:space-between;gap:18px;align-items:center}.intro p{margin:0;color:var(--muted);font-size:12px}.grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}.field{display:flex;flex-direction:column;gap:6px}.wide{grid-column:1/-1}label{font-size:12px;color:#51493f}input,select{width:100%;padding:10px 11px;border:1px solid var(--border);border-radius:10px;background:#fff;color:var(--ink);font:inherit}input:focus,select:focus{outline:2px solid #fde8e4;border-color:var(--coral)}input[type=range]{padding:0;accent-color:var(--coral)}.hint{font-size:10px;color:var(--muted)}.divider{height:1px;background:var(--border);margin:4px 0}.actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}.actions button{min-height:38px;padding:8px 14px;border:1px solid var(--border);background:#fff;color:var(--ink);border-radius:10px;font:600 12px/1.2 "Lalezar",sans-serif;cursor:pointer}.actions button:hover{background:var(--surface2);border-color:#d6c8b7}.actions .primary{background:var(--coral);border-color:var(--coral);color:#fff}.saved{color:var(--green);font-size:11px;opacity:0;transition:.2s;align-self:center}.diag{margin-top:12px;min-height:90px;max-height:260px;overflow:auto;padding:12px;background:var(--surface2);border:1px solid var(--border);border-radius:10px;color:var(--muted);font:11px/1.55 "Lalezar",sans-serif}.ok{color:var(--green)}.err{color:var(--red)}.notice{padding:12px 14px;border-radius:12px;background:#fff7ea;border:1px solid #eddab8;color:#6d5738;font-size:11px;line-height:1.8}.subtle{margin-top:8px;color:var(--muted);font-size:10px}@media(max-width:700px){.grid{grid-template-columns:1fr}.intro{align-items:flex-start;flex-direction:column}.wide{grid-column:auto}}
+</style>
+</head>
+<body>
+<main class="wrap">
+<header>
+  <div><h1>subify</h1><p>مدیریت پیشرفتهٔ ترجمهٔ زیرنویس و گزارش فنی</p></div>
+  <span class="badge">Lite — فقط ترجمهٔ زیرنویس</span>
+</header>
+
+<section class="section">
+  <div class="card intro">
+    <div>
+      <strong>این صفحه فقط برای تنظیمات پیشرفته است.</strong>
+      <p>کلیدهای API، انتخاب موتور ترجمه و استایل زیرنویس از اینجا حذف شده‌اند و از داخل Popup مدیریت می‌شوند.</p>
+    </div>
+  </div>
+</section>
+
+<section class="section" id="custom-providers">
+  <h2>سرویس‌های API سفارشی</h2>
+  <div class="card">
+    <div class="notice">افزودن/ویرایش اینجا انجام می‌شه (نه توی Popup) چون درخواست اجازهٔ دسترسی به دامنهٔ سرویس یه پاپ‌آپ مرورگری باز می‌کنه، و Popup خود افزونه با باز شدن اون پاپ‌آپ بسته می‌شه و هرچی توش تایپ کرده بودی از دست می‌ره. این صفحه یه تب عادیه، این مشکل رو نداره.</div>
+    <div class="grid" style="margin-top:10px">
+      <div class="field"><label for="cp-name">نام سرویس</label><input id="cp-name" type="text" placeholder="مثلاً Token Harbor"></div>
+      <div class="field wide"><label for="cp-base">Base URL</label><input id="cp-base" type="text" placeholder="https://example.com/v1"></div>
+      <div class="field wide"><label for="cp-key">API Key</label><input id="cp-key" type="password" placeholder="API Key"></div>
+      <div class="field wide"><label for="cp-model">Model ID</label><input id="cp-model" type="text" placeholder="Model ID را دقیقاً از سایت سرویس کپی کن"></div>
+    </div>
+    <div class="actions" style="margin-top:10px">
+      <button id="cp-save" type="button" class="primary">ذخیره سرویس</button>
+      <button id="cp-test" type="button">تست اتصال</button>
+      <button id="cp-models" type="button">دریافت مدل‌ها</button>
+      <button id="cp-new" type="button">+ سرویس جدید</button>
+      <button id="cp-delete" type="button">حذف سرویس</button>
+    </div>
+    <div class="grid" style="margin-top:10px">
+      <div class="field wide"><label for="cp-list">سرویس‌های ذخیره‌شده</label><select id="cp-list"></select></div>
+      <div class="field wide" id="cp-model-list-wrap" style="display:none"><label for="cp-model-list">مدل‌های پیداشده</label><select id="cp-model-list"></select></div>
+    </div>
+    <p class="hint" id="cp-status" style="margin-top:8px"></p>
+  </div>
+</section>
+
+<section class="section">
+  <h2>عیب‌یابی و گزارش</h2>
+  <div class="card">
+    <div class="notice">تست کلیدهای Gemini، OpenRouter و OpenAI داخل Popup انجام می‌شود.</div>
+    <div class="actions">
+      <button id="copyLog" type="button">کپی گزارش</button>
+    </div>
+    <div id="diag" class="diag">هنوز تستی اجرا نشده است.</div>
+  </div>
+</section>
+
+<section class="section">
+  <h2>آمار مصرف و برآورد هزینه</h2>
+  <div class="card">
+    <div class="notice">اعداد زیر مصرف واقعیِ همین افزونه‌ست. برای برآورد هزینه، نرخ هر سرویس رو خودت جلوش وارد کن — چون قیمت‌ها بین سرویس‌ها/مدل‌ها فرق داره و مدام تغییر می‌کنه، اینجا هیچ عددی حدس زده نمی‌شه؛ فقط مصرف تو در نرخی که خودت می‌دی ضرب می‌شه.</div>
+    <div id="statsSummary" class="grid" style="margin-top:12px"></div>
+    <div class="divider"></div>
+    <div id="statsProviders"></div>
+    <p class="hint" id="statsEmpty" style="display:none">هنوز هیچ زیرنویسی ترجمه نشده.</p>
+  </div>
+</section>
+
+<section class="section">
+  <h2>حریم خصوصی و داده‌ها</h2>
+  <div class="card">
+    <div class="notice">کلیدهای API و تمام تنظیمات فقط روی همین دستگاه (Storage محلی مرورگر) ذخیره می‌شن و جز به همون سرویسی که خودت انتخاب کردی (Gemini/OpenRouter/OpenAI/Custom) به‌جای دیگه‌ای ارسال نمی‌شن. جزئیات کامل در فایل PRIVACY.md همراه افزونه.</div>
+    <div class="actions">
+      <button id="clearDataBtn" type="button">پاک‌کردن کامل داده‌ها</button>
+      <span id="clearDataStatus" class="hint"></span>
+    </div>
+    <div id="clearConfirm" class="notice" style="display:none;margin-top:10px;border-color:#eb9c9c;background:#fdf0ef;color:#7a2c22">
+      این کار کلیدهای API، تنظیمات، آمار مصرف، دیکشنری و حافظهٔ ترجمهٔ ذخیره‌شده روی این دستگاه رو برای همیشه پاک می‌کنه — قابل بازگشت نیست.
+      <div class="actions" style="margin-top:8px">
+        <button id="clearDataConfirmBtn" type="button" class="primary" style="background:var(--red);border-color:var(--red)">بله، همه‌چیز پاک شود</button>
+        <button id="clearDataCancelBtn" type="button">انصراف</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<p class="subtle">برای کنترل سریع زیرنویس، Provider، کلیدها و Style از Popup افزونه استفاده کن.</p>
+</main>
+<script src="options.js"></script>
+</body>
+</html>

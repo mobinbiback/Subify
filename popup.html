@@ -1,0 +1,220 @@
+<!doctype html>
+<html lang="fa" dir="rtl">
+<head>
+  <meta name="sby-build" content="4d6f62696e626962616b">
+
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Subify</title>
+<style>
+@font-face{font-family:"Lalezar";src:url("fonts/Lalezar-Regular.ttf") format("truetype");font-weight:100 900;font-style:normal;font-display:swap}
+
+/* v2.4.10 popup polish */
+.section-title{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:2px 0 8px;color:#fff;font-size:12px}
+.section-title .hint{font-size:9px;color:var(--muted)}
+.provider-card{margin-top:10px;padding:12px;border:1px solid var(--line);border-radius:14px;background:linear-gradient(180deg,#151b24,#10151c)}
+.provider-card .provider-head{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:9px}
+.provider-badge{padding:4px 8px;border-radius:999px;background:#8b7cff1a;border:1px solid #8b7cff40;color:#cfc9ff;font-size:9px}
+.provider-select{display:flex;align-items:center;gap:8px}
+.provider-select select{flex:1;padding:9px 10px;background:#0b1016;color:#fff;border:1px solid var(--line);border-radius:10px;font-size:11px}
+.key-tests{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-top:8px}
+.key-tests button{padding:8px 5px;border:1px solid var(--line);background:#0d1218;color:#dce2e8;border-radius:9px;cursor:pointer;font-size:10px}
+.key-tests button:hover{border-color:#687386;background:#151c24}
+.style-shell{display:flex;flex-direction:column;gap:9px}
+.style-block{border:1px solid var(--line);background:rgba(17,22,29,.82);border-radius:14px;padding:10px}
+.style-block h3{margin:0 0 8px;font-size:11px;color:#fff;display:flex;justify-content:space-between;align-items:center}
+.style-block h3 span{color:var(--muted);font-size:9px}
+.style-live-preview{min-height:140px;border:1px solid #34404e;border-radius:14px;background:linear-gradient(145deg,#1a2028,#0c1016);display:flex;align-items:flex-end;justify-content:center;padding:14px;position:relative;overflow:hidden}
+.style-live-preview:before{content:'LIVE PREVIEW';position:absolute;left:10px;top:9px;font:9px/1.2 Arial,sans-serif;letter-spacing:.12em;color:#718096}
+.style-preview-stage{width:100%;height:100%;min-height:108px;display:flex;align-items:flex-end;justify-content:center}
+.style-preview-caption{max-width:88%;text-align:center;padding:7px 12px;border-radius:999px;background:rgba(0,0,0,.72);box-shadow:0 4px 18px rgba(0,0,0,.28)}
+.style-preview-caption .preview-orig{display:block;color:#fff;opacity:.88;font-family:Arial,sans-serif;font-size:10px;line-height:1.3;margin-bottom:3px}
+.style-preview-caption .preview-fa{display:block;color:#fff;font-size:16px;line-height:1.35}
+.preset-grid{grid-template-columns:repeat(4,1fr);gap:6px}
+.preset-grid button{min-height:38px;padding:5px 2px}
+.preset-grid button.active{box-shadow:0 0 0 1px #8b7cff50 inset,0 0 0 2px #8b7cff18}
+.style-grid{grid-template-columns:1fr 1fr;gap:7px}
+.style-field{padding:9px;border-radius:11px}
+.style-field.wide{grid-column:1/-1}
+.style-field label{font-size:10px}
+.range-row{display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:7px}
+.range-row output{min-width:34px;text-align:left;color:#fff;font-size:10px}
+.key-card + .key-card{margin-top:7px}
+.keys-title{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px}
+.keys-title b{font-size:12px}
+.keys-title span{font-size:9px;color:var(--muted)}
+@media(max-width:390px){.key-tests{grid-template-columns:1fr}.preset-grid{grid-template-columns:repeat(2,1fr)}}
+.model-fetch-btn,.export-btn{border-radius:10px;padding:8px 12px;font-weight:600;transition:.2s;cursor:pointer}.model-fetch-btn:hover,.export-btn:hover{transform:translateY(-1px);filter:brightness(1.12)}
+</style>
+<style>
+:root{--bg:#0a0d12;--panel:#11161d;--panel2:#151b24;--line:#26303c;--text:#f4f6f8;--muted:#8f9aaa;--accent:#8b7cff;--accent2:#61d8ff;--ok:#32d69a;--danger:#ff6f7d;--shadow:0 18px 50px rgba(0,0,0,.35)}
+*{box-sizing:border-box}html,body{margin:0;padding:0}body{width:370px;max-height:650px;overflow:auto;background:radial-gradient(circle at 15% 0%,#1a1834 0,#0a0d12 34%),var(--bg);color:var(--text);font-family:"Lalezar",sans-serif;font-size:13px;letter-spacing:.01em}button,input,select{font-family:"Lalezar",sans-serif}button{transition:.18s ease}
+header{padding:17px 17px 13px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--line);background:rgba(10,13,18,.72);backdrop-filter:blur(18px);position:sticky;top:0;z-index:5}.brand{display:flex;align-items:center;gap:10px}.brand:before{content:"S";display:grid;place-items:center;width:34px;height:34px;border-radius:11px;background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;font-size:18px;box-shadow:0 8px 25px #6e61ff33}.brand h1{margin:0;font-size:21px;line-height:1;color:#fff}.brand span{display:block;color:var(--muted);font-size:10px;margin-top:4px}.gear{width:34px;height:34px;border:1px solid var(--line);background:var(--panel);color:#dfe4ea;border-radius:10px;cursor:pointer}.gear:hover{border-color:#6f7b8b;background:var(--panel2)}
+.tabs{display:grid;grid-template-columns:repeat(4,1fr);gap:5px;padding:10px 12px 0;background:rgba(10,13,18,.92);position:sticky;top:65px;z-index:4}.tab{border:1px solid transparent;background:transparent;color:var(--muted);border-radius:10px 10px 0 0;padding:9px 4px;cursor:pointer;font-weight:700;font-size:11px}.tab:hover{color:#fff}.tab.active{background:var(--panel);color:#fff;border-color:var(--line);border-bottom-color:var(--panel)}.tab-panel{display:none}.tab-panel.active{display:block}
+main{padding:13px 14px 14px}.hero{padding:14px 0 12px;display:flex;flex-direction:column;align-items:center;gap:9px}.power{width:86px;height:86px;border-radius:28px;border:1px solid #34404f;background:linear-gradient(145deg,#151c26,#0d1117);color:#fff;font-size:28px;cursor:pointer;box-shadow:var(--shadow)}.power:hover{transform:translateY(-2px)}.power.on{border-color:#42d6a4;background:linear-gradient(145deg,#122b26,#10191b);box-shadow:0 0 0 5px #32d69a12,0 0 36px #32d69a22;color:#b9ffe6}.state{font-size:11px;color:var(--muted)}.state.on{color:var(--ok)}
+.modes{border:1px solid var(--line);border-radius:15px;overflow:hidden;background:rgba(17,22,29,.86);box-shadow:0 8px 30px rgba(0,0,0,.18)}.mode{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 13px;border-bottom:1px solid var(--line)}.mode:last-child{border-bottom:0}.mode b{font-size:13px;color:#f7f8fa}.mode small{display:block;color:var(--muted);font-size:10px;line-height:1.45;margin-top:2px}.switch{appearance:none;width:40px;height:23px;border-radius:999px;background:#2b3440;position:relative;cursor:pointer;outline:0;flex:none}.switch:before{content:"";position:absolute;width:17px;height:17px;top:3px;right:20px;border-radius:50%;background:#9aa5b2;transition:.18s}.switch:checked{background:#176c57}.switch:checked:before{right:3px;background:#fff;box-shadow:0 2px 8px #0006}
+.status{margin-top:11px;padding:10px 12px;background:var(--panel);border:1px solid var(--line);border-radius:12px;color:var(--muted);font-size:11px;line-height:1.65}.status strong{color:#fff}.error{color:var(--danger)!important}.actions{display:flex;gap:7px;margin-top:10px}.actions button,.style-actions button,.key-actions button{flex:1;padding:9px 8px;border:1px solid var(--line);background:var(--panel);color:#e9edf2;border-radius:10px;cursor:pointer}.actions button:hover,.style-actions button:hover,.key-actions button:hover{border-color:#586577;background:var(--panel2)}
+.source-row{margin-top:10px;padding:10px 12px;border:1px solid var(--line);border-radius:12px;background:var(--panel);display:flex;align-items:center;gap:10px}.source-row label{font-size:11px;color:var(--muted);white-space:nowrap}.source-row select{flex:1;min-width:0;padding:7px 9px;background:#0d1218;color:#fff;border:1px solid var(--line);border-radius:9px;font-size:11px}
+.style-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}.style-field{display:flex;flex-direction:column;gap:6px;padding:10px;background:var(--panel);border:1px solid var(--line);border-radius:12px}.style-field.wide{grid-column:1/-1}.style-field label{color:var(--muted);font-size:10px}.style-field select,.style-field input[type=range]{width:100%}.preset-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:5px}.preset-grid button{padding:7px 2px;border:1px solid var(--line);background:#0d1218;color:#c9d0d9;border-radius:9px;font-size:9px;cursor:pointer}.preset-grid button:hover{border-color:#5b6675}.preset-grid button.active{border-color:var(--accent);color:#fff;background:#25213e;box-shadow:0 0 0 1px #8b7cff22 inset}.style-live-preview{min-height:112px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;border:1px solid var(--line);border-radius:12px;background:linear-gradient(135deg,#1b222c,#10151c);padding:15px;text-align:center;overflow:hidden}.style-live-preview span{font-size:11px;color:#fff;opacity:.72}.style-live-preview strong{font-size:18px}.key-card{margin-bottom:9px;padding:11px;background:var(--panel);border:1px solid var(--line);border-radius:12px}.key-card label{display:block;color:var(--muted);font-size:10px;margin-bottom:6px}.key-card input{width:100%;padding:9px 10px;background:#0d1218;color:#fff;border:1px solid var(--line);border-radius:9px;font-size:11px;outline:none}.key-card input:focus{border-color:var(--accent)}.key-actions{display:flex;gap:7px}
+footer{padding:10px 14px 14px;border-top:1px solid var(--line);display:flex;gap:6px;flex-wrap:wrap;background:#090c11}footer button{border:1px solid var(--line);background:var(--panel);color:#cbd3dc;cursor:pointer;font-size:9px;padding:7px 8px;border-radius:9px}footer button:hover{border-color:#586577;color:#fff}#today{color:var(--muted);font-size:9px;margin-inline-start:auto}
+#log{max-height:120px;overflow:auto;margin-top:10px;padding:8px 10px;border:1px solid var(--line);border-radius:10px;background:#090c11;font:10px/1.5 monospace;color:#8993a1;display:none}#log.show{display:block}
+</style>
+
+<style>
+@font-face{font-family:"VazirUI";src:url("fonts/Vazirmatn-Regular.ttf") format("truetype");font-weight:400;font-style:normal;font-display:swap}
+@font-face{font-family:"VazirUI";src:url("fonts/Vazirmatn-Medium.ttf") format("truetype");font-weight:500 700;font-style:normal;font-display:swap}
+@font-face{font-family:"EstedadUI";src:url("fonts/Estedad-Regular.ttf") format("truetype");font-weight:400;font-style:normal;font-display:swap}
+@font-face{font-family:"EstedadUI";src:url("fonts/Estedad-Medium.ttf") format("truetype");font-weight:500 900;font-style:normal;font-display:swap}
+:root{--bg:#0b1018;--panel:#111824;--panel-soft:#151e2b;--line:#202b3b;--text:#f7f8fb;--muted:#8f9bae;--accent:#7c5cff;--accent-2:#4cc2ff;--ok:#25d8a0;--danger:#ff6b7a;--shadow:0 16px 44px rgba(0,0,0,.34)}
+html,body{background:radial-gradient(140% 90% at 90% 0%,#1a2140 0%,#0b1018 48%,#090d14 100%) !important;color:var(--text)!important}
+body{width:390px;max-height:680px;font-family:"VazirUI",sans-serif!important;font-size:12px;letter-spacing:0!important}
+body *{font-family:"VazirUI",sans-serif!important}
+.brand{gap:9px!important}.brand-copy{display:flex;flex-direction:column;min-width:0}.brand-copy h1,.brand h1{font-family:"EstedadUI",sans-serif!important;font-size:20px!important;letter-spacing:.02em!important}.brand span{font-size:9px!important;color:#aeb7c5!important;margin-top:2px!important}.brand-mark{width:34px;height:34px;border-radius:11px;background:linear-gradient(135deg,var(--accent),var(--accent-2));display:grid;place-items:center;position:relative;box-shadow:0 10px 28px rgba(91,83,255,.26);flex:none}.brand-mark:before{content:"";width:17px;height:13px;border:2px solid #fff;border-radius:5px;position:absolute;left:8px;top:10px;opacity:.95}.brand-mark span{position:absolute!important;width:7px!important;height:2px!important;background:#fff!important;border-radius:99px!important;opacity:.95!important;margin:0!important}.brand-mark span:nth-child(1){left:13px;top:13px}.brand-mark span:nth-child(2){left:13px;top:18px;width:10px!important}.brand-mark span:nth-child(3){display:none}
+header{padding:13px 14px 12px!important;background:rgba(8,12,18,.74)!important;border-bottom:1px solid rgba(255,255,255,.07)!important;backdrop-filter:blur(18px)!important}.gear{width:34px;height:34px;border-radius:11px!important;background:#121925!important;border:1px solid var(--line)!important;font-size:16px}
+.tabs{top:59px!important;padding:8px 10px 0!important;gap:5px!important;background:rgba(8,12,18,.9)!important}.tab{display:flex;align-items:center;justify-content:center;gap:5px;padding:9px 6px!important;border-radius:11px 11px 0 0!important;color:#8994a6!important;font-size:11px!important}.tab.active{background:var(--panel)!important;color:#fff!important;border-color:var(--line)!important}.tab-ico{font-family:Arial,sans-serif!important;font-size:11px!important;opacity:.75}
+main{padding:12px 12px 14px!important}.hero{padding:10px 0 12px!important}.power{width:82px!important;height:82px!important;border-radius:25px!important;background:linear-gradient(145deg,#151d2a,#0d1219)!important;border:1px solid #2c3a4d!important;box-shadow:var(--shadow)!important}.power.on{border-color:#28cfa0!important;box-shadow:0 0 0 5px rgba(37,216,160,.08),0 0 32px rgba(37,216,160,.15)!important}.state{font-size:10px!important}
+.modes,.provider-card,.style-block,.key-card,.source-row,.status{background:rgba(17,24,36,.78)!important;border:1px solid var(--line)!important;border-radius:14px!important;box-shadow:0 8px 28px rgba(0,0,0,.12)}
+.mode{padding:11px 12px!important}.mode b{font-size:12px!important}.mode small{font-size:9px!important;color:#8994a6!important}.switch{width:38px!important;height:22px!important}.switch:before{width:16px!important;height:16px!important;right:19px!important}.switch:checked{background:#176852!important}.switch:checked:before{right:3px!important}
+.source-row{padding:9px 11px!important}.source-row label{font-size:10px!important}.source-row select,.provider-select select,.provider-model-input,.key-card input,.style-field select{padding:8px 9px!important;background:#0c121a!important;border:1px solid #243043!important;color:#fff!important;border-radius:10px!important;font-size:10px!important;outline:none}
+.section-title,.style-block h3,.keys-title b{font-family:"EstedadUI",sans-serif!important}.section-title{font-size:11px!important}.provider-card{padding:10px!important}.provider-badge{background:rgba(124,92,255,.12)!important;border-color:rgba(124,92,255,.3)!important;color:#d9d1ff!important}
+.status{font-size:10px!important;line-height:1.65!important}.actions button,.style-actions button,.key-actions button,.key-tests button,footer button{background:#121a26!important;border-color:#263246!important;color:#e9edf4!important;border-radius:10px!important;font-size:10px!important}.actions button:hover,.style-actions button:hover,.key-actions button:hover,.key-tests button:hover,footer button:hover{border-color:#53647d!important;background:#172131!important}
+.style-shell{gap:8px!important}.style-block{padding:10px!important}.style-live-preview{min-height:138px!important;border-color:#2a3748!important;background:linear-gradient(145deg,#171f2c,#0d131c)!important}.style-preview-caption{box-shadow:0 7px 22px rgba(0,0,0,.35)!important}.preset-grid{gap:6px!important}.preset-grid button{min-height:42px!important;font-size:9px!important;background:#101720!important;border-color:#253143!important}.preset-grid button.active{background:linear-gradient(145deg,#292344,#191a29)!important;border-color:var(--accent)!important}.style-field{background:#101720!important;border-color:#243143!important;border-radius:11px!important;padding:9px!important}.style-field label{font-size:9px!important;color:#8f9bad!important}.range-row output{font-family:"VazirUI",sans-serif!important;color:#fff!important}
+.key-card{padding:10px!important}.key-card label{font-size:9px!important}.key-tests{gap:6px!important}.key-tests button{padding:8px 4px!important}
+footer{background:rgba(7,10,15,.9)!important;border-top:1px solid rgba(255,255,255,.07)!important;padding:9px 11px 11px!important}.downloads{gap:5px!important}.downloads button{font-size:8px!important;padding:7px 7px!important}.downloads #today{font-size:8px!important}
+/* compact scrollbar */
+::-webkit-scrollbar{width:6px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:#2b3747;border-radius:99px}
+.downloads button:disabled{opacity:.42;cursor:not-allowed}
+</style>
+</head>
+<body>
+<header>
+  <div class="brand"><div class="brand-mark" aria-hidden="true"><span></span><span></span><span></span></div><div class="brand-copy"><h1>subify</h1><span>ترجمهٔ هوشمند زیرنویس یوتیوب</span></div></div>
+  <button id="openFullSettings" class="gear" title="تنظیمات کامل">⚙</button>
+</header>
+<nav class="tabs" role="tablist">
+  <button class="tab active" data-tab="main" role="tab"><span class="tab-ico">◉</span>زیرنویس</button>
+  <button class="tab" data-tab="translate" role="tab"><span class="tab-ico">文</span>ترجمه</button>
+  <button class="tab" data-tab="style" role="tab"><span class="tab-ico">✦</span>استایل</button>
+  <button class="tab" data-tab="keys" role="tab"><span class="tab-ico">⌘</span>کلیدها</button>
+</nav>
+<main>
+  <section class="tab-panel active" data-panel="main">
+  <section class="hero">
+    <button id="toggle" class="power" title="شروع/توقف Subify">فا</button>
+    <div id="stateLabel" class="state">آماده</div>
+  </section>
+
+  <section class="modes">
+    <label class="mode"><span><b>زیرنویس فارسی</b><small>استخراج مستقیم از Caption خود YouTube با تایم‌استمپ واقعی</small></span><input id="subify-popup-subtitle" class="switch" type="checkbox" checked></label>
+
+  </section>
+
+  <div class="source-row"><label for="popup-source-language">زبان مبدا</label><select id="popup-source-language"><option value="auto">خودکار</option><option value="en">English</option><option value="es">Español</option><option value="de">Deutsch</option><option value="fr">Français</option><option value="tr">Türkçe</option><option value="pt">Português</option><option value="ru">Русский</option><option value="hi">हिन्दी</option><option value="ja">日本語</option><option value="ko">한국어</option><option value="ar">العربية</option></select></div>
+
+  <div id="status" class="status">آماده؛ موتور ترجمه و مدل را از «ترجمه» انتخاب کنید و کلیدها را از «کلیدها» مدیریت کنید.</div>
+  <div class="actions"><button id="openDash">تنظیمات پیشرفته</button><button id="diagBtn">گزارش فنی</button></div>
+  <div id="log"></div>
+  </section>
+
+  <section class="tab-panel" data-panel="translate">
+    <section class="modes">
+      <label class="mode"><span><b>زیرنویس فارسی</b><small>استخراج مستقیم Caption یوتیوب با تایم‌کد واقعی</small></span><input id="subify-tab-subtitle" class="switch" type="checkbox" checked></label>
+      <label class="mode"><span><b>نمایش خط اصلی</b><small>متن اصلی بالای ترجمهٔ فارسی نمایش داده شود</small></span><input id="subify-tab-original" class="switch" type="checkbox"></label>
+      <label class="mode"><span><b>هایلایت کلمه‌به‌کلمه</b><small>نمایش حالت کارائوکه هنگام پخش زیرنویس</small></span><input id="subify-tab-karaoke" class="switch" type="checkbox" checked></label>
+    </section>
+    <div class="provider-card">
+      <div class="provider-head"><span class="section-title">موتور ترجمه <span class="hint">برای همین ویدیو</span></span><span id="providerBadge" class="provider-badge">Auto</span></div>
+      <div class="provider-select"><select id="popup-provider"><option value="auto">خودکار</option><option value="gemini">Gemini</option><option value="openrouter">OpenRouter</option><option value="openai">OpenAI</option><option value="custom">سرویس سفارشی</option></select></div>
+      <div id="providerHint" class="status" style="margin-top:8px">در حالت خودکار، سرویس دارای کلید معتبر انتخاب می‌شود.</div>
+      <div class="provider-model-row" style="margin-top:8px;display:grid;grid-template-columns:1fr;gap:7px">
+        <label for="popup-provider-model" class="hint" style="font-size:10px">مدل این Provider</label>
+        <input id="popup-provider-model" class="provider-model-input" type="text" placeholder="شناسه مدل را وارد کنید" autocomplete="off">
+        <div style="display:flex;gap:6px"><select id="popup-gemini-models" class="provider-model-input" style="display:none;flex:1"></select><button id="fetch-gemini-models" class="model-fetch-btn" type="button" style="display:none">↻ دریافت مدل‌ها</button></div>
+        <input id="popup-gemini-model-manual" class="provider-model-input" type="text" placeholder="یا Model ID جمنای را دستی وارد کن" autocomplete="off" style="display:none">
+        <div id="providerModelHint" class="hint">مدل را دستی انتخاب کن؛ این انتخاب فقط برای ترجمه زیرنویس است.</div>
+      </div>
+      <div id="custom-provider-panel" class="custom-provider-panel" style="display:none;margin-top:10px">
+        <div class="custom-provider-title">سرویس سفارشی <span class="hint">OpenAI-compatible</span></div>
+        <select id="custom-provider-list" class="provider-model-input"></select>
+        <div id="custom-provider-status" class="hint" style="margin-top:6px"></div>
+        <button id="manage-custom-providers" type="button" style="margin-top:7px">مدیریت سرویس‌های سفارشی (افزودن/ویرایش)</button>
+        <div class="hint" style="margin-top:4px">افزودن یا ویرایش سرویس سفارشی از صفحهٔ تنظیمات انجام می‌شه — چون درخواست اجازهٔ دسترسی وسط این Popup باعث بسته‌شدنش می‌شد و متن‌هایی که تایپ کرده بودی از دست می‌رفت.</div>
+      </div>
+    </div>
+    <div class="source-row"><label for="tab-source-language">زبان مبدا</label><select id="tab-source-language"><option value="auto">خودکار</option><option value="en">English</option><option value="es">Español</option><option value="de">Deutsch</option><option value="fr">Français</option><option value="tr">Türkçe</option><option value="pt">Português</option><option value="ru">Русский</option><option value="hi">हिन्दी</option><option value="ja">日本語</option><option value="ko">한국어</option><option value="ar">العربية</option></select></div>
+    <div class="status">زیرنویس از <strong>Caption واقعی YouTube</strong> خوانده می‌شود و ترجمه بر اساس همان cue و تایم‌کد نمایش داده می‌شود.</div>
+  </section>
+
+  <section class="tab-panel" data-panel="style">
+    <div class="style-shell">
+      <div class="style-block">
+        <h3>پیش‌نمایش زنده <span>تغییرات همان لحظه اعمال می‌شوند</span></h3>
+        <div id="styleLivePreview" class="style-live-preview"><div class="style-preview-stage"><div class="style-preview-caption"><span id="stylePreviewOrig" class="preview-orig">Even here, they bloom.</span><span id="stylePreviewFa" class="preview-fa">حتی اینجا هم شکوفا می‌شوند.</span></div></div></div>
+      </div>
+      <div class="style-block">
+        <h3>پریست آماده <span>یک انتخاب، یک استایل کامل</span></h3>
+        <div class="preset-grid">
+          <button data-preset="classic">Classic</button><button data-preset="youtube">YouTube</button><button data-preset="tiktok">TikTok</button><button data-preset="pill">Pill</button><button data-preset="snapchat">Snap</button><button data-preset="cinema">Cinema</button><button data-preset="minimal">Minimal</button>
+        </div>
+      </div>
+      <div class="style-block">
+        <h3>تایپوگرافی <span>فونت و خوانایی</span></h3>
+        <div class="style-grid">
+          <div class="style-field"><label>فونت</label><select id="style-font"><option value="Lalezar">Lalezar</option></select></div>
+          <div class="style-field"><label>نمایش</label><select id="style-display"><option value="translation">فقط ترجمه</option><option value="dual">اصلی + ترجمه</option><option value="original">فقط اصلی</option></select></div>
+          <div class="style-field"><label>اندازه <span id="style-fontSizeVal"></span>px</label><input id="style-fontSize" type="range" min="16" max="54" step="1"></div>
+          <div class="style-field"><label>عرض متن <span id="style-maxWidthVal"></span>%</label><input id="style-maxWidth" type="range" min="55" max="96" step="1"></div>
+        </div>
+      </div>
+      <div class="style-block">
+        <h3>موقعیت <span>هماهنگ با جای زیرنویس YouTube</span></h3>
+        <div class="style-grid">
+          <div class="style-field"><label>موقعیت</label><select id="style-positionMode"><option value="bottom">پایین، مثل YouTube</option><option value="middle">وسط ویدیو</option><option value="top">بالا</option><option value="custom">سفارشی / Drag</option></select></div>
+          <div class="style-field"><label>موقعیت عمودی <span id="style-positionYVal"></span>%</label><input id="style-positionY" type="range" min="3" max="92" step="1"></div>
+        </div>
+      </div>
+      <div class="style-block">
+        <h3>ظاهر <span>رنگ، پس‌زمینه و افکت</span></h3>
+        <div class="style-grid">
+          <div class="style-field"><label>شفافیت <span id="style-bgOpacityVal"></span></label><input id="style-bgOpacity" type="range" min="0.15" max="0.95" step="0.05"></div>
+          <div class="style-field"><label>گردی گوشه <span id="style-radiusVal"></span>px</label><input id="style-radius" type="range" min="0" max="999" step="1"></div>
+          <div class="style-field"><label>رنگ متن</label><input id="style-textColor" type="color"></div>
+          <div class="style-field"><label>رنگ پس‌زمینه</label><input id="style-bgColor" type="color"></div>
+          <div class="style-field"><label>رنگ هایلایت</label><input id="style-highlightColor" type="color"></div>
+          <div class="style-field"><label>Outline <span id="style-outlineVal"></span>px</label><input id="style-outlineWidth" type="range" min="0" max="8" step="0.5"></div>
+          <div class="style-field"><label>Shadow <span id="style-shadowVal"></span>px</label><input id="style-shadowBlur" type="range" min="0" max="30" step="1"></div>
+        </div>
+      </div>
+      <div class="style-actions wide"><button id="resetStyle">بازنشانی استایل</button><button id="saveStyle">ذخیره استایل</button><button id="openStyleFull">تنظیمات کامل استایل</button></div>
+    </div>
+  </section>
+
+  <section class="tab-panel" data-panel="keys">
+    <div class="key-card"><label>Gemini API Key</label><input id="popup-gemini-key" type="password" placeholder="کلید Gemini"></div>
+    <div class="key-card"><label>OpenRouter API Key</label><input id="popup-openrouter-key" type="password" placeholder="کلید OpenRouter"></div>
+    <div class="key-card"><label>OpenAI API Key</label><input id="openaiKey" type="password" placeholder="sk-..." autocomplete="off"></div><div class="key-card"><label>OpenAI Model</label><input id="openaiModel" type="text" value="gpt-5.6-luna" placeholder="gpt-5.6-luna" autocomplete="off"></div>
+<div class="key-actions"><button id="saveKeys">ذخیره کلیدها</button></div>
+    <div class="key-tests"><button id="testGemini">تست Gemini</button><button id="testOpenRouter">تست OpenRouter</button><button id="testOpenAI">تست OpenAI</button></div>
+    <div id="keyStatus" class="status">کلیدها ذخیره و از تنظیمات اصلی خوانده می‌شوند.</div>
+  </section>
+</main>
+<footer class="downloads">
+  <button id="dlFaSrt">فارسی SRT</button>
+  <button id="dlFaVtt">فارسی VTT</button>
+  <button id="dlFaTxt">فارسی TXT</button>
+  <button id="dlOrigSrt">اصلی SRT</button>
+  <button id="dlOrigVtt">اصلی VTT</button>
+  <button id="dlOrigTxt">اصلی TXT</button>
+  <button id="openLearn">📚 یادگیری</button>
+  <button id="openStoryboard">🎬 Storyboard</button>
+  <button id="captureShot">📸 اسکرین‌شات</button>
+  <span id="today">subify</span>
+</footer>
+<script src="popup.js"></script>
+<style>
+.custom-provider-panel{padding:10px;border:1px solid rgba(127,127,127,.18);border-radius:14px;background:rgba(127,127,127,.06)}
+.custom-provider-title{font-weight:800;margin-bottom:8px}.custom-provider-panel input,.custom-provider-panel select{width:100%;box-sizing:border-box;margin-top:6px}
+.custom-provider-panel button{border:0;border-radius:9px;padding:7px 10px;cursor:pointer}.custom-provider-panel .hint{font-size:10px;opacity:.72}
+</style>
+</body>
+</html>

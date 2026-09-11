@@ -1,0 +1,110 @@
+{
+  "manifest_version": 3,
+  "name": "Subify Lite | ترجمه زیرنویس یوتیوب، ویمیو، آپارات و Coursera",
+  "short_name": "Subify Lite",
+  "version": "1.0.0",
+  "description": "ترجمهٔ زیرنویس زمان‌بندی‌شده به فارسی روی یوتیوب، ویمیو، آپارات و Coursera — بدون دوبلهٔ صوتی، برای دسکتاپ و اندروید (Firefox).",
+  "browser_specific_settings": {
+    "gecko": {
+      "id": "subify-lite@mobinbibak.dev",
+      "strict_min_version": "115.0"
+    },
+    "gecko_android": {
+      "strict_min_version": "120.0"
+    }
+  },
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "Subify Lite | ترجمه زیرنویس",
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "48": "icons/icon48.png",
+      "128": "icons/icon128.png"
+    }
+  },
+  "options_page": "options.html",
+  "background": {
+    "service_worker": "background.js"
+  },
+  "permissions": [
+    "storage",
+    "activeTab",
+    "downloads",
+    "tabs"
+  ],
+  "host_permissions": [
+    "https://www.youtube.com/*",
+    "https://www.youtube-nocookie.com/*",
+    "https://generativelanguage.googleapis.com/*",
+    "https://openrouter.ai/*",
+    "https://api.openai.com/*"
+  ],
+  "optional_host_permissions": [
+    "https://*/*",
+    "http://*/*"
+  ],
+  "content_scripts": [
+    {
+      "matches": [
+        "https://www.youtube.com/*"
+      ],
+      "js": [
+        "page-bridge.js"
+      ],
+      "run_at": "document_start"
+    },
+    {
+      "matches": [
+        "https://www.youtube.com/*",
+        "https://vimeo.com/*",
+        "https://*.vimeo.com/*",
+        "https://player.vimeo.com/*",
+        "https://www.aparat.com/*",
+        "https://aparat.com/*",
+        "https://www.coursera.org/*"
+      ],
+      "all_frames": true,
+      "js": [
+        "subtitle-overlay.js"
+      ],
+      "css": [
+        "content.css"
+      ],
+      "run_at": "document_idle"
+    }
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": [
+        "page-hook.js"
+      ],
+      "matches": [
+        "https://www.youtube.com/*"
+      ]
+    },
+    {
+      "resources": [
+        "fonts/Lalezar-Regular.ttf",
+        "fonts/OFL.txt",
+        "icons/*.png"
+      ],
+      "matches": [
+        "https://www.youtube.com/*",
+        "https://vimeo.com/*",
+        "https://*.vimeo.com/*",
+        "https://player.vimeo.com/*",
+        "https://www.aparat.com/*",
+        "https://aparat.com/*",
+        "https://www.coursera.org/*"
+      ]
+    }
+  ],
+  "icons": {
+    "16": "icons/icon16.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  },
+  "content_security_policy": {
+    "extension_pages": "script-src 'self'; object-src 'self'"
+  }
+}
