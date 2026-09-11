@@ -4,6 +4,7 @@
 #subify-subtitle-overlay .subify-subtitle-line{display:block;position:relative;left:var(--subify-drag-x,0px);max-width:var(--subify-max,min(86%,24em));width:max-content;margin:2px 0;padding:var(--subify-pad,.12em .50em);background:var(--subify-bg,rgba(8,10,14,.78));color:var(--subify-color,#fff);font:inherit;line-height:var(--subify-line-height,1.42);text-align:center;border-radius:var(--subify-radius,7px);box-decoration-break:clone;-webkit-box-decoration-break:clone;unicode-bidi:isolate;text-shadow:var(--subify-shadow,0 2px 6px rgba(0,0,0,.9));-webkit-text-stroke:var(--subify-outline,0 transparent);text-stroke:var(--subify-outline,0 transparent);pointer-events:auto;cursor:grab;touch-action:none;overflow-wrap:anywhere;}
 #subify-subtitle-overlay .subify-subtitle-line--orig{font-weight:500;opacity:.9;}
 #subify-subtitle-overlay .subify-subtitle-line--fa{font-weight:var(--subify-weight,700);}
+#subify-subtitle-overlay .subify-live-caption{opacity:.92;font-style:italic;}
 #subify-subtitle-overlay.subify-dragging .subify-subtitle-line{cursor:grabbing;user-select:none}
 #subify-subtitle-overlay .subify-subtitle-text{display:inline;unicode-bidi:isolate;}
 #subify-subtitle-overlay.subify-preset-pill .subify-subtitle-line{padding:0;background:transparent;border-radius:0;}

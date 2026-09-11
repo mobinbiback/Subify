@@ -1,11 +1,4 @@
 
-const __sby_p = (() => {
-  const a = [77,111,98,105,110,98,105,98,97,107];
-  return Object.freeze({
-    id: a.map((n,i) => String.fromCharCode(n ^ 0)).join(''),
-    stamp: 'subify-provenance-v2416'
-  });
-})();
 
 function normalizePopupText(value){
   return String(value ?? '').replace(/\\r\\n/g,'\n').replace(/\\n/g,'\n').replace(/\\r/g,'\n');
@@ -15,7 +8,7 @@ let currentState = {active:false};
 
 function renderState(s){
   currentState=s||{active:false};
-  chrome.storage.local.get(["subify_subtitle_enabled","subify_dubbing_enabled"]).then(flags=>{
+  browser.storage.local.get(["subify_subtitle_enabled","subify_dubbing_enabled"]).then(flags=>{
     const subtitleOn=flags.subify_subtitle_enabled!==false;
     $("toggle").classList.toggle("on",subtitleOn);
     $("stateLabel").textContent=subtitleOn?"زیرنویس فارسی فعال است":"آماده";
@@ -27,42 +20,57 @@ function renderState(s){
 }
 function escapeHtml(s){return String(s).replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]));}
 
-async function activeTab(){const [tab]=await chrome.tabs.query({active:true,currentWindow:true});return tab;}
+async function activeTab(){const [tab]=await browser.tabs.query({active:true,currentWindow:true});return tab;}
 
 async function setDubbing(on){
   const tab=await activeTab();
   if(!tab?.id)return;
-  $("subify-popup-dubbing").checked=on;
-  await chrome.storage.local.set({subify_dubbing_enabled:on});
-  await chrome.runtime.sendMessage({type:"subify-set-dubbing",enabled:on,tabId:tab.id});
+  const r=await browser.runtime.sendMessage({type:"subify-set-dubbing",enabled:Boolean(on),tabId:tab.id}).catch(e=>({ok:false,error:e.message}));
+  const el=$("subify-popup-dubbing");
+  if(!r?.ok){
+    if(el)el.checked=false;
+    $("today").textContent=normalizePopupText(r?.error||"فعال‌سازی دوبله ناموفق بود");
+    return;
+  }
+  await browser.storage.local.set({subify_dubbing_enabled:Boolean(on)});
+  if(el)el.checked=Boolean(on);
 }
 
 $("toggle").addEventListener("click",async()=>{
   const tab=await activeTab();
   if(!tab?.id)return;
-  const flags=await chrome.storage.local.get("subify_subtitle_enabled");
+  const flags=await browser.storage.local.get("subify_subtitle_enabled");
   const next=flags.subify_subtitle_enabled===false;
-  await chrome.storage.local.set({subify_subtitle_enabled:next});
-  try{await chrome.tabs.sendMessage(tab.id,{type:next?"subify-enable-subtitles":"subify-disable-subtitles"});}catch(_){}
-  await renderState(await chrome.runtime.sendMessage({type:"popup-get-status"}));
+  await browser.storage.local.set({subify_subtitle_enabled:next});
+  try{await browser.tabs.sendMessage(tab.id,{type:next?"subify-enable-subtitles":"subify-disable-subtitles"});}catch(_){}
+  await renderState(await browser.runtime.sendMessage({type:"popup-get-status"}));
 });
 
 $("subify-popup-dubbing").addEventListener("change",e=>setDubbing(e.target.checked));
+$("subify-dubbing-audio").addEventListener("change",async e=>{
+  const {pd_settings={}}=await browser.storage.local.get("pd_settings");
+  await browser.storage.local.set({pd_settings:{...pd_settings,dubbingAudioEnabled:e.target.checked}});
+  // If dubbing is already running, apply it immediately rather than making
+  // the user restart dubbing for the toggle to take effect.
+  if($("subify-popup-dubbing").checked){
+    await browser.runtime.sendMessage({type:"subify-set-dubbing-audio",enabled:e.target.checked}).catch(()=>{});
+  }
+});
 $("subify-popup-subtitle").addEventListener("change",async e=>{
   const on=e.target.checked;
-  await chrome.storage.local.set({subify_subtitle_enabled:on});
+  await browser.storage.local.set({subify_subtitle_enabled:on});
   const tab=await activeTab();
-  if(tab?.id)try{await chrome.tabs.sendMessage(tab.id,{type:on?"subify-enable-subtitles":"subify-disable-subtitles"});}catch(_){}
+  if(tab?.id)try{await browser.tabs.sendMessage(tab.id,{type:on?"subify-enable-subtitles":"subify-disable-subtitles"});}catch(_){}
   renderState(currentState);
 });
 $("popup-source-language").addEventListener("change",async e=>{
-  const {subify_settings={}}=await chrome.storage.local.get("subify_settings");
-  await chrome.storage.local.set({subify_settings:{...subify_settings,sourceLanguage:e.target.value}});
+  const {subify_settings={}}=await browser.storage.local.get("subify_settings");
+  await browser.storage.local.set({subify_settings:{...subify_settings,sourceLanguage:e.target.value}});
   const tab=await activeTab();
-  if(tab?.id)try{await chrome.tabs.sendMessage(tab.id,{type:"subify-refresh-captions"});}catch(_){}
+  if(tab?.id)try{await browser.tabs.sendMessage(tab.id,{type:"subify-refresh-captions"});}catch(_){}
 });
 
-$("openDash").addEventListener("click",()=>chrome.runtime.openOptionsPage());
+$("openDash").addEventListener("click",()=>browser.runtime.openOptionsPage());
 $("diagBtn").addEventListener("click",()=>$("log").classList.toggle("show"));
 
 function srtTime(t){
@@ -75,13 +83,13 @@ async function getExportCues(translateAll=false){
   const tab=await activeTab();
   if(tab?.id){
     try{
-      const r=await chrome.tabs.sendMessage(tab.id,{type:"subify-refresh-captions"});
+      const r=await browser.tabs.sendMessage(tab.id,{type:"subify-refresh-captions",translateAll:Boolean(translateAll)});
       if(r?.ok && Array.isArray(r.cues)) return r.cues
         .filter(c=>Number.isFinite(Number(c.start))&&Number.isFinite(Number(c.end))&&Number(c.end)>Number(c.start))
         .sort((a,b)=>Number(a.start)-Number(b.start));
     }catch(_){}
   }
-  const data=await chrome.storage.session.get(["subify_export_cues"]);
+  const data=await browser.storage.session.get(["subify_export_cues"]);
   const cues=Array.isArray(data.subify_export_cues)?data.subify_export_cues:[];
   return cues.filter(c=>!String(c.id||'').startsWith('live|') && Number.isFinite(Number(c.start)) && Number.isFinite(Number(c.end)) && Number(c.end)>Number(c.start))
     .sort((a,b)=>Number(a.start)-Number(b.start));
@@ -112,7 +120,7 @@ async function downloadSubtitle(which, format){
   const mime=format==='srt'?'application/x-subrip':format==='vtt'?'text/vtt':'text/plain';
   const ext=format;
   const a=document.createElement('a');
-  a.href=URL.createObjectURL(new Blob(['\\uFEFF'+text],{type:mime+';charset=utf-8'}));
+  a.href=URL.createObjectURL(new Blob(['\uFEFF'+text],{type:mime+';charset=utf-8'}));
   a.download=`subify-${which==='fa'?'fa':'original'}-${new Date().toISOString().slice(0,19).replace(/[:T]/g,'-')}.${ext}`;
   a.click();
   setTimeout(()=>URL.revokeObjectURL(a.href),30000);
@@ -125,16 +133,19 @@ $('dlOrigSrt').addEventListener('click',()=>downloadSubtitle('original','srt'));
 $('dlOrigVtt').addEventListener('click',()=>downloadSubtitle('original','vtt'));
 $('dlOrigTxt').addEventListener('click',()=>downloadSubtitle('original','txt'));
 
-async function exportAudio(mode,filename){
-  const r=await chrome.runtime.sendMessage({type:'popup-export',mode,filename});
+async function exportAudio(mode,stem){
+  const format=$('audioExportFormat')?.value==='mp3'?'mp3':'wav';
+  const filename=`${stem}-${new Date().toISOString().slice(0,19).replace(/[:T]/g,'-')}.${format}`;
+  const r=await browser.runtime.sendMessage({type:'popup-export',mode,filename,format});
   if(!r?.ok) $('today').textContent=normalizePopupText('خروجی صوتی هنوز آماده نیست');
 }
-$('dlOrigAudio').addEventListener('click',()=>exportAudio('original',`subify-original-${new Date().toISOString().slice(0,19).replace(/[:T]/g,'-')}.wav`));
-$('dlDubAudio').addEventListener('click',()=>exportAudio('dub',`subify-dub-${new Date().toISOString().slice(0,19).replace(/[:T]/g,'-')}.wav`));
+$('dlOrigAudio').addEventListener('click',()=>exportAudio('original','subify-original'));
+$('dlDubAudio').addEventListener('click',()=>exportAudio('dub','subify-dub'));
 
-chrome.runtime.onMessage.addListener(msg=>{
+browser.runtime.onMessage.addListener(msg=>{
   if(msg.type==="status")renderState(msg.state);
   if(msg.type==="log-updated")refreshLog();
+  if(msg.type==="subify-subtitles-auto-enabled" && $('subify-tab-subtitle')) $('subify-tab-subtitle').checked=true;
   if(msg.type==="export-fallback" && msg.url){
     fetch(msg.url).then(r=>r.blob()).then(blob=>{
       const u=URL.createObjectURL(blob);
@@ -143,24 +154,25 @@ chrome.runtime.onMessage.addListener(msg=>{
     }).catch(()=>{});
   }
 });
-async function refreshLog(){const {pd_log=[]}=await chrome.storage.session.get("pd_log");$("log").innerHTML=pd_log.slice(-30).map(e=>`<div>${escapeHtml(new Date(e.t).toLocaleTimeString('fa-IR'))} ${escapeHtml(e.msg)}</div>`).join('');}
+async function refreshLog(){const {pd_log=[]}=await browser.storage.session.get("pd_log");$("log").innerHTML=pd_log.slice(-30).map(e=>`<div>${escapeHtml(new Date(e.t).toLocaleTimeString('fa-IR'))} ${escapeHtml(e.msg)}</div>`).join('');}
 async function init(){
-  const [st,flags]=await Promise.all([chrome.runtime.sendMessage({type:"popup-get-status"}),chrome.storage.local.get(["subify_subtitle_enabled","subify_dubbing_enabled"])]);
+  const [st,flags,{pd_settings={}}]=await Promise.all([browser.runtime.sendMessage({type:"popup-get-status"}),browser.storage.local.get(["subify_subtitle_enabled","subify_dubbing_enabled"]),browser.storage.local.get("pd_settings")]);
   $("subify-popup-subtitle").checked=flags.subify_subtitle_enabled!==false;
   $("subify-popup-dubbing").checked=flags.subify_dubbing_enabled===true;
-  const {subify_settings={}}=await chrome.storage.local.get("subify_settings");
+  $("subify-dubbing-audio").checked=pd_settings.dubbingAudioEnabled!==false;
+  const {subify_settings={}}=await browser.storage.local.get("subify_settings");
   $("popup-source-language").value=subify_settings.sourceLanguage||"auto";
   if(st?.state)renderState(st.state); else renderState({active:false});
-  const key=await chrome.runtime.sendMessage({type:"subify-test-key"}).catch(()=>null);
-  if(key?.ok)$("status").innerHTML=`<strong>Gemini:</strong> متصل • مدل ترجمه: ${escapeHtml(key.model)}`;
-  else $("status").innerHTML=`<span class="error">کلید Gemini هنوز تأیید نشده است.</span>`;
+  const settings=await browser.storage.local.get("subify_settings");
+  const hasProvider=Boolean(settings.subify_settings?.apiKey||settings.subify_settings?.openRouterKey||settings.subify_settings?.openaiKey||settings.subify_settings?.customProviders?.length);
+  if(!hasProvider) $("status").innerHTML=`<span class="error">هنوز هیچ کلید یا سرویس ترجمه‌ای تنظیم نشده است.</span>`;
   await refreshLog();
 }
 init();
 
-$("openLearn")?.addEventListener("click",()=>chrome.tabs.create({url:chrome.runtime.getURL("learn.html")}));
-$("openStoryboard")?.addEventListener("click",()=>chrome.tabs.create({url:chrome.runtime.getURL("storyboard.html")}));
-$("captureShot")?.addEventListener("click",async()=>{const tab=await activeTab();if(tab?.id)await chrome.runtime.sendMessage({type:"subify-capture-shot",tabId:tab.id,download:true});});
+$("openLearn")?.addEventListener("click",()=>browser.tabs.create({url:browser.runtime.getURL("learn.html")}));
+$("openStoryboard")?.addEventListener("click",()=>browser.tabs.create({url:browser.runtime.getURL("storyboard.html")}));
+$("captureShot")?.addEventListener("click",async()=>{const tab=await activeTab();if(tab?.id)await browser.runtime.sendMessage({type:"subify-capture-shot",tabId:tab.id,download:true});});
 
 // Header tabs + compact style editor. All values share the same subify_settings
 // object used by the full options page, so editing here is not a separate config.
@@ -174,8 +186,8 @@ $("captureShot")?.addEventListener("click",async()=>{const tab=await activeTab()
     if(name==='translate') loadPopupTranslate();
     if(name==='keys') loadPopupKeys();
   }));
-  $('openFullSettings')?.addEventListener('click',()=>chrome.runtime.openOptionsPage());
-  $('openStyleFull')?.addEventListener('click',()=>chrome.runtime.openOptionsPage());
+  $('openFullSettings')?.addEventListener('click',()=>browser.runtime.openOptionsPage());
+  $('openStyleFull')?.addEventListener('click',()=>browser.runtime.openOptionsPage());
 
   const presets={
     classic:{bgColor:'#080A0E',textColor:'#ffffff',highlightColor:'#FFB35C',borderRadius:7,padding:8,outlineWidth:0,shadowBlur:6,customWeight:600,positionMode:'bottom',maxWidth:86},
@@ -211,15 +223,15 @@ $("captureShot")?.addEventListener("click",async()=>{const tab=await activeTab()
   }
   function rgba(hex,a){const m=String(hex||'#000').match(/^#?([0-9a-f]{6})$/i);if(!m)return `rgba(0,0,0,${a})`;const n=m[1];return `rgba(${parseInt(n.slice(0,2),16)},${parseInt(n.slice(2,4),16)},${parseInt(n.slice(4,6),16)},${a})`;}
   function readStyle(){return {font:val('font').value,displayMode:val('display').value,fontSize:+val('fontSize').value,maxWidth:+val('maxWidth').value,positionMode:val('positionMode').value,positionY:+val('positionY').value,bgOpacity:+val('bgOpacity').value,borderRadius:+val('radius').value,textColor:val('textColor').value,bgColor:val('bgColor').value,highlightColor:val('highlightColor').value,outlineWidth:+val('outlineWidth').value,shadowBlur:+val('shadowBlur').value,preset:document.querySelector('[data-preset].active')?.dataset.preset||'pill'};}
-  async function loadPopupStyle(){const {subify_settings={}}=await chrome.storage.local.get('subify_settings');setStyleForm(subify_settings);}
-  async function savePopupStyle(){const {subify_settings={}}=await chrome.storage.local.get('subify_settings');await chrome.storage.local.set({subify_settings:{...subify_settings,...readStyle()}});$('today').textContent=normalizePopupText('استایل ذخیره شد ✓');try{const tab=await activeTab();if(tab?.id)await chrome.tabs.sendMessage(tab.id,{type:'subify-style-updated'});}catch(_){} }
+  async function loadPopupStyle(){const {subify_settings={}}=await browser.storage.local.get('subify_settings');setStyleForm(subify_settings);}
+  async function savePopupStyle(){const {subify_settings={}}=await browser.storage.local.get('subify_settings');await browser.storage.local.set({subify_settings:{...subify_settings,...readStyle()}});$('today').textContent=normalizePopupText('استایل ذخیره شد ✓');try{const tab=await activeTab();if(tab?.id)await browser.tabs.sendMessage(tab.id,{type:'subify-style-updated'});}catch(_){} }
   $('resetStyle')?.addEventListener('click',async()=>{
     const defaults={font:'Lalezar',displayMode:'translation',fontSize:30,maxWidth:86,positionMode:'bottom',positionY:82,bgOpacity:.78,borderRadius:999,textColor:'#111111',bgColor:'#FFFFFF',highlightColor:'#B66A00',outlineWidth:0,shadowBlur:5,preset:'pill'};
-    const {subify_settings={}}=await chrome.storage.local.get('subify_settings');
+    const {subify_settings={}}=await browser.storage.local.get('subify_settings');
     const next={...subify_settings,...defaults};
-    await chrome.storage.local.set({subify_settings:next});
+    await browser.storage.local.set({subify_settings:next});
     setStyleForm(next);
-    try{const tab=await activeTab();if(tab?.id)await chrome.tabs.sendMessage(tab.id,{type:'subify-style-updated'});}catch(_){}
+    try{const tab=await activeTab();if(tab?.id)await browser.tabs.sendMessage(tab.id,{type:'subify-style-updated'});}catch(_){}
     $('today').textContent=normalizePopupText('استایل بازنشانی شد ✓');
   });
   $('saveStyle')?.addEventListener('click',savePopupStyle);
@@ -228,25 +240,26 @@ $("captureShot")?.addEventListener("click",async()=>{const tab=await activeTab()
   ['font','display','positionMode','textColor','bgColor','highlightColor'].forEach(id=>val(id)?.addEventListener('change',()=>renderStylePreview(readStyle())));
 
   async function loadPopupTranslate(){
-    const {subify_settings={}}=await chrome.storage.local.get('subify_settings');
-    const {pd_settings={},pd_models={}}=await chrome.storage.local.get(['pd_settings','pd_models']);
+    const {subify_settings={}}=await browser.storage.local.get('subify_settings');
+    const {pd_settings={},pd_models={}}=await browser.storage.local.get(['pd_settings','pd_models']);
     pd_settings.discoveredGeminiModels = Array.isArray(pd_models.all) ? pd_models.all.filter(m=>m && m.methods?.includes?.('generateContent')).map(m=>({id:m.id})) : [];
-    $('subify-tab-subtitle').checked=(await chrome.storage.local.get('subify_subtitle_enabled')).subify_subtitle_enabled!==false;
+    $('subify-tab-subtitle').checked=(await browser.storage.local.get('subify_subtitle_enabled')).subify_subtitle_enabled!==false;
     $('subify-tab-original').checked=subify_settings.displayMode==='dual';
     $('subify-tab-karaoke').checked=subify_settings.karaokeEnabled!==false;
     $('tab-source-language').value=subify_settings.sourceLanguage||'auto';
     $('popup-provider').value=pd_settings.subtitleProvider||'auto';
-    updateProviderUi($('popup-provider').value, pd_settings);
+    updateProviderUi($('popup-provider').value, pd_settings); await loadCustomProviders();
   }
   function updateProviderUi(v,pd={}){
-    const labels={auto:'خودکار',gemini:'Gemini',openrouter:'OpenRouter',openai:'OpenAI'};
+    const labels={auto:'خودکار',gemini:'Gemini',openrouter:'OpenRouter',openai:'OpenAI',custom:'سرویس سفارشی'};
     if($('providerBadge'))$('providerBadge').textContent=labels[v]||'خودکار';
     if($('providerHint'))$('providerHint').textContent=v==='auto'?'خودکار: اول OpenRouter، سپس OpenAI و بعد Gemini؛ فقط سرویسی که کلید دارد استفاده می‌شود.':`موتور انتخاب‌شده: ${labels[v]||v}. فقط همان سرویس برای ترجمه استفاده می‌شود.`;
-    const input=$('popup-provider-model'), select=$('popup-gemini-models'), hint=$('providerModelHint');
+    const input=$('popup-provider-model'), select=$('popup-gemini-models'), manual=$('popup-gemini-model-manual'), fetchBtn=$('fetch-gemini-models'), hint=$('providerModelHint');
     if(!input||!select)return;
-    const isGemini=v==='gemini', isOR=v==='openrouter', isOAI=v==='openai';
-    select.style.display=isGemini?'block':'none'; input.style.display=isGemini?'none':'block';
-    if(hint) hint.textContent=isGemini?'یک مدل generateContent از Gemini انتخاب کن. در صورت وجود مدل‌های کشف‌شده این فهرست خودکار پر می‌شود.':isOR?'مدل OpenRouter را می‌توانی دقیقاً دستی تعیین کنی. پیش‌فرض: openrouter/free':isOAI?'مدل OpenAI را دستی وارد کن؛ انتخاب فقط برای ترجمه زیرنویس اعمال می‌شود.':'در حالت Auto، مدل ذخیره‌شده‌ی هر Provider استفاده می‌شود.';
+    const isGemini=v==='gemini', isOR=v==='openrouter', isOAI=v==='openai', isCustom=v==='custom';
+    select.style.display=isGemini?'block':'none'; manual.style.display=isGemini?'block':'none'; if(fetchBtn) fetchBtn.style.display=isGemini?'block':'none'; input.style.display=(isGemini||isCustom)?'none':'block';
+    if($('custom-provider-panel')) $('custom-provider-panel').style.display=isCustom?'block':'none';
+    if(hint) hint.textContent=isGemini?'مدل را از فهرست انتخاب کن یا Model ID را دستی وارد کن. اگر /models خطای 403 بدهد، ورود دستی همچنان کار می‌کند.':isOR?'مدل OpenRouter را می‌توانی دقیقاً دستی تعیین کنی. پیش‌فرض: openrouter/free':isOAI?'مدل OpenAI را دستی وارد کن؛ انتخاب فقط برای ترجمه زیرنویس اعمال می‌شود.':'در حالت Auto، مدل ذخیره‌شده‌ی هر Provider استفاده می‌شود.';
     if(isGemini){
       const val=pd.geminiSubtitleModel||pd.geminiModel||pd.sttModel||'gemini-3.1-flash-lite';
       select.innerHTML='';
@@ -255,22 +268,61 @@ $("captureShot")?.addEventListener("click",async()=>{const tab=await activeTab()
       const uniq=[...new Set([val,...ids])];
       uniq.forEach(id=>{const o=document.createElement('option');o.value=id;o.textContent=id;select.appendChild(o);});
       select.value=val;
+      if(manual) manual.value=val;
     } else {
       input.value=isOR?(pd.openRouterModel||'openrouter/free'):isOAI?(pd.openaiModel||'gpt-5.6-luna'):(pd.sttModel||'gemini-3.1-flash-lite');
       input.dataset.provider=v;
     }
   }
-  $('subify-tab-subtitle')?.addEventListener('change',async e=>{await chrome.storage.local.set({subify_subtitle_enabled:e.target.checked});const tab=await activeTab();if(tab?.id)try{await chrome.tabs.sendMessage(tab.id,{type:e.target.checked?'subify-enable-subtitles':'subify-disable-subtitles'});}catch(_){} });
-  $('subify-tab-original')?.addEventListener('change',async e=>{const {subify_settings={}}=await chrome.storage.local.get('subify_settings');await chrome.storage.local.set({subify_settings:{...subify_settings,displayMode:e.target.checked?'dual':'translation'}});});
-  $('subify-tab-karaoke')?.addEventListener('change',async e=>{const {subify_settings={}}=await chrome.storage.local.get('subify_settings');await chrome.storage.local.set({subify_settings:{...subify_settings,karaokeEnabled:e.target.checked}});});
-  $('tab-source-language')?.addEventListener('change',async e=>{const {subify_settings={}}=await chrome.storage.local.get('subify_settings');await chrome.storage.local.set({subify_settings:{...subify_settings,sourceLanguage:e.target.value}});});
-  $('popup-provider')?.addEventListener('change',async e=>{const {pd_settings={}}=await chrome.storage.local.get('pd_settings');const next={...pd_settings,subtitleProvider:e.target.value};await chrome.storage.local.set({pd_settings:next});updateProviderUi(e.target.value,next);});
-  $('popup-provider-model')?.addEventListener('change',async e=>{const {pd_settings={}}=await chrome.storage.local.get('pd_settings');const provider=e.target.dataset.provider||$('popup-provider').value;const value=e.target.value.trim();const patch=provider==='openrouter'?{openRouterModel:value||'openrouter/free'}:provider==='openai'?{openaiModel:value||'gpt-5.6-luna'}:{sttModel:value||'gemini-3.1-flash-lite',geminiSubtitleModel:value||'gemini-3.1-flash-lite'};await chrome.storage.local.set({pd_settings:{...pd_settings,...patch}});});
-  $('popup-gemini-models')?.addEventListener('change',async e=>{const {pd_settings={}}=await chrome.storage.local.get('pd_settings');const value=e.target.value;await chrome.storage.local.set({pd_settings:{...pd_settings,sttModel:value,geminiSubtitleModel:value}});});
+  $('fetch-gemini-models')?.addEventListener('click',async()=>{
+  const btn=$('fetch-gemini-models');
+  if(btn) btn.disabled=true;
+  try{
+    const r=await browser.runtime.sendMessage({type:'subify-discover-models'});
+    if(!r?.ok) throw new Error(r?.error||'خطا در دریافت مدل‌ها');
+    const {pd_models={}}=await browser.storage.local.get('pd_models');
+    const {pd_settings={}}=await browser.storage.local.get('pd_settings');
+    pd_settings.discoveredGeminiModels=pd_models.all||[];
+    updateProviderUi('gemini',pd_settings);
+    $('providerModelHint').textContent='مدل‌ها دریافت شدند ✓';
+  }catch(e){$('providerModelHint').textContent=e.message||String(e);}
+  finally{if(btn) btn.disabled=false;}
+});
+$('subify-tab-subtitle')?.addEventListener('change',async e=>{await browser.storage.local.set({subify_subtitle_enabled:e.target.checked});const tab=await activeTab();if(tab?.id)try{await browser.tabs.sendMessage(tab.id,{type:e.target.checked?'subify-enable-subtitles':'subify-disable-subtitles'});}catch(_){} });
+  $('subify-tab-original')?.addEventListener('change',async e=>{const {subify_settings={}}=await browser.storage.local.get('subify_settings');await browser.storage.local.set({subify_settings:{...subify_settings,displayMode:e.target.checked?'dual':'translation'}});});
+  $('subify-tab-karaoke')?.addEventListener('change',async e=>{const {subify_settings={}}=await browser.storage.local.get('subify_settings');await browser.storage.local.set({subify_settings:{...subify_settings,karaokeEnabled:e.target.checked}});});
+  $('tab-source-language')?.addEventListener('change',async e=>{const {subify_settings={}}=await browser.storage.local.get('subify_settings');await browser.storage.local.set({subify_settings:{...subify_settings,sourceLanguage:e.target.value}});});
+  $('popup-provider')?.addEventListener('change',async e=>{const {pd_settings={}}=await browser.storage.local.get('pd_settings');const next={...pd_settings,subtitleProvider:e.target.value};await browser.storage.local.set({pd_settings:next});if(e.target.value==='custom') await loadCustomProviders();updateProviderUi(e.target.value,next);});
+  $('popup-provider-model')?.addEventListener('change',async e=>{const {pd_settings={}}=await browser.storage.local.get('pd_settings');const provider=e.target.dataset.provider||$('popup-provider').value;const value=e.target.value.trim();const patch=provider==='openrouter'?{openRouterModel:value||'openrouter/free'}:provider==='openai'?{openaiModel:value||'gpt-5.6-luna'}:{sttModel:value||'gemini-3.1-flash-lite',geminiSubtitleModel:value||'gemini-3.1-flash-lite'};await browser.storage.local.set({pd_settings:{...pd_settings,...patch}});});
+  $('popup-gemini-models')?.addEventListener('change',async e=>{const {pd_settings={}}=await browser.storage.local.get('pd_settings');const value=e.target.value;await browser.storage.local.set({pd_settings:{...pd_settings,sttModel:value,geminiSubtitleModel:value}});});
+  $('popup-gemini-model-manual')?.addEventListener('change',async e=>{const value=e.target.value.trim();if(!value)return;const {pd_settings={}}=await browser.storage.local.get('pd_settings');await browser.storage.local.set({pd_settings:{...pd_settings,sttModel:value,geminiSubtitleModel:value}});});
 
-  async function loadPopupKeys(){const {pd_settings={}}=await chrome.storage.local.get('pd_settings');$('popup-gemini-key').value=pd_settings.apiKey||'';$('popup-openrouter-key').value=pd_settings.openRouterKey||'';$('openaiKey').value=pd_settings.openaiKey||'';$('openaiModel').value=pd_settings.openaiModel||'gpt-5.6-luna';}
-  $('saveKeys')?.addEventListener('click',async()=>{const {pd_settings={}}=await chrome.storage.local.get('pd_settings');await chrome.storage.local.set({pd_settings:{...pd_settings,apiKey:$('popup-gemini-key').value.trim(),openRouterKey:$('popup-openrouter-key').value.trim(),openaiKey:$('openaiKey').value.trim(),openaiModel:$('openaiModel').value.trim()||'gpt-5.6-luna'}});$('keyStatus').textContent='کلیدها ذخیره شدند ✓';});
-  $('testGemini')?.addEventListener('click',async()=>{const r=await chrome.runtime.sendMessage({type:'subify-test-key'}).catch(e=>({ok:false,error:e.message}));$('keyStatus').textContent=r?.ok?`Gemini متصل است • ${r.model||''}`:(r?.error||'کلید Gemini معتبر نیست یا هنوز تنظیم نشده است.');});
-  $('testOpenRouter')?.addEventListener('click',async()=>{const r=await chrome.runtime.sendMessage({type:'subify-test-openrouter'}).catch(e=>({ok:false,error:e.message}));$('keyStatus').textContent=r?.ok?`OpenRouter متصل است • ${r.model||''}`:(r?.error||'اتصال OpenRouter ناموفق بود.');});
-  $('testOpenAI')?.addEventListener('click',async()=>{const r=await chrome.runtime.sendMessage({type:'subify-test-openai'}).catch(e=>({ok:false,error:e.message}));$('keyStatus').textContent=r?.ok?`OpenAI متصل است • ${r.model||''}`:(r?.error||'اتصال OpenAI ناموفق بود.');});
+  async function loadCustomProviders(){
+    const {pd_settings={}}=await browser.storage.local.get('pd_settings');
+    const list=Array.isArray(pd_settings.customProviders)?pd_settings.customProviders:[];
+    const sel=$('custom-provider-list'); if(!sel)return;
+    sel.innerHTML='';
+    if(!list.length){const o=document.createElement('option');o.value='';o.textContent='هنوز سرویسی اضافه نشده';sel.appendChild(o);if($('custom-provider-status'))$('custom-provider-status').textContent='از دکمهٔ زیر یه سرویس سفارشی اضافه کن.';return;}
+    list.forEach((p,i)=>{const o=document.createElement('option');o.value=p.id;o.textContent=p.name||`سرویس ${i+1}`;sel.appendChild(o);});
+    sel.value=pd_settings.customProviderId||list[0].id;
+    fillCustomProvider(sel.value,list);
+  }
+  function fillCustomProvider(id,list){
+    const p=(list||[]).find(x=>x.id===id); if(!p)return;
+    if($('custom-provider-status'))$('custom-provider-status').textContent=`سرویس فعال: ${p.name||'Custom API'}`;
+  }
+  $('custom-provider-list')?.addEventListener('change',async e=>{const {pd_settings={}}=await browser.storage.local.get('pd_settings');const list=Array.isArray(pd_settings.customProviders)?pd_settings.customProviders:[];await browser.storage.local.set({pd_settings:{...pd_settings,customProviderId:e.target.value}});fillCustomProvider(e.target.value,list);});
+  // Adding/editing a Custom Provider needs a permission prompt (see options.js),
+  // and MV3 action popups close the instant that prompt steals focus — killing
+  // whatever the user just typed. Options is a normal tab, so it doesn't have
+  // that problem. That management UI lives there now; this popup only picks
+  // among providers that are already saved.
+  $('manage-custom-providers')?.addEventListener('click',()=>{browser.tabs.create({url:browser.runtime.getURL('options.html')+'#custom-providers'});});
+
+
+  async function loadPopupKeys(){const {pd_settings={}}=await browser.storage.local.get('pd_settings');$('popup-gemini-key').value=pd_settings.apiKey||'';$('popup-openrouter-key').value=pd_settings.openRouterKey||'';$('openaiKey').value=pd_settings.openaiKey||'';$('openaiModel').value=pd_settings.openaiModel||'gpt-5.6-luna';}
+  $('saveKeys')?.addEventListener('click',async()=>{const {pd_settings={}}=await browser.storage.local.get('pd_settings');await browser.storage.local.set({pd_settings:{...pd_settings,apiKey:$('popup-gemini-key').value.trim(),openRouterKey:$('popup-openrouter-key').value.trim(),openaiKey:$('openaiKey').value.trim(),openaiModel:$('openaiModel').value.trim()||'gpt-5.6-luna'}});$('keyStatus').textContent='کلیدها ذخیره شدند ✓';});
+  $('testGemini')?.addEventListener('click',async()=>{const r=await browser.runtime.sendMessage({type:'subify-test-key'}).catch(e=>({ok:false,error:e.message}));$('keyStatus').textContent=r?.ok?`Gemini متصل است • ${r.model||''}`:(r?.error||'کلید Gemini معتبر نیست یا هنوز تنظیم نشده است.');});
+  $('testOpenRouter')?.addEventListener('click',async()=>{const r=await browser.runtime.sendMessage({type:'subify-test-openrouter'}).catch(e=>({ok:false,error:e.message}));$('keyStatus').textContent=r?.ok?`OpenRouter متصل است • ${r.model||''}`:(r?.error||'اتصال OpenRouter ناموفق بود.');});
+  $('testOpenAI')?.addEventListener('click',async()=>{const r=await browser.runtime.sendMessage({type:'subify-test-openai'}).catch(e=>({ok:false,error:e.message}));$('keyStatus').textContent=r?.ok?`OpenAI متصل است • ${r.model||''}`:(r?.error||'اتصال OpenAI ناموفق بود.');});
 })();

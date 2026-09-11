@@ -2,9 +2,8 @@
   "manifest_version": 3,
   "name": "subify | ترجمه هوشمند زیرنویس یوتیوب",
   "short_name": "subify",
-  "version": "2.4.16",
+  "version": "2.5.2",
   "description": "ترجمه مستقیم زیرنویس زمان‌بندی‌شده YouTube با ترجمه پیش‌دستانه، همگام‌سازی دقیق و خروجی SRT، VTT و TXT.",
-  "minimum_chrome_version": "116",
   "action": {
     "default_popup": "popup.html",
     "default_title": "subify | ترجمه هوشمند زیرنویس یوتیوب",
@@ -20,19 +19,22 @@
   },
   "permissions": [
     "storage",
-    "tabCapture",
-    "offscreen",
     "activeTab",
     "downloads",
-    "tabs"
+    "tabs",
+    "offscreen",
+    "tabCapture"
   ],
   "host_permissions": [
     "https://www.youtube.com/*",
     "https://www.youtube-nocookie.com/*",
     "https://generativelanguage.googleapis.com/*",
-    "wss://generativelanguage.googleapis.com/*",
     "https://openrouter.ai/*",
     "https://api.openai.com/*"
+  ],
+  "optional_host_permissions": [
+    "https://*/*",
+    "http://*/*"
   ],
   "content_scripts": [
     {
@@ -46,8 +48,15 @@
     },
     {
       "matches": [
-        "https://www.youtube.com/*"
+        "https://www.youtube.com/*",
+        "https://vimeo.com/*",
+        "https://*.vimeo.com/*",
+        "https://player.vimeo.com/*",
+        "https://www.aparat.com/*",
+        "https://aparat.com/*",
+        "https://www.coursera.org/*"
       ],
+      "all_frames": true,
       "js": [
         "subtitle-overlay.js"
       ],
@@ -60,13 +69,26 @@
   "web_accessible_resources": [
     {
       "resources": [
-        "page-hook.js",
+        "page-hook.js"
+      ],
+      "matches": [
+        "https://www.youtube.com/*"
+      ]
+    },
+    {
+      "resources": [
         "fonts/Lalezar-Regular.ttf",
         "fonts/OFL.txt",
         "icons/*.png"
       ],
       "matches": [
-        "https://www.youtube.com/*"
+        "https://www.youtube.com/*",
+        "https://vimeo.com/*",
+        "https://*.vimeo.com/*",
+        "https://player.vimeo.com/*",
+        "https://www.aparat.com/*",
+        "https://aparat.com/*",
+        "https://www.coursera.org/*"
       ]
     }
   ],
@@ -74,5 +96,8 @@
     "16": "icons/icon16.png",
     "48": "icons/icon48.png",
     "128": "icons/icon128.png"
+  },
+  "content_security_policy": {
+    "extension_pages": "script-src 'self'; object-src 'self'"
   }
 }

@@ -1,11 +1,4 @@
 
-const __sby_p = (() => {
-  const a = [77,111,98,105,110,98,105,98,97,107];
-  return Object.freeze({
-    id: a.map((n,i) => String.fromCharCode(n ^ 0)).join(''),
-    stamp: 'subify-provenance-v2416'
-  });
-})();
 // subify — offscreen document (v3)
 // Adds: streaming dub playback, session recording, WAV export, latency measurement.
 
@@ -35,14 +28,14 @@ const chunkMeta = new Map();   // chunkId -> {startSec, wall}
 const dubCursor = new Map();   // chunkId -> write position (sec) in the recording
 let latencyReported = new Set();
 
-const send = (m) => { try { chrome.runtime.sendMessage(m); } catch (e) {} };
+const send = (m) => { try { browser.runtime.sendMessage(m); } catch (e) {} };
 const log = (msg, level = "info") => send({ type: "log", level, msg });
 
 // ---------- keepalive ----------
 let port = null;
 function openKeepalive() {
   try {
-    port = chrome.runtime.connect({ name: "subify-keepalive" });
+    port = browser.runtime.connect({ name: "subify-keepalive" });
     port.onDisconnect.addListener(() => { port = null; });
   } catch (e) {}
 }
@@ -151,7 +144,7 @@ async function start(streamId, s) {
 
   const liveMode = s.engine !== "chunked";
 
-  await ctx.audioWorklet.addModule(chrome.runtime.getURL("capture-worklet.js"));
+  await ctx.audioWorklet.addModule(browser.runtime.getURL("capture-worklet.js"));
   workletNode = new AudioWorkletNode(ctx, "capture-processor", {
     numberOfInputs: 1, numberOfOutputs: 1,
     processorOptions: liveMode
@@ -332,29 +325,48 @@ function handleLiveFrame(mono, inRate) {
   }
 }
 
+const MAX_CUE_SECONDS = 7; // see the comment in playLiveAudio() below
+
 // Gapless scheduling: each packet is queued at the running playhead rather than
 // waiting for the previous buffer's onended, which would leave audible seams.
 function playLiveAudio(pcm, rate) {
   if (!ctx || !pcm.length) return;
-  if (!dubbingEnabled) return;
 
-  const buffer = ctx.createBuffer(1, pcm.length, rate);
-  buffer.copyToChannel(pcm, 0);
-  const src = ctx.createBufferSource();
-  src.buffer = buffer;
-  src.connect(ttsGain);
-
-  const now = ctx.currentTime;
-  const lead = 0.06;
-  if (livePlayhead < now + lead) livePlayhead = now + lead;
-  src.start(livePlayhead);
   const dur = pcm.length / rate;
-  livePlayhead += dur;
 
-  if (REC.active) {
-    const at24 = resample(pcm, rate, REC.rate);
-    REC.writeDub(at24, liveRecSec);
-    liveRecSec += at24.length / REC.rate;
+  // Continuous speech — the norm for a live stream host talking without long
+  // pauses — keeps pushing the "quiet gap" timer further down back forever,
+  // so a live-cue might rarely (or never) actually get sent. Force a flush
+  // every few seconds regardless, so captions keep arriving at a steady
+  // pace even mid-sentence, instead of only appearing at natural pauses.
+  if (liveCue && capturedSec - liveCue.start > MAX_CUE_SECONDS && liveCue.text.trim()) {
+    send({ type: "live-cue", start: liveCue.start, end: capturedSec, text: liveCue.text.trim() });
+    liveCue = { start: capturedSec, text: "" };
+  }
+
+  // Actual audio playback/recording is skipped in "captions only" mode
+  // (dubbingEnabled === false) — but the cue-boundary logic below still runs,
+  // since Gemini's live-translate model is audio-in/audio-out with no
+  // text-only mode, so this audio arrival is still our only signal for when
+  // one translated utterance ends and the next begins.
+  if (dubbingEnabled) {
+    const buffer = ctx.createBuffer(1, pcm.length, rate);
+    buffer.copyToChannel(pcm, 0);
+    const src = ctx.createBufferSource();
+    src.buffer = buffer;
+    src.connect(ttsGain);
+
+    const now = ctx.currentTime;
+    const lead = 0.06;
+    if (livePlayhead < now + lead) livePlayhead = now + lead;
+    src.start(livePlayhead);
+    livePlayhead += dur;
+
+    if (REC.active) {
+      const at24 = resample(pcm, rate, REC.rate);
+      REC.writeDub(at24, liveRecSec);
+      liveRecSec += at24.length / REC.rate;
+    }
   }
 
   if (!liveSpeaking) {
@@ -363,13 +375,15 @@ function playLiveAudio(pcm, rate) {
       send({ type: "latency", seconds: Math.max(0, capturedSec - liveLastInputAt) });
     }
   }
-  duck(settings?.duckLevel ?? 0.12);
+  if (dubbingEnabled) duck(settings?.duckLevel ?? 0.12);
 
   clearTimeout(liveQuietTimer);
-  const quietIn = Math.max(300, (livePlayhead - ctx.currentTime) * 1000 + 350);
+  const quietIn = dubbingEnabled
+    ? Math.max(300, (livePlayhead - ctx.currentTime) * 1000 + 350)
+    : Math.max(300, dur * 1000 + 350);
   liveQuietTimer = setTimeout(() => {
     liveSpeaking = false;
-    unduck();
+    if (dubbingEnabled) unduck();
     if (liveCue && liveCue.text.trim()) {
       send({ type: "live-cue", start: liveCue.start, end: capturedSec, text: liveCue.text.trim() });
     }
@@ -462,7 +476,9 @@ function unduck() {
 
 // ---------- export ----------
 
-function buildMixWav(mode) {
+// Pure PCM mixdown, shared by both the WAV and MP3 export paths so the two
+// formats always sound identical — only the container/encoding differs.
+function buildMixPcm(mode) {
   const n = Math.max(REC.origLen, REC.dubLen);
   if (!n) throw new Error("Nothing recorded yet");
   const out = new Float32Array(n);
@@ -490,18 +506,51 @@ function buildMixWav(mode) {
   for (let i = 0; i < n; i++) peak = Math.max(peak, Math.abs(out[i]));
   if (peak > 1) for (let i = 0; i < n; i++) out[i] /= peak * 1.02;
 
-  return encodeWav(out, REC.rate);
+  return { samples: out, rate: REC.rate };
 }
 
-// chrome.downloads is NOT exposed to offscreen documents, so this only builds the
+// MP3 via the bundled lamejs encoder (vendor/lame.min.js) — chosen over
+// MediaRecorder/Opus because MediaRecorder only encodes in real time (an
+// exported 90-minute dub would take 90 minutes to produce); lamejs crunches
+// through the PCM as fast as the CPU allows, offline, mono, ~64kbps — plenty
+// for a spoken-word dub track and roughly a tenth the size of the WAV.
+function encodeMp3(samples, sampleRate) {
+  if (typeof lamejs === "undefined" || !lamejs.Mp3Encoder) {
+    throw new Error("MP3 encoder failed to load (vendor/lame.min.js missing?)");
+  }
+  const kbps = 64;
+  const encoder = new lamejs.Mp3Encoder(1, sampleRate, kbps);
+  const blockSize = 1152;
+  const int16 = new Int16Array(samples.length);
+  for (let i = 0; i < samples.length; i++) {
+    const x = Math.max(-1, Math.min(1, samples[i]));
+    int16[i] = x < 0 ? x * 0x8000 : x * 0x7fff;
+  }
+  const chunks = [];
+  for (let i = 0; i < int16.length; i += blockSize) {
+    const chunk = encoder.encodeBuffer(int16.subarray(i, i + blockSize));
+    if (chunk.length) chunks.push(chunk);
+  }
+  const tail = encoder.flush();
+  if (tail.length) chunks.push(tail);
+  return chunks;
+}
+
+// browser.downloads is NOT exposed to offscreen documents, so this only builds the
 // blob and returns its URL. The service worker performs the actual download —
 // blob URLs are shared across extension contexts of the same origin.
-async function exportWav(mode) {
-  const buf = buildMixWav(mode);
-  const blob = new Blob([buf], { type: "audio/wav" });
+async function exportAudio(mode, format) {
+  const { samples, rate } = buildMixPcm(mode);
+  let blob;
+  if (format === "mp3") {
+    const chunks = encodeMp3(samples, rate);
+    blob = new Blob(chunks, { type: "audio/mpeg" });
+  } else {
+    blob = new Blob([encodeWav(samples, rate)], { type: "audio/wav" });
+  }
   const url = URL.createObjectURL(blob);
   setTimeout(() => { try { URL.revokeObjectURL(url); } catch (e) {} }, 300000);
-  log(`Export built — ${(blob.size / 1048576).toFixed(1)} MB, ${REC.seconds.toFixed(0)}s of timeline`, "ok");
+  log(`Export built (${format === "mp3" ? "MP3" : "WAV"}) — ${(blob.size / 1048576).toFixed(1)} MB, ${REC.seconds.toFixed(0)}s of timeline`, "ok");
   return { url, bytes: blob.size, seconds: REC.seconds };
 }
 
@@ -555,7 +604,7 @@ async function stop(keepRecording) {
 
 // ---------- messaging ----------
 
-chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
+browser.runtime.onMessage.addListener((msg, sender, sendResponse) => {
   switch (msg.type) {
     case "offscreen-ping":
       sendResponse({ ok: true, recordedSeconds: REC.seconds });
@@ -588,23 +637,11 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
       }
       sendResponse({ ok: true, enabled: dubbingEnabled });
       return false;
-    case "offscreen-set-dubbing":
-      dubbingEnabled = Boolean(msg.enabled);
-      if (!dubbingEnabled) {
-        playQueue = []; playing = false;
-        if (ttsGain && ctx) { ttsGain.gain.cancelScheduledValues(ctx.currentTime); ttsGain.gain.setValueAtTime(0, ctx.currentTime); }
-        unduck();
-      } else if (ttsGain && ctx) {
-        ttsGain.gain.cancelScheduledValues(ctx.currentTime);
-        ttsGain.gain.setValueAtTime(settings?.dubGain ?? 1.6, ctx.currentTime);
-      }
-      sendResponse({ ok: true, enabled: dubbingEnabled });
-      return false;
     case "offscreen-play":
       enqueuePlayback(msg);
       return false;
     case "offscreen-export":
-      exportWav(msg.mode)
+      exportAudio(msg.mode, msg.format === "mp3" ? "mp3" : "wav")
         .then((r) => sendResponse({ ok: true, ...r }))
         .catch((e) => {
           log("Export failed: " + (e.message || e), "error");

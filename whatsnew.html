@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Subify | به‌روزرسانی جدید</title>
+<style>
+@font-face{font-family:"Lalezar";src:url("fonts/Lalezar-Regular.ttf") format("truetype");font-weight:100 900;font-style:normal;font-display:swap}
+:root{--bg:#0a0d12;--panel:#11161d;--panel2:#151b24;--line:#26303c;--text:#f4f6f8;--muted:#8f9aaa;--accent:#8b7cff;--accent2:#61d8ff;--ok:#32d69a;--danger:#ff6f7d;--shadow:0 18px 50px rgba(0,0,0,.35)}
+*{box-sizing:border-box}
+body{margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:32px 16px;background:radial-gradient(circle at 15% 0%,#1a1834 0,#0a0d12 34%),var(--bg);color:var(--text);font-family:"Lalezar",sans-serif;letter-spacing:.01em}
+.card{width:100%;max-width:520px;background:var(--panel);border:1px solid var(--line);border-radius:20px;box-shadow:var(--shadow);padding:26px 24px}
+.head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:14px}
+.brand{display:flex;align-items:center;gap:8px;font-size:15px}
+.brand b{color:var(--accent2)}
+.badge{padding:5px 10px;border-radius:999px;background:#8b7cff1a;border:1px solid #8b7cff40;color:#cfc9ff;font-size:10px}
+h1{margin:6px 0 2px;font-size:19px;color:var(--ok);text-align:center}
+.sub{margin:0 0 18px;color:var(--muted);font-size:12px;text-align:center;line-height:1.9}
+.section{margin-top:16px}
+.section h2{margin:0 0 8px;font-size:11px;color:var(--accent2);letter-spacing:.06em}
+ul{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px}
+li{display:flex;align-items:flex-start;gap:8px;font-size:12.5px;line-height:1.9;background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:9px 12px}
+li b{color:var(--text)}
+li span.tag{margin-inline-start:6px;color:var(--muted);font-size:10.5px}
+.dot{flex:0 0 auto;width:18px;height:18px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:11px;margin-top:1px}
+.dot.new{background:#32d69a26;color:var(--ok)}
+.dot.fix{background:#61d8ff26;color:var(--accent2)}
+.sites{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
+.site{padding:8px 12px;border-radius:10px;background:var(--panel2);border:1px solid var(--line);font-size:11.5px;color:var(--text)}
+.note{margin-top:16px;padding:11px 13px;border-radius:12px;background:#61d8ff14;border:1px solid #61d8ff35;color:#cfeeff;font-size:11px;line-height:1.9}
+.cta{margin-top:20px;width:100%;padding:13px;border:0;border-radius:12px;background:linear-gradient(180deg,#8b7cff,#6f5fe0);color:#fff;font:700 13px/1.2 "Lalezar",sans-serif;cursor:pointer}
+.cta:hover{filter:brightness(1.08)}
+</style>
+</head>
+<body>
+<main class="card">
+  <div class="head">
+    <div class="brand">🎬 <b>Subify</b></div>
+    <span class="badge" id="versionBadge">نسخهٔ جدید</span>
+  </div>
+  <h1>افزونه با موفقیت به‌روزرسانی شد</h1>
+  <p class="sub">نسخهٔ قبلی کامل نبود — چند باگ ترجمه و یه مشکل امنیتی توی دسترسی‌ها داشت. این نسخه هم اون‌ها رو رفع کرده هم چند قابلیت جدید اضافه کرده.</p>
+
+  <div class="section">
+    <h2>قابلیت‌های جدید</h2>
+    <ul>
+      <li><span class="dot new">＋</span><div><b>زیرنویس زندهٔ STT برای ویدیوهای بدون کپشن</b> — یه سوییچ «پخش صدای دوبله» تو Popup هست؛ خاموشش کنی، تشخیص زندهٔ Gemini فقط زیرنویس نشون می‌ده، بدون صدای دوبله. مناسب استریم‌های زنده.<span class="tag">در Popup</span></div></li>
+      <li><span class="dot new">＋</span><div><b>داشبورد آمار مصرف و برآورد هزینه</b> — کاراکتر ترجمه‌شده و ثانیهٔ دوبله رو نشون می‌ده و با نرخی که خودت وارد می‌کنی هزینه رو تخمین می‌زنه.<span class="tag">در Options</span></div></li>
+      <li><span class="dot new">＋</span><div><b>خروجی صوت با فرمت MP3</b> — علاوه بر WAV، حالا می‌تونی دوبله رو با حجمی تا ۴ برابر کمتر دانلود کنی.<span class="tag">در Popup</span></div></li>
+      <li><span class="dot new">＋</span><div><b>پشتیبانی از Vimeo، آپارات و Coursera</b> — علاوه بر یوتیوب، به‌همراه یه لایهٔ اضافی استخراج کپشن (خوندن پنل Transcript خودِ یوتیوب) برای ویدیوهایی که جور دیگه‌ای کپشنشون پیدا نمی‌شه.</div></li>
+      <li><span class="dot new">＋</span><div><b>پاک‌کردن کامل داده‌ها + سند حریم خصوصی</b> — یک دکمه برای حذف کامل کلید‌ها، تنظیمات، آمار و حافظهٔ ترجمه.<span class="tag">در Options</span></div></li>
+    </ul>
+  </div>
+
+  <div class="section">
+    <h2>رفع اشکال و امنیت</h2>
+    <ul>
+      <li><span class="dot fix">↻</span><div><b>باگ از‌دست‌رفتن فرم Custom Provider</b> — مدیریت سرویس سفارشی از Popup به Options منتقل شد؛ درخواست اجازهٔ دسترسی دیگه Popup رو نمی‌بنده و متنی که تایپ کردی از دست نمی‌ره.</div></li>
+      <li><span class="dot fix">↻</span><div><b>مدل پیش‌فرض دوبله ارزون‌تر شد</b> — STT و TTS پیش‌فرض به ارزون‌ترین گزینهٔ موجود تغییر کرد (قابل تغییر در Options).</div></li>
+      <li><span class="dot fix">↻</span><div>رفع باگ قطع‌شدن ترجمه‌های طولانی وسط کار (سقف توکن اصلاح شد).</div></li>
+      <li><span class="dot fix">↻</span><div>رفع ناهماهنگی توگل زیرنویس بین Popup و پخش‌کننده.</div></li>
+      <li><span class="dot fix">↻</span><div><b>Custom API Provider بازطراحی شد</b> — حالا فقط برای همون یک دامنه‌ای که خودت وارد می‌کنی اجازه می‌گیره، نه کل اینترنت.</div></li>
+      <li><span class="dot fix">↻</span><div>دسترسی افزونه از «همهٔ سایت‌ها» به دامنه‌های واقعاً موردنیاز محدود شد.</div></li>
+    </ul>
+  </div>
+
+  <div class="section">
+    <h2>سایت‌های پشتیبانی‌شده</h2>
+    <div class="sites">
+      <span class="site">▶️ YouTube</span>
+      <span class="site">🎥 Vimeo</span>
+      <span class="site">📺 آپارات</span>
+      <span class="site">🎓 Coursera</span>
+    </div>
+    <p class="note" style="margin-top:10px">اگه از ایران وصل می‌شی و Gemini جواب نمی‌ده: این مسدودی از سمت گوگل و به‌خاطر تحریمه، نه چیزی که این افزونه بتونه حلش کنه. تنها راه، یه VPN سیستمیه که کل ترافیک مرورگر رو عوض کنه — ریسک ToS داره، تضمینی هم نیست.</p>
+  </div>
+
+  <div class="note">اگه با نسخهٔ قبل مشکلی داشتی، این نسخه از پایه اون بخش‌ها رو دوباره نوشته. اگه بازم مشکلی دیدی از دکمهٔ گزارش داخل Popup بگو.</div>
+
+  <button class="cta" id="gotIt">متوجه شدم</button>
+</main>
+<script src="whatsnew.js"></script>
+</body>
+</html>
