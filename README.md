@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="icons/icon128.png" width="96" height="96" alt="Subify logo" />
+<img src="https://box.1webhost.info:2083/cpsess2965509027/frontend/jupiter/filemanager/showfile.html?file=Icon.png&fileop=&dir=%2Fhome%2Fyvhbuurz%2Fpublic_html&dirop=&charset=&file_charset=&baseurl=&basedir=width="96" height="96" alt="Subify logo" />
 
 # 🎬 Subify
 
