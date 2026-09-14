@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="icons/icon128.png=width="96" height="96" alt="Subify logo" />
+<img src="icons/icon128.png" width="96" height="96" alt="Subify logo" />
 
 # 🎬 Subify
 
