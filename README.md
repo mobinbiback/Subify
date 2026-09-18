@@ -6,12 +6,21 @@
 
 ### ترجمه و دوبله هوشمند زیرنویس یوتیوب به فارسی
 
-[![Version](https://img.shields.io/badge/version-2.4.16-8b7cff?style=flat-square)](#)
+[![🇬🇧 English](https://img.shields.io/badge/🇬🇧_English-8b7cff?style=for-the-badge)](README.en.md)
+[![🇮🇷 فارسی](https://img.shields.io/badge/🇮🇷_فارسی-25d8a0?style=for-the-badge)](README.md)
+
+<br>
+
+[![Version](https://img.shields.io/badge/version-2.7.4-8b7cff?style=flat-square)](#)
 [![Manifest](https://img.shields.io/badge/manifest-v3-4cc2ff?style=flat-square)](#)
 [![License: MIT](https://img.shields.io/badge/license-MIT-25d8a0?style=flat-square)](LICENSE)
 [![Chrome](https://img.shields.io/badge/chrome-116%2B-orange?style=flat-square)](#)
 
 **زیرنویس زمان‌بندی‌شده یوتیوب رو مستقیم، با ترجمه پیش‌دستانه و همگام‌سازی دقیق، به فارسی برگردون یا حتی زنده دوبله کن.**
+
+<br>
+
+[🌐 وب‌سایت](https://sub-ify.site/) · [🟢 Chrome Web Store](https://chromewebstore.google.com/detail/subify-%D8%AA%D8%B1%D8%AC%D9%85%D9%87%D8%8C-%D8%AF%D9%88%D8%A8%D9%84%D9%87-%D9%88%D8%B2%DB%8C%D8%B1/lkddchadfmlncbjhekdjhhddahjafohg) · [🦊 Firefox Add-ons](https://addons.mozilla.org/en-US/firefox/addon/subify-lite/)
 
 </div>
 
@@ -33,31 +42,42 @@
 
 ## 📦 نصب
 
-این افزونه فعلاً به‌صورت Unpacked (بارگذاری دستی) روی Chrome/Chromium نصب می‌شه:
+Subify به‌صورت رسمی برای مرورگرهای Chrome و Firefox منتشر شده و می‌تونی مستقیماً از فروشگاه افزونه‌ها نصبش کنی.
 
-```bash
-git clone https://github.com/mobinbiback/Subify.git
-```
+### 🟢 Chrome
 
-1. آدرس `chrome://extensions` رو باز کن
-2. گزینه **Developer mode** رو از گوشهٔ بالا سمت راست فعال کن
-3. روی **Load unpacked** بزن و پوشه کلون‌شده `Subify` رو انتخاب کن
-4. آیکون Subify رو کنار نوار آدرس پین کن و از یک ویدیوی یوتیوب شروع کن 🎉
+[![Get Subify for Chrome](https://img.shields.io/badge/Get%20Subify%20for-Chrome-4285F4?style=for-the-badge&logo=googlechrome&logoColor=white)](https://chromewebstore.google.com/detail/subify-%D8%AA%D8%B1%D8%AC%D9%85%D9%87%D8%8C-%D8%AF%D9%88%D8%A8%D9%84%D9%87-%D9%88%D8%B2%DB%8C%D8%B1/lkddchadfmlncbjhekdjhhddahjafohg)
 
-> نیازمند Chrome (یا مرورگر مبتنی بر Chromium) نسخهٔ ۱۱۶ به بالا.
+### 🦊 Firefox
+
+[![Get Subify for Firefox](https://img.shields.io/badge/Get%20Subify%20for-Firefox-FF7139?style=for-the-badge&logo=firefox-browser&logoColor=white)](https://addons.mozilla.org/en-US/firefox/addon/subify-lite/)
+
+### 🌐 وب‌سایت
+
+[![Visit Subify Website](https://img.shields.io/badge/Visit-Subify%20Website-8b7cff?style=for-the-badge)](https://sub-ify.site/)
 
 ---
 
 ## 🚀 شروع سریع
 
-1. روی آیکون افزونه کلیک کن و کلید API یکی از سرویس‌دهنده‌ها (Gemini، OpenRouter یا OpenAI) رو وارد کن
-2. حالت دلخواه رو فعال کن: **ترجمه متنی زیرنویس** یا **دوبله زنده صوتی**
-3. یک ویدیوی یوتیوب پخش کن - زیرنویس فارسی همگام با گفتار نمایش داده یا شنیده می‌شه
-4. در صورت نیاز از تب **استایل** برای شخصی‌سازی ظاهر زیرنویس یا از **خروجی** برای گرفتن فایل SRT/VTT/TXT استفاده کن
+1. Subify رو از فروشگاه افزونهٔ مرورگرت نصب کن
+2. روی آیکون افزونه کلیک کن و کلید API یکی از سرویس‌دهنده‌ها (Gemini، OpenRouter یا OpenAI) رو وارد کن
+3. حالت دلخواه رو فعال کن: **ترجمه متنی زیرنویس** یا **دوبله زنده صوتی**
+4. یک ویدیوی یوتیوب پخش کن - زیرنویس فارسی همگام با گفتار نمایش داده یا شنیده می‌شه
+5. در صورت نیاز از تب **استایل** برای شخصی‌سازی ظاهر زیرنویس یا از **خروجی** برای گرفتن فایل SRT/VTT/TXT استفاده کن
 
 ---
 
-## 🔐 مجوزهای افزونه
+## 🔐 حریم خصوصی و مجوزها
+
+Subify برای حفظ حریم خصوصی کاربر طراحی شده است.
+
+- 🔒 کلیدهای API و تنظیمات در مرورگر کاربر ذخیره می‌شوند
+- 🔑 Subify از کلید API شخصی کاربر برای سرویس‌دهندهٔ انتخابی استفاده می‌کند
+- 🌐 درخواست‌های شبکه‌ای افزونه برای عملکرد آن به YouTube و APIهای سرویس‌های هوش مصنوعی انتخاب‌شده محدود می‌شوند
+- 💾 تنظیمات افزونه به‌صورت محلی ذخیره می‌شوند
+
+### مجوزهای افزونه
 
 | مجوز | کاربرد |
 |---|---|
@@ -72,7 +92,7 @@ git clone https://github.com/mobinbiback/Subify.git
 
 ## 🛠️ ساختار پروژه
 
-```
+```text
 Subify/
 ├── manifest.json          # پیکربندی Manifest V3
 ├── popup.html / popup.js  # رابط اصلی افزونه
@@ -87,30 +107,64 @@ Subify/
 ├── learn.js / learn.html  # یادگیری لغت (Leitner)
 ├── fonts/                 # Vazirmatn، Estedad، Lalezar
 └── icons/
-```
+
 
 ---
 
-## 🤝 مشارکت
+🤝 مشارکت
 
 خوشحال می‌شیم مشارکت کنی:
 
 1. ریپو رو Fork کن
-2. یک برنچ برای فیچرت بساز (`git checkout -b feature/AmazingFeature`)
-3. تغییراتت رو کامیت کن (`git commit -m 'Add some AmazingFeature'`)
-4. برنچ رو Push کن (`git push origin feature/AmazingFeature`)
+
+
+2. یک برنچ برای فیچرت بساز:
+
+
+
+git checkout -b feature/AmazingFeature
+
+3. تغییراتت رو کامیت کن:
+
+
+
+git commit -m "Add some AmazingFeature"
+
+4. برنچ رو Push کن:
+
+
+
+git push origin feature/AmazingFeature
+
 5. یک Pull Request باز کن
 
----
 
-## 📝 لایسنس
 
-این پروژه تحت لایسنس MIT منتشر شده — فایل [LICENSE](LICENSE) رو ببین.
 
 ---
 
-<div align="center">
+📝 لایسنس
 
-ساخته‌شده با 💜 برای فارسی‌زبان‌هایی که یوتیوب تماشا می‌کنن
+این پروژه تحت لایسنس MIT منتشر شده — فایل LICENSE رو ببین.
+
+
+---
+
+🔗 لینک‌ها
+
+🌐 وب‌سایت Subify
+
+💻 GitHub Repository
+
+🟢 Chrome Web Store
+
+🦊 Firefox Add-ons
+
+
+
+---
+
+<div align="center">ساخته‌شده با 💜 برای فارسی‌زبان‌هایی که یوتیوب تماشا می‌کنن
 
 </div>
+```
