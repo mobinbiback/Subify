@@ -6,7 +6,7 @@
 
 ### ترجمه و دوبله هوشمند زیرنویس یوتیوب به فارسی 
 
-[![🇬🇧 English](https://img.shields.io/badge/🇬🇧_English-8b7cff?style=for-the-badge)](README.en.md)
+[![🇬🇧 English](https://img.shields.io/badge/🇬🇧_English-8b7cff?style=for-the-badge)](README.En.md)
 [![🇮🇷 فارسی](https://img.shields.io/badge/🇮🇷_فارسی-25d8a0?style=for-the-badge)](README.md)
 
 <br>
