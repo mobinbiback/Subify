@@ -11,7 +11,7 @@
 
 <br>
 
-[![Version](https://img.shields.io/badge/version-2.7.4-8b7cff?style=flat-square)](#)
+[![Version](https://img.shields.io/badge/version-2.7.3-8b7cff?style=flat-square)](#)
 [![Manifest](https://img.shields.io/badge/manifest-v3-4cc2ff?style=flat-square)](#)
 [![License: MIT](https://img.shields.io/badge/license-MIT-25d8a0?style=flat-square)](LICENSE)
 [![Chrome](https://img.shields.io/badge/chrome-116%2B-orange?style=flat-square)](#)
