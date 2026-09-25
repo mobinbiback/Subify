@@ -17,7 +17,7 @@
 
 [![Manifest V3](https://img.shields.io/badge/Manifest-V3-4cc2ff?style=flat-square)](#)
 [![License: MIT](https://img.shields.io/badge/license-MIT-25d8a0?style=flat-square)](LICENSE)
-
+[![Validate Subify](https://github.com/mobinbiback/Subify/actions/workflows/validate.yml/badge.svg)](https://github.com/mobinbiback/Subify/actions/workflows/validate.yml)
 <br>
 
 [🌐 وب‌سایت](https://sub-ify.site/) · [🟢 Chrome Web Store](https://chromewebstore.google.com/detail/subify-%D8%AA%D8%B1%D8%AC%D9%85%D9%87%D8%8C-%D8%AF%D9%88%D8%A8%D9%84%D9%87-%D9%88%D8%B2%DB%8C%D8%B1/lkddchadfmlncbjhekdjhhddahjafohg) · [🦊 Firefox Add-ons](https://addons.mozilla.org/en-US/firefox/addon/subify-lite/)
