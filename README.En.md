@@ -2,13 +2,11 @@
 
 <img src="assets/img/subify-logo-dark.png" width="180" alt="Subify logo" />
 
-# 🎬 Subify
+### AI Subtitle Translator for YouTube & the Web
 
-### **Watch. Understand. Learn. 🌍**
+AI-powered subtitle translation, bilingual captions, real-time translation, and AI dubbing for videos on the web.
 
-**AI-powered subtitle translation, bilingual captions & live dubbing for YouTube.**
-
-Turn foreign-language videos into something you can actually understand with real-time translation, synchronized bilingual subtitles, subtitle export, and AI-powered voice dubbing.
+Subify is an open-source browser extension that helps you understand and learn from online videos with translated subtitles, bilingual captions, and AI-powered voice dubbing.
 
 [![🇬🇧 English](https://img.shields.io/badge/🇬🇧_English-8b7cff?style=for-the-badge)](README.En.md)
 [![🇮🇷 فارسی](https://img.shields.io/badge/🇮🇷_فارسی-25d8a0?style=for-the-badge)](README.md)
@@ -17,6 +15,7 @@ Turn foreign-language videos into something you can actually understand with rea
 
 [![Manifest V3](https://img.shields.io/badge/Manifest-V3-4cc2ff?style=flat-square)](#)
 [![License: MIT](https://img.shields.io/badge/license-MIT-25d8a0?style=flat-square)](LICENSE)
+[![Validate Subify](https://github.com/mobinbiback/Subify/actions/workflows/validate.yml/badge.svg)](https://github.com/mobinbiback/Subify/actions/workflows/validate.yml)
 
 <br>
 
