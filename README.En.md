@@ -26,6 +26,18 @@ Turn foreign-language videos into something you can actually understand with rea
 
 ---
 
+## 🎥 See Subify in action
+
+<p align="center">
+  <img src="assets/img/subify-demo.gif" alt="Subify translating a YouTube video in real time" width="1000">
+</p>
+
+<p align="center">
+  <i>Translate YouTube subtitles and follow the video in your language.</i>
+</p>
+
+---
+
 ## 🌍 What is Subify?
 
 **Subify is a free, open-source browser extension for understanding foreign-language YouTube videos.**
