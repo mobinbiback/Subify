@@ -103,16 +103,35 @@ API keys and extension settings are stored locally in the browser. Requests are 
 
 ---
 
-## 🎯 Why Subify?
+## 🔎 What can you do with Subify?
 
-Foreign-language content is everywhere.
+Subify helps you:
 
-The problem is not finding something worth watching.  
-The problem is understanding it.
+- Translate YouTube subtitles with AI
+- Watch videos with bilingual subtitles
+- Translate subtitles in real time while watching
+- Use AI to dub video audio into another language
+- Learn languages from YouTube videos and online courses
+- Export translated subtitles as SRT, VTT, or TXT
+- Customize subtitle appearance and translation settings
 
-Subify puts translation and dubbing directly where the content already lives, so you can keep watching instead of constantly switching between players, subtitle files, and translation tools.
+### Common use cases
 
-**Watch more. Understand more. Learn as you go.**
+**Translate YouTube videos**
+
+Use AI-powered subtitle translation to understand videos in your preferred language.
+
+**Watch with bilingual subtitles**
+
+Display the original and translated subtitles together while watching a video.
+
+**Learn a language with videos**
+
+Keep the original language visible while reading the translation to improve comprehension and vocabulary.
+
+**AI video dubbing**
+
+Use AI voice dubbing to listen to translated video content instead of reading subtitles.
 
 ---
 
