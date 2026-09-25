@@ -11,21 +11,29 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+      - name: Clone repository
+        run: |
+          git clone --depth 1 "$GITHUB_SERVER_URL/$GITHUB_REPOSITORY.git" repo
 
       - name: Validate manifest
+        working-directory: repo
         run: |
           node -e "
           const fs = require('fs');
           const manifest = JSON.parse(fs.readFileSync('manifest.json', 'utf8'));
-          if (!manifest.name) throw new Error('manifest.name is missing');
-          if (!manifest.version) throw new Error('manifest.version is missing');
+
+          if (!manifest.name)
+            throw new Error('manifest.name is missing');
+
+          if (!manifest.version)
+            throw new Error('manifest.version is missing');
+
           console.log('Subify manifest OK');
           console.log('Version:', manifest.version);
           "
 
       - name: Check required files
+        working-directory: repo
         run: |
           test -f manifest.json
           test -f README.md
@@ -34,12 +42,14 @@ jobs:
           echo "Required files OK"
 
       - name: Check JavaScript syntax
+        working-directory: repo
         run: |
-          for file in $(find . -name "*.js" \
+          find . -name "*.js" \
             -not -path "./.git/*" \
-            -not -path "./node_modules/*"); do
-            node --check "$file"
-          done
+            -not -path "./node_modules/*" \
+            -print0 | while IFS= read -r -d '' file; do
+              node --check "$file"
+            done
 
       - name: Validation complete
         run: echo "Subify validation passed successfully."
