@@ -18,6 +18,10 @@ If private security advisories are not available for your situation, you may con
 
 https://github.com/mobinbiback
 
+If private security advisories are not available for your situation, you may contact the project maintainer privately at:
+
+forworkwithais@gmail.com
+
 ## What to Include
 
 Please include as much of the following information as possible:
