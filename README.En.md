@@ -2,11 +2,11 @@
 
 <img src="assets/img/subify-logo-dark.png" width="180" alt="Subify logo" />
 
-### AI Subtitle Translator for YouTube & the Web
+### **See, Understand, Learn 🌍**
 
-AI-powered subtitle translation, bilingual captions, real-time translation, and AI dubbing for videos on the web.
+**AI-powered translation, bilingual subtitles, dubbing, and language-learning tools for web content.**
 
-Subify is an open-source browser extension that helps you understand and learn from online videos with translated subtitles, bilingual captions, and AI-powered voice dubbing.
+Subify helps you translate multilingual content, understand it better, discover new vocabulary, and learn without leaving the content you're already using.
 
 [![🇬🇧 English](https://img.shields.io/badge/🇬🇧_English-8b7cff?style=for-the-badge)](README.En.md)
 [![🇮🇷 فارسی](https://img.shields.io/badge/🇮🇷_فارسی-25d8a0?style=for-the-badge)](README.md)
@@ -28,116 +28,129 @@ Subify is an open-source browser extension that helps you understand and learn f
 ## 🎥 See Subify in action
 
 <p align="center">
-  <img src="assets/img/subify-demo.gif" alt="Subify translating a YouTube video in real time" width="1000">
+  <img src="assets/img/subify-demo.gif" alt="Subify in action" width="1000">
 </p>
 
 <p align="center">
-  <i>Translate YouTube subtitles and follow the video in your language.</i>
+  <i>Translate, use bilingual subtitles, and learn directly alongside the content you're watching.</i>
 </p>
 
 ---
 
 ## 🌍 What is Subify?
 
-**Subify is a free, open-source browser extension for understanding foreign-language YouTube videos.**
+**Subify is a free, open-source browser extension for translating, understanding, and learning from multilingual web content.**
 
-Translate captions in real time, display bilingual subtitles, customize their appearance, export them as subtitle files, and use AI-powered live voice dubbing when you would rather listen than read.
+With Subify, you can translate video and web content, use bilingual subtitles, listen with AI-powered dubbing, translate web pages, and look up new words as you encounter them.
 
-Subify is built for language learners, students, course viewers, podcast listeners, and anyone who regularly watches content in a language they do not fully understand.
+The goal isn't simply to translate content.
 
----
+It's to turn translation into a more useful learning experience:
 
-## 🎥 See it in action
-
-> **A good demo should show the product, not explain it.**
->
-> Add a short GIF or screen recording here showing:
-> 1. A YouTube video playing in another language
-> 2. Subify translating the subtitles
-> 3. Bilingual captions appearing in sync
-> 4. Live dubbing being enabled
+**See. Understand. Learn.**
 
 ---
 
 ## ✨ Features
 
-### 🌐 Real-time subtitle translation
-Translate synchronized YouTube captions directly from the video without downloading a separate subtitle file.
+### 🌐 Real-time translation
+
+Translate speech and subtitles using supported AI services and follow the translation alongside the content.
 
 ### ⚡ Predictive translation
-Pre-fetch upcoming subtitle segments so translated captions are ready when the speaker reaches them, with timing synchronization designed to keep the translation aligned with playback.
+
+Upcoming content can be processed ahead of time so translations are ready with less delay as playback continues.
 
 ### 🔤 Bilingual subtitles
-Keep the original caption and its translation together so you can follow the meaning while still seeing the source language.
 
-### 🎙️ Live AI voice dubbing
-Use Gemini-powered live translation to hear translated speech while the video is playing, with controls for:
+View the original language and translation together.
+
+This makes it easier to compare the original sentence with its translation while learning a language.
+
+### 🎙️ AI-powered dubbing
+
+Follow video content with translated speech and control the dubbing experience.
+
+Controls include:
+
 - Dubbing volume
 - Original-audio ducking
 - Playback speed
 - Voice selection
 
-### 🔄 Chunked fallback
-Use a chunked translation path when the live route is unavailable.
+### 📄 Full-page translation
 
-### 🧠 Multiple AI providers
-Use your own API key with supported providers:
-- Google Gemini
-- OpenRouter
-- OpenAI
+Use **Translate Page** to translate visible text on web pages directly.
+
+Translation is no longer limited to video subtitles.
+
+### 📖 Dictionary
+
+Look up words and expressions while watching or reading.
+
+The built-in Dictionary helps you understand new vocabulary without leaving the content you're working with.
+
+### 🧠 Vocabulary learning
+
+Save new words and review them later through the **Learn** section.
+
+Subify keeps vocabulary-learning data locally and provides a dedicated workflow for reviewing saved words.
+
+### 🎬 Storyboard
+
+Use the Storyboard and subtitle-related tools to work with and review video content.
 
 ### 💾 Subtitle export
-Export translated subtitles as:
+
+Export subtitles and translations in multiple formats:
+
 - SRT
 - VTT
 - TXT
 
 ### 🎨 Subtitle customization
-Customize the subtitle experience with live preview, presets, and bundled Persian fonts including Vazirmatn, Estedad, and Lalezar.
 
-### 📚 Vocabulary learning
-Extract vocabulary from subtitles and review words locally with a Leitner-style flashcard workflow.
+Customize the subtitle experience to fit your preferences.
 
-### 🔒 Local-first privacy
-API keys and extension settings are stored locally in the browser. Requests are made to YouTube and the AI provider APIs configured by the user.
+Subify supports different display settings and fonts for multiple languages, including bundled Persian fonts.
+
+### 🤖 AI providers
+
+Subify uses a provider-based architecture so you can choose and configure the AI service used by the extension.
+
+Current providers include:
+
+- Google Gemini
+- OpenRouter
+- OpenAI
+
+### 🌍 Multilingual content
+
+Subify is designed for multilingual content, with translation and learning workflows that are not limited to a single target language.
 
 ---
 
-## 🔎 What can you do with Subify?
+## 🎯 Why Subify?
 
-Subify helps you:
+The internet is full of multilingual content.
 
-- Translate YouTube subtitles with AI
-- Watch videos with bilingual subtitles
-- Translate subtitles in real time while watching
-- Use AI to dub video audio into another language
-- Learn languages from YouTube videos and online courses
-- Export translated subtitles as SRT, VTT, or TXT
-- Customize subtitle appearance and translation settings
+Educational videos, online courses, talks, podcasts, and web pages are everywhere, but they are not always available in a language we fully understand.
 
-### Common use cases
+The problem isn't always finding content.
 
-**Translate YouTube videos**
+**Sometimes the problem is understanding it.**
 
-Use AI-powered subtitle translation to understand videos in your preferred language.
+Subify brings translation, subtitles, dubbing, Dictionary, and vocabulary-learning tools closer to the content itself.
 
-**Watch with bilingual subtitles**
+Instead of constantly switching between different tools:
 
-Display the original and translated subtitles together while watching a video.
-
-**Learn a language with videos**
-
-Keep the original language visible while reading the translation to improve comprehension and vocabulary.
-
-**AI video dubbing**
-
-Use AI voice dubbing to listen to translated video content instead of reading subtitles.
+**See. Understand. Learn.**
 
 ---
 
 ## 📦 Installation
 
-Subify is currently available for **Chrome** and **Firefox**.
+Subify is available for Chromium-based browsers and Firefox.
 
 ### 🟢 Chrome
 
@@ -155,85 +168,76 @@ Subify is currently available for **Chrome** and **Firefox**.
 
 ## 🚀 Quick Start
 
-1. Install Subify from the Chrome Web Store or Firefox Add-ons.
+1. Install Subify from your browser's extension store.
 2. Open the extension settings.
-3. Add your API key for Gemini, OpenRouter, or OpenAI.
-4. Open a YouTube video with captions.
-5. Enable **Subtitle Translation** or **Live Voice Dubbing**.
-6. Customize subtitle appearance or export the result as SRT, VTT, or TXT.
+3. Configure your preferred AI provider and API key.
+4. Open the content you want to translate.
+5. Enable translation.
+6. Use bilingual subtitles, dubbing, Dictionary, or learning tools when needed.
 
 ---
 
 ## 🧠 AI Providers
 
-Subify follows a provider-based architecture so users can choose the AI service that fits their needs.
+Subify uses a provider-based architecture so users can choose and configure the AI service they want to use.
 
 | Provider | Use |
 |---|---|
-| Google Gemini | Translation and live voice translation |
+| Google Gemini | Translation and live AI capabilities |
 | OpenRouter | Text translation through supported models |
 | OpenAI | Text translation through the OpenAI API |
 
-> **Bring your own API key:** Subify is designed around user-provided API credentials rather than a centralized API key stored by the extension.
+> **Bring your own API key:** Subify is designed around credentials provided and configured by the user.
 
 ---
 
-## 🔐 Privacy & Permissions
+## 🔐 Privacy
 
 Subify follows a **local-first** approach.
 
-- API keys and extension settings are stored locally in the user's browser.
-- AI requests use the API key configured by the user.
-- Network access is limited to YouTube and the configured AI provider APIs required by the extension.
-- Vocabulary and extension settings are designed around local browser storage.
+- Extension settings and configuration data are kept locally in the browser where possible.
+- API keys entered by the user are stored in the extension settings.
+- AI requests are sent using the service and credentials configured by the user.
+- Vocabulary-learning data is stored locally in the browser.
 
-### Extension permissions
-
-| Permission | Purpose |
-|---|---|
-| `storage` | Store extension settings and API keys locally |
-| `tabCapture` / `offscreen` | Capture tab audio for live dubbing |
-| `activeTab` / `tabs` | Detect and interact with the active YouTube tab |
-| `downloads` | Save subtitle exports |
+Subify is designed to give users more control over the services and credentials they use.
 
 ---
 
 ## 🏗️ How it works
 
 ```text
-                 ┌─────────────────────┐
-                 │   YouTube video     │
-                 │  + synchronized     │
-                 │      captions       │
-                 └──────────┬──────────┘
-                            │
-                            ▼
-                 ┌─────────────────────┐
-                 │   Subtitle engine   │
-                 │   timing + chunks   │
-                 └──────────┬──────────┘
-                            │
-                            ▼
-                 ┌─────────────────────┐
-                 │   AI translation    │
-                 │ Gemini / OpenRouter │
-                 │       / OpenAI      │
-                 └───────┬─────┬───────┘
-                         │     │
-                ┌────────┘     └────────┐
-                ▼                       ▼
-        ┌───────────────┐       ┌────────────────┐
-        │ Bilingual /   │       │  Live voice    │
-        │ translated    │       │    dubbing     │
-        │ subtitles     │       │                │
-        └───────┬───────┘       └───────┬────────┘
-                │                       │
-                └───────────┬───────────┘
-                            ▼
-                     ┌─────────────┐
-                     │    YouTube  │
-                     │    player   │
-                     └─────────────┘
+                    ┌──────────────────────┐
+                    │   Web / Video       │
+                    │      Content        │
+                    └──────────┬───────────┘
+                               │
+                               ▼
+                    ┌──────────────────────┐
+                    │   Content / Caption  │
+                    │      Processing      │
+                    └──────────┬───────────┘
+                               │
+                               ▼
+                    ┌──────────────────────┐
+                    │      AI Engine       │
+                    │ Gemini / OpenRouter  │
+                    │       / OpenAI       │
+                    └───────┬──────┬───────┘
+                            │      │
+               ┌────────────┘      └─────────────┐
+               ▼                                 ▼
+      ┌──────────────────┐             ┌──────────────────┐
+      │ Translation      │             │ AI Dubbing       │
+      │ & Subtitles      │             │                  │
+      └────────┬─────────┘             └────────┬─────────┘
+               │                                │
+               └──────────────┬─────────────────┘
+                              ▼
+                   ┌──────────────────────┐
+                   │ Dictionary / Learn   │
+                   │ Vocabulary Tools     │
+                   └──────────────────────┘
 ```
 
 ---
@@ -263,26 +267,30 @@ Subify/
 | File | Role |
 |---|---|
 | `subtitle-overlay.js` | Subtitle rendering and synchronization |
-| `live-client.js` | Live Gemini connection |
+| `live-client.js` | Live translation connection |
 | `background.js` | Extension service worker |
-| `offscreen.js` | Audio processing for live dubbing |
-| `learn.js` | Vocabulary learning workflow |
-| `storyboard.js` | Subtitle/storyboard-related UI |
+| `offscreen.js` | Audio processing for voice features |
+| `learn.js` | Vocabulary learning and review |
+| `storyboard.js` | Storyboard-related functionality |
 
 ---
 
 ## 🤝 Contributing
 
-Subify is open source and contributions are welcome.
+Subify is an open-source project and contributions are welcome.
 
 ```bash
 git clone https://github.com/mobinbiback/Subify.git
 cd Subify
 ```
 
-Then load the project as an unpacked extension in a Chromium-based browser, or use the appropriate extension-development workflow for Firefox.
+You can then load the project as an **Unpacked Extension** in a Chromium-based browser or use the appropriate extension-development workflow for Firefox.
 
-For feature requests, bug reports, and improvements, open an issue or submit a pull request.
+For bug reports, feature requests, or improvements:
+
+- Open an issue
+- Submit a pull request
+- Clearly describe the problem or change
 
 ### Development workflow
 
@@ -299,19 +307,17 @@ Then open a Pull Request on GitHub.
 
 ## 🗺️ Roadmap
 
-Subify is actively evolving.
+Subify is continuously evolving.
 
-Planned and ongoing work includes:
+Ongoing development includes areas such as:
 
-- More supported video and learning platforms
-- Better subtitle translation quality and latency
-- More AI providers and model options
-- Improved live dubbing
-- More subtitle export and customization options
-- Better language-learning workflows
-- A broader web experience beyond the current extension workflow
-
-Have an idea? Open an issue and describe the problem you want to solve.
+- More supported platforms and content sources
+- Better translation quality and speed
+- More AI providers and models
+- Improved dubbing experience
+- More language-learning features
+- Better Dictionary and vocabulary workflows
+- More tools for working with multilingual content
 
 ---
 
@@ -319,9 +325,9 @@ Have an idea? Open an issue and describe the problem you want to solve.
 
 Subify is free and open source.
 
-If it helps you understand videos, learn a language, or access content you could not easily follow before, **consider giving the repository a Star**.
+If Subify has helped you understand a video, learn a language, or access content that was previously difficult to follow, **consider giving the repository a Star**.
 
-Every Star helps other people discover the project.
+Every Star helps more people discover the project.
 
 ---
 
@@ -346,5 +352,7 @@ Subify is released under the [MIT License](LICENSE).
 <div align="center">
 
 **Built with 💜 for everyone who wants to understand more of the internet.**
+
+### **See. Understand. Learn. 🌍**
 
 </div>
