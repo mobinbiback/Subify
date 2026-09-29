@@ -14,7 +14,7 @@ Subify helps you translate multilingual content, understand it better, discover 
 <br>
 
 [![Manifest V3](https://img.shields.io/badge/Manifest-V3-4cc2ff?style=flat-square)](#)
-[![License: MIT](https://img.shields.io/badge/license-MIT-25d8a0?style=flat-square)](LICENSE)
+[![License: MIT](https://img.shields.io/badge/license-MIT-25d8a0?style=flat-square)](LICENSE) [![License: AGPL--3.0](https://img.shields.io/badge/license-AGPL--3.0-8b7cff?style=flat-square)](LICENSE-AGPL)
 [![Validate Subify](https://github.com/mobinbiback/Subify/actions/workflows/validate.yml/badge.svg)](https://github.com/mobinbiback/Subify/actions/workflows/validate.yml)
 
 <br>
@@ -303,6 +303,13 @@ git push origin feature/your-feature
 
 Then open a Pull Request on GitHub.
 
+For more information:
+
+- [Contributing Guidelines](CONTRIBUTING.md)
+- [Security Policy](SECURITY.md)
+- [Support](SUPPORT.md)
+- [Code of Conduct](.github/CODE_OF_CONDUCT.md)
+
 ---
 
 ## 🗺️ Roadmap
@@ -333,7 +340,23 @@ Every Star helps more people discover the project.
 
 ## 📝 License
 
-Subify is released under the [MIT License](LICENSE).
+Subify is **dual-licensed under the MIT License and the GNU Affero General Public License v3.0 (AGPL-3.0)**.
+
+You may use, modify, and distribute Subify under the terms of either license:
+
+- [MIT License](LICENSE)
+- [GNU Affero General Public License v3.0](LICENSE-AGPL)
+
+Please read the applicable license for the complete terms and conditions.
+
+### Contributing and Development
+
+If you plan to contribute to Subify, please review:
+
+- [Contributing Guidelines](CONTRIBUTING.md)
+- [Security Policy](SECURITY.md)
+- [Support](SUPPORT.md)
+- [Code of Conduct](.github/CODE_OF_CONDUCT.md)
 
 ---
 
