@@ -14,7 +14,7 @@
 <br>
 
 [![Manifest V3](https://img.shields.io/badge/Manifest-V3-4cc2ff?style=flat-square)](#)
-[![License: MIT](https://img.shields.io/badge/license-MIT-25d8a0?style=flat-square)](LICENSE)
+[![License: MIT](https://img.shields.io/badge/license-MIT-25d8a0?style=flat-square)](LICENSE) [![License: AGPL--3.0](https://img.shields.io/badge/license-AGPL--3.0-8b7cff?style=flat-square)](LICENSE-AGPL)
 [![Validate Subify](https://github.com/mobinbiback/Subify/actions/workflows/validate.yml/badge.svg)](https://github.com/mobinbiback/Subify/actions/workflows/validate.yml)
 
 <br>
@@ -303,6 +303,13 @@ git push origin feature/your-feature
 
 سپس یک Pull Request در GitHub ایجاد کن.
 
+برای اطلاعات بیشتر:
+
+- [راهنمای مشارکت](CONTRIBUTING.md)
+- [سیاست امنیتی](SECURITY.md)
+- [راهنمای پشتیبانی](SUPPORT.md)
+- [Code of Conduct](.github/CODE_OF_CONDUCT.md)
+
 ---
 
 ## 🗺️ نقشه راه
@@ -333,7 +340,23 @@ git push origin feature/your-feature
 
 ## 📝 لایسنس
 
-سابیفای تحت [لایسنس MIT](LICENSE) منتشر شده است.
+سابیفای به‌صورت **دوگانه تحت MIT و GNU AGPL-3.0** ارائه می‌شود.
+
+شما می‌توانید کد Subify را تحت شرایط یکی از این دو مجوز استفاده، تغییر و توزیع کنید:
+
+- [MIT License](LICENSE)
+- [GNU Affero General Public License v3.0](LICENSE-AGPL)
+
+برای جزئیات کامل، متن هر دو مجوز را در فایل‌های بالا مطالعه کنید.
+
+### مشارکت و توسعه
+
+اگر قصد مشارکت در توسعه Subify را دارید، ابتدا این فایل‌ها را مطالعه کنید:
+
+- [راهنمای مشارکت](CONTRIBUTING.md)
+- [سیاست امنیتی](SECURITY.md)
+- [راهنمای پشتیبانی](SUPPORT.md)
+- [Code of Conduct](.github/CODE_OF_CONDUCT.md)
 
 ---
 
