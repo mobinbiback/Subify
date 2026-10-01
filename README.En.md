@@ -130,6 +130,21 @@ Subify is designed for multilingual content, with translation and learning workf
 
 ---
 
+## 🌐 Supported Platforms
+
+Subify works across a range of educational and content platforms, with support for **AI-powered subtitles and dubbing**.
+
+The following platforms have been tested with Subify and support **both subtitles and dubbing**:
+
+- YouTube
+- Udemy
+- edX
+- Khan Academy
+- LinkedIn Learning
+- TED
+
+---
+
 ## 🎯 Why Subify?
 
 The internet is full of multilingual content.
@@ -318,7 +333,7 @@ Subify is continuously evolving.
 
 Ongoing development includes areas such as:
 
-- More supported platforms and content sources
+- More supported platforms and content sources that are not yet supported by Subify
 - Better translation quality and speed
 - More AI providers and models
 - Improved dubbing experience
