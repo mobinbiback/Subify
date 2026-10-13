@@ -1,6 +1,76 @@
-<!doctype html><html lang="fa" dir="rtl"><head>
-  <meta name="sby-build" content="4d6f62696e626962616b">
-<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Subify • Storyboard</title><style>
-@font-face{font-family:"Lalezar";src:url("fonts/Lalezar-Regular.ttf") format("truetype");font-weight:100 900;font-style:normal;font-display:swap}
-:root{--bg:#faf6f0;--surface:#fff;--surface2:#f3ede4;--border:#ede5da;--ink:#241f1a;--muted:#786d60;--coral:#c93f2b;--teal:#0d9488}*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.55 "Lalezar",sans-serif}.wrap{max-width:1100px;margin:auto;padding:25px 18px 60px}header{display:flex;justify-content:space-between;align-items:end;margin-bottom:15px}h1{margin:0;color:var(--coral);font-size:22px}.sub{color:var(--muted);font-size:12px}.toolbar{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:15px}button{border:1px solid var(--border);background:var(--surface);border-radius:9px;padding:8px 12px;cursor:pointer;font:600 13px inherit}.primary{background:var(--coral);color:#fff;border-color:var(--coral)}.board{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:14px}.scene{background:var(--surface);border:1px solid var(--border);border-radius:14px;overflow:hidden;box-shadow:0 2px 8px #5d40230f}.scene img{width:100%;aspect-ratio:16/9;object-fit:cover;background:#111;display:block}.body{padding:12px}.time{font:700 11px ui-monospace,monospace;color:var(--coral)}.orig{margin-top:7px;color:var(--muted)}.fa{margin-top:7px;font-size:16px;font-weight:700;color:var(--teal)}.empty{text-align:center;color:var(--muted);padding:60px}.small{font-size:11px;color:var(--muted)}
-</style></head><body><main class="wrap"><header><div><h1>🎬 Storyboard</h1><div class="sub">از تایم‌کدهای واقعی زیرنویس YouTube، شات‌برد محلی بساز</div></div><div id="status"></div></header><div class="toolbar"><button id="addCurrent" class="primary">افزودن فریم فعلی</button><button id="build">ساخت از زیرنویس ویدیو</button><button id="clear">پاک کردن Storyboard</button><button id="export">خروجی JSON</button></div><section id="board" class="board"></section></main><script src="storyboard.js"></script></body></html>
+<!doctype html>
+<html lang="fa" dir="rtl">
+<head>
+<meta name="sby-build" content="4d6f62696e626962616b">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Subify • Storyboard</title>
+<style>
+@font-face{font-family:VazirUI;src:url("fonts/Vazirmatn-Regular.ttf") format("truetype");font-weight:400;font-display:swap}
+@font-face{font-family:VazirUI;src:url("fonts/Vazirmatn-Medium.ttf") format("truetype");font-weight:500 700;font-display:swap}
+@font-face{font-family:EstedadUI;src:url("fonts/Estedad-Regular.ttf") format("truetype");font-weight:400;font-display:swap}
+@font-face{font-family:EstedadUI;src:url("fonts/Estedad-Medium.ttf") format("truetype");font-weight:500 900;font-display:swap}
+:root{color-scheme:dark;--bg:#080b10;--surface:#10151d;--surface2:#151c26;--surface3:#0d1219;--border:#222b38;--ink:#f5f7fa;--muted:#8993a3;--accent:#7c5cff;--accent2:#32d6a0;--danger:#ff6b7a;--shadow:rgba(0,0,0,.22)}
+:root[data-theme="light"]{color-scheme:light;--bg:#f5f7fb;--surface:#fff;--surface2:#f1f4f8;--surface3:#e9eef5;--border:#dfe4ec;--ink:#171b25;--muted:#687286;--accent:#7057f5;--accent2:#148e6d;--danger:#c53b4a;--shadow:rgba(40,55,80,.12)}
+*{box-sizing:border-box}
+html,body{min-height:100%}
+body{margin:0;background:radial-gradient(circle at 50% -12%,rgba(124,92,255,.11),transparent 34%),var(--bg);color:var(--ink);font:14px/1.65 VazirUI,sans-serif;transition:background .2s,color .2s}
+.wrap{max-width:1160px;margin:auto;padding:28px 20px 70px}
+header{display:flex;align-items:center;justify-content:space-between;gap:20px;margin-bottom:18px}
+h1{margin:0;font:700 26px/1.2 EstedadUI,sans-serif;letter-spacing:-.2px}
+.sub{margin-top:7px;color:var(--muted);font-size:11px}
+.header-actions{display:flex;align-items:center;gap:9px}
+.status-pill{display:flex;align-items:center;gap:7px;padding:8px 11px;border:1px solid var(--border);border-radius:12px;background:var(--surface);color:var(--muted);font-size:11px;white-space:nowrap}
+.dot{width:7px;height:7px;border-radius:50%;background:var(--danger);box-shadow:0 0 0 3px color-mix(in srgb,var(--danger) 12%,transparent)}
+.dot.ok{background:var(--accent2);box-shadow:0 0 0 3px color-mix(in srgb,var(--accent2) 12%,transparent)}
+.theme-btn{width:38px;height:38px;border:1px solid var(--border);border-radius:12px;background:var(--surface);color:var(--ink);font-size:16px;cursor:pointer;box-shadow:0 7px 20px var(--shadow);transition:.15s}
+.theme-btn:hover{border-color:var(--accent);transform:translateY(-1px)}
+.toolbar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:15px}
+button{border:1px solid var(--border);background:var(--surface);color:var(--ink);border-radius:11px;padding:9px 13px;cursor:pointer;font:500 12px VazirUI,sans-serif;transition:.15s}
+button:hover{background:var(--surface2);border-color:color-mix(in srgb,var(--accent) 40%,var(--border));transform:translateY(-1px)}
+button:disabled{opacity:.55;cursor:progress;transform:none}
+.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+.primary:hover{background:var(--accent);filter:brightness(1.06)}
+.info{margin:0 0 18px;padding:11px 13px;border:1px solid var(--border);border-radius:13px;background:var(--surface);color:var(--muted);font-size:11px}
+.info b{color:var(--ink)}
+.board{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:14px}
+.scene{background:var(--surface);border:1px solid var(--border);border-radius:17px;overflow:hidden;box-shadow:0 15px 38px var(--shadow)}
+.scene img,.scene .placeholder{width:100%;aspect-ratio:16/9;object-fit:cover;display:block;background:var(--surface3)}
+.scene .placeholder{display:grid;place-items:center;color:var(--muted);font-size:12px}
+.body{padding:13px 14px 15px}
+.time{font:700 11px ui-monospace,SFMono-Regular,Menlo,monospace;color:color-mix(in srgb,var(--accent) 75%,var(--ink))}
+.orig{margin-top:8px;color:var(--ink);line-height:1.7}
+.fa{margin-top:7px;color:var(--accent2);font-weight:700;line-height:1.75}
+.small{margin-top:9px;color:var(--muted);font-size:10px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.empty{grid-column:1/-1;text-align:center;color:var(--muted);padding:70px 20px;border:1px dashed var(--border);border-radius:17px;background:var(--surface)}
+@media(max-width:700px){.wrap{padding:20px 13px 50px}header{align-items:flex-start}.status-pill{display:none}.board{grid-template-columns:1fr}.toolbar button{flex:1}.sub{max-width:260px}}
+</style>
+<link rel="stylesheet" href="starfield.css"/><style id="sfy-sky">html:not([data-theme="light"]){background:radial-gradient(ellipse at 50% -10%,#1B2735,#090A0F) fixed!important}html[data-theme="light"]{background:#fafafa!important}body{background:transparent!important;isolation:isolate}body>.sfy-stars{z-index:-1}</style><style id="sfy-responsive">/* Phone width: the header controls wrap under the title instead of running off the screen. */
+header{flex-wrap:wrap;row-gap:12px}
+.header-actions{flex-wrap:wrap}
+</style>
+</head>
+<body><div class="sfy-stars" aria-hidden="true"><i class="l1"></i><i class="l2"></i><i class="l3"></i><i class="l4"></i></div>
+<main class="wrap">
+<header>
+  <div>
+    <h1>🎬 Storyboard</h1>
+    <div class="sub">صحنه‌های ترجمه‌شدهٔ ویدیوی در حال پخش را در یک برگه جمع کن. هر صحنه زمان، جملهٔ اصلی و ترجمه‌اش را دارد و روی همین مرورگر می‌ماند.</div>
+  </div>
+  <div class="header-actions">
+    <div id="sourceStatus" class="status-pill"><span id="sourceDot" class="dot"></span><span id="sourceText">در حال پیدا کردن ویدیو…</span></div>
+    <button id="themeToggle" class="theme-btn" type="button" title="تغییر پوسته" aria-label="تغییر پوسته">🌙</button>
+  </div>
+</header>
+<div class="toolbar">
+  <button id="addCurrent" class="primary">افزودن فریم فعلی</button>
+  <button id="build">ساخت از زیرنویس ویدیو</button>
+  <button id="clear">پاک کردن Storyboard</button>
+  <button id="export">خروجی JSON</button>
+</div>
+<div class="info" id="status">در حال آماده‌سازی…</div>
+<section id="board" class="board"></section>
+</main>
+<script src="ui-language.js"></script><script src="storyboard.js"></script>
+</body>
+</html>

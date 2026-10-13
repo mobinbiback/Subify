@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Subify • خلاصهٔ ویدیو</title>
+<link rel="stylesheet" href="ai-pages.css">
+<link rel="stylesheet" href="starfield.css">
+<style id="sfy-sky">html:not([data-theme="light"]){background:radial-gradient(ellipse at 50% -10%,#1B2735,#090A0F) fixed!important}html[data-theme="light"]{background:#fafafa!important}body{background:transparent!important;isolation:isolate}body>.sfy-stars{z-index:-1}</style>
+</head>
+<body>
+<div class="sfy-stars" aria-hidden="true"><i class="l1"></i><i class="l2"></i><i class="l3"></i><i class="l4"></i></div>
+<a class="skip" href="#main">رفتن به محتوا</a>
+<header class="ai-head">
+  <div>
+    <h1>خلاصهٔ ویدیو</h1>
+    <p class="ai-sub">خلاصه، نکته‌های کلیدی و کلمات تازه از زیرنویس همین ویدیو.</p>
+  </div>
+  <div class="header-actions"></div>
+</header>
+<nav class="ai-nav" aria-label="بخش‌های هوش مصنوعی">
+  <a href="chat.html">گفت‌وگو</a>
+  <a href="summary.html" aria-current="page">خلاصه</a>
+  <a href="roleplay.html">نقش‌آفرینی</a>
+  <a href="writer.html">نوشتن</a>
+  <a href="shadow.html">تلفظ</a>
+</nav>
+<main id="main" class="ai-main">
+  <section id="ctx" class="ai-ctx" aria-live="polite"></section>
+
+  <section class="ai-card" aria-labelledby="make-title">
+    <div class="ai-card-head">
+      <h2 id="make-title">ساختن خلاصه</h2>
+      <div class="ai-row">
+        <button id="make" class="ai-btn ai-btn--primary" type="button">ساختن خلاصه</button>
+        <button id="copy" class="ai-btn" type="button" hidden>کپی خلاصه</button>
+      </div>
+    </div>
+    <p id="status" class="ai-status" role="status"></p>
+  </section>
+
+  <div id="result" class="ai-stack" hidden>
+    <section class="ai-card" aria-labelledby="short-title">
+      <h2 id="short-title">خلاصهٔ کوتاه</h2>
+      <p id="short" class="ai-item-meaning ai-block"></p>
+    </section>
+    <section class="ai-card" aria-labelledby="detail-title">
+      <h2 id="detail-title">خلاصهٔ کامل</h2>
+      <div id="detailed" class="ai-block"></div>
+    </section>
+    <section class="ai-card" aria-labelledby="points-title">
+      <h2 id="points-title">نکته‌های کلیدی</h2>
+      <ul id="points" class="ai-list ai-block"></ul>
+    </section>
+    <section class="ai-card" aria-labelledby="words-title">
+      <h2 id="words-title">کلمات تازه و مفید</h2>
+      <div id="words" class="ai-list ai-block"></div>
+    </section>
+  </div>
+</main>
+<script src="learning-core.js"></script>
+<script src="ui-language.js"></script>
+<script src="ai-core.js"></script>
+<script src="summary.js"></script>
+</body>
+</html>

@@ -1,0 +1,170 @@
+<!doctype html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Subify • نقش‌آفرینی</title>
+<link rel="stylesheet" href="ai-pages.css">
+<link rel="stylesheet" href="starfield.css">
+<style id="sfy-sky">html:not([data-theme="light"]){background:radial-gradient(ellipse at 50% -10%,#1B2735,#090A0F) fixed!important}html[data-theme="light"]{background:#fafafa!important}body{background:transparent!important;isolation:isolate}body>.sfy-stars{z-index:-1}</style>
+</head>
+<body>
+<div class="sfy-stars" aria-hidden="true"><i class="l1"></i><i class="l2"></i><i class="l3"></i><i class="l4"></i></div>
+<a class="skip" href="#main">رفتن به محتوا</a>
+<header class="ai-head">
+  <div>
+    <h1>نقش‌آفرینی</h1>
+    <p class="ai-sub">یک موقعیت را انتخاب کن و به زبان ویدیو گفت‌وگو کن. هر وقت خواستی، گزارش پایان گفت‌وگو را بگیر.</p>
+  </div>
+  <div class="header-actions"></div>
+</header>
+<nav class="ai-nav" aria-label="بخش‌های هوش مصنوعی">
+  <a href="chat.html">گفت‌وگو</a>
+  <a href="summary.html">خلاصه</a>
+  <a href="roleplay.html" aria-current="page">نقش‌آفرینی</a>
+  <a href="writer.html">نوشتن</a>
+  <a href="shadow.html">تلفظ</a>
+</nav>
+<main id="main" class="ai-main">
+  <section id="ctx" class="ai-ctx" aria-live="polite" hidden></section>
+
+  <section id="setup" class="ai-card ai-stack" aria-labelledby="setup-title">
+    <h2 id="setup-title">موقعیت گفت‌وگو</h2>
+    <div id="presets" class="ai-grid2" role="group" aria-label="موقعیت آماده"></div>
+
+    <div id="custom-box" class="ai-field" hidden>
+      <label for="scene">موقعیت دلخواه را بنویس</label>
+      <textarea id="scene" class="ai-textarea" rows="3" maxlength="500" placeholder="مثلاً: من در یک فروشگاه لباس هستم و می‌خواهم سایز دیگری بگیرم."></textarea>
+    </div>
+
+    <div class="ai-grid2">
+      <div class="ai-field">
+        <label for="user-role">نقش تو</label>
+        <input id="user-role" class="ai-input" type="text" maxlength="60">
+      </div>
+      <div class="ai-field">
+        <label for="partner-role">نقش طرف مقابل</label>
+        <input id="partner-role" class="ai-input" type="text" maxlength="60">
+      </div>
+      <div class="ai-field">
+        <label for="atmosphere">فضای گفت‌وگو</label>
+        <select id="atmosphere" class="ai-select">
+          <option value="friendly">دوستانه</option>
+          <option value="formal">رسمی</option>
+          <option value="challenging">چالش‌برانگیز</option>
+        </select>
+      </div>
+      <div class="ai-field">
+        <label for="length">طول پاسخ‌ها</label>
+        <select id="length" class="ai-select">
+          <option value="short">کوتاه</option>
+          <option value="medium" selected>متوسط</option>
+          <option value="long">بلند</option>
+        </select>
+      </div>
+      <div class="ai-field">
+        <label for="starter">چه کسی شروع کند؟</label>
+        <select id="starter" class="ai-select">
+          <option value="partner">طرف مقابل</option>
+          <option value="me">من</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="ai-stack">
+      <label class="ai-row"><input id="tips" type="checkbox" checked> <span>بعد از هر پیام، یک نکتهٔ کوتاه بده</span></label>
+      <label id="from-video-row" class="ai-row"><input id="from-video" type="checkbox"> <span>موضوع را از ویدیوی فعلی بگیر</span></label>
+      <label id="speak-row" class="ai-row"><input id="speak" type="checkbox" checked> <span>جمله‌های طرف مقابل را با صدا بخوان</span></label>
+      <p id="video-note" class="ai-muted ai-small"></p>
+      <p id="voice-support" class="ai-muted ai-small" hidden></p>
+    </div>
+
+    <div class="ai-row ai-row-between">
+      <span id="setup-status" class="ai-status" role="status"></span>
+      <button id="start" class="ai-btn ai-btn--primary" type="button">شروع گفت‌وگو</button>
+    </div>
+  </section>
+
+  <section id="chat" class="ai-card ai-stack" aria-labelledby="chat-title" hidden>
+    <div class="ai-card-head">
+      <div>
+        <h2 id="chat-title">گفت‌وگو</h2>
+        <p id="chat-sub" class="ai-muted ai-small"></p>
+      </div>
+      <div class="ai-btnrow">
+        <button id="end" class="ai-btn" type="button">پایان و گزارش</button>
+        <button id="again" class="ai-btn ai-btn--ghost" type="button">گفت‌وگوی تازه</button>
+      </div>
+    </div>
+    <div id="log" class="ai-log" role="log" aria-live="polite" aria-relevant="additions"></div>
+    <form id="form" class="ai-field" autocomplete="off">
+      <label for="message">پیامت را به زبان ویدیو بنویس</label>
+      <textarea id="message" class="ai-textarea" rows="2" maxlength="800"></textarea>
+      <div class="ai-row ai-row-between">
+        <span class="ai-muted ai-small">Enter یعنی ارسال، Shift+Enter یعنی خط جدید</span>
+        <div class="ai-btnrow">
+          <button id="mic" class="ai-btn" type="button" aria-pressed="false">جواب با صدا</button>
+          <button id="send" class="ai-btn ai-btn--primary" type="submit">ارسال</button>
+        </div>
+      </div>
+      <p id="voice-note" class="ai-status" role="status"></p>
+      <p id="chat-status" class="ai-status" role="status"></p>
+    </form>
+  </section>
+
+  <section id="report" class="ai-card ai-stack" aria-labelledby="report-title" hidden>
+    <div class="ai-card-head">
+      <h2 id="report-title">گزارش گفت‌وگو</h2>
+      <div class="ai-btnrow">
+        <button id="copy" class="ai-btn" type="button">کپی گزارش</button>
+        <button id="word" class="ai-btn" type="button">دانلود Word</button>
+      </div>
+    </div>
+    <div class="ai-stack">
+      <label class="ai-row"><input id="rep-transcript" type="checkbox"> <span>گفت‌وگو هم بیاید</span></label>
+      <p class="ai-muted ai-small">این بخش جمله‌های خودت را هم دارد.</p>
+    </div>
+    <p id="rep-summary" class="ai-block"></p>
+    <div>
+      <h3 class="ai-small">نقطه‌های قوت</h3>
+      <ul id="rep-strengths" class="ai-list ai-block"></ul>
+    </div>
+    <div id="rep-areas-wrap">
+      <h3 class="ai-small">پنج بخش زبانی</h3>
+      <div id="rep-areas" class="ai-list ai-block"></div>
+    </div>
+    <div>
+      <h3 class="ai-small">اصلاح‌ها</h3>
+      <div id="rep-fixes" class="ai-list ai-block"></div>
+    </div>
+    <div>
+      <div class="ai-row ai-row-between">
+        <h3 class="ai-small">کلمه‌های تازه</h3>
+        <button id="save-all" class="ai-btn ai-btn--ghost ai-small" type="button">ذخیره همه</button>
+      </div>
+      <div id="rep-words" class="ai-list ai-block"></div>
+    </div>
+    <div id="rep-level-row" class="ai-kv">
+      <b>سطح تقریبی</b>
+      <span id="rep-level"></span>
+    </div>
+    <div class="ai-kv">
+      <b>قدم بعدی</b>
+      <span id="rep-next"></span>
+    </div>
+    <div id="rep-check-row" class="ai-kv">
+      <b>نشانهٔ موفقیت</b>
+      <span id="rep-check"></span>
+    </div>
+    <p id="rep-status" class="ai-status" role="status"></p>
+  </section>
+</main>
+<script src="learning-core.js"></script>
+<script src="ui-language.js"></script>
+<script src="select-menu.js"></script>
+<script src="ai-core.js"></script>
+<script src="roleplay-core.js"></script>
+<script src="word-export.js"></script>
+<script src="roleplay.js"></script>
+</body>
+</html>

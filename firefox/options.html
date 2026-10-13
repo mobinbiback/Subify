@@ -1,0 +1,566 @@
+<!doctype html>
+<html lang="fa" dir="rtl">
+<head>
+  <meta name="sby-build" content="4d6f62696e626962616b">
+
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Subify lite | مدیریت پیشرفته</title>
+<style>
+@font-face{font-family:"VazirUI";src:url("fonts/Vazirmatn-Regular.ttf") format("truetype");font-weight:400;font-style:normal;font-display:swap}
+@font-face{font-family:"VazirUI";src:url("fonts/Vazirmatn-Medium.ttf") format("truetype");font-weight:500 700;font-style:normal;font-display:swap}
+@font-face{font-family:"VazirUI";src:url("fonts/Vazirmatn-Light.ttf") format("truetype");font-weight:300;font-style:normal;font-display:swap}
+@font-face{font-family:"EstedadUI";src:url("fonts/Estedad-Regular.ttf") format("truetype");font-weight:400;font-style:normal;font-display:swap}
+@font-face{font-family:"EstedadUI";src:url("fonts/Estedad-Medium.ttf") format("truetype");font-weight:500 800;font-style:normal;font-display:swap}
+:root{color-scheme:dark;--bg:#0b0f15;--surface:#121826;--surface2:#171f2e;--surface3:#0d1219;--border:#232e3f;--ink:#f5f7fa;--muted:#aab3c2;--accent:#7c5cff;--accent-soft:#201b3b;--green:#25d8a0;--red:#ff6b7a;--warning:#e6b866;--warning-bg:#2b2414;--danger-bg:#2b171b;--shadow:0 16px 44px rgba(0,0,0,.34)}
+:root[data-theme="light"]{color-scheme:light;--bg:#f6f7fb;--surface:#fff;--surface2:#f8f9fc;--surface3:#f1f3f8;--border:#e4e7ef;--ink:#171a23;--muted:#586174;--accent:#5446d8;--accent-soft:#efedff;--green:#158a63;--red:#d94a59;--warning:#8b6326;--warning-bg:#fff8e9;--danger-bg:#fff1f2;--shadow:0 8px 24px rgba(25,30,50,.055)}
+*{box-sizing:border-box}html{scroll-behavior:smooth}html,body{margin:0;padding:0}body{background:var(--bg);color:var(--ink);font:14px/1.75 "VazirUI",sans-serif;-webkit-font-smoothing:antialiased}.wrap{max-width:980px;margin:auto;padding:34px 28px 72px}
+header{display:flex;align-items:center;justify-content:space-between;gap:24px;padding:4px 0 22px;border-bottom:1px solid var(--border)}header>div:first-child{min-width:0}h1{margin:0;color:var(--ink);font:700 27px/1 "EstedadUI","VazirUI",sans-serif;letter-spacing:-.02em}header p{margin:6px 0 0;color:var(--muted);font-size:12px}header .header-actions{display:flex;align-items:center;gap:8px}.theme-btn{width:38px;height:38px;padding:0;border:1px solid var(--border);border-radius:11px;background:var(--surface);color:var(--ink);font-size:16px;cursor:pointer;transition:.15s}.theme-btn:hover{border-color:var(--accent);transform:translateY(-1px)}header .badge{padding:6px 11px;border:1px solid var(--border);border-radius:999px;background:var(--surface);font-size:11px;color:var(--muted);white-space:nowrap}
+.section{margin-top:26px}.section h2{display:flex;align-items:center;gap:8px;margin:0 0 10px;color:var(--ink);font:700 13px/1.4 "EstedadUI","VazirUI",sans-serif}.section h2:before{content:"";width:3px;height:14px;border-radius:99px;background:var(--accent)}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:18px;box-shadow:var(--shadow);padding:20px}.intro{display:flex;justify-content:space-between;gap:18px;align-items:center}.intro strong{display:block;font-size:13px}.intro p{margin:4px 0 0;color:var(--muted);font-size:11px;line-height:1.8}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}.field{display:flex;flex-direction:column;gap:7px;min-width:0}.wide{grid-column:1/-1}label{font-size:11px;font-weight:500;color:#4d5565}input,select{width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:11px;background:var(--surface);color:var(--ink);font:inherit;font-size:12px;min-height:42px;transition:border-color .15s,box-shadow .15s,background .15s}input::placeholder{color:#a0a7b5}input:hover,select:hover{border-color:#cfd4df}input:focus,select:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px rgba(101,88,232,.11)}input[type=range]{padding:0;min-height:auto;accent-color:var(--accent);cursor:pointer;background:transparent;box-shadow:none;border:0}.hint{font-size:10px;color:var(--muted);line-height:1.65}
+.check{display:grid;grid-template-columns:auto 1fr;align-items:center;gap:9px;padding:11px 12px;border:1px solid var(--border);border-radius:12px;background:var(--surface2)}.check input{width:17px;height:17px;min-height:0;margin:0;accent-color:var(--accent)}.check label{cursor:pointer;color:var(--ink)}
+.notice{padding:12px 14px;border-radius:12px;background:var(--warning-bg);border:1px solid #f0dfb9;color:var(--warning);font-size:11px;line-height:1.85}.subtle{margin-top:18px;color:var(--muted);font-size:10px;text-align:center}.divider{height:1px;background:var(--border);margin:16px 0}.actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}.actions button{min-height:40px;padding:9px 15px;border:1px solid var(--border);background:var(--surface);color:var(--ink);border-radius:11px;font:600 11px/1.2 "VazirUI",sans-serif;cursor:pointer;transition:.15s}.actions button:hover{border-color:#cfd3df;background:var(--surface2)}.actions .primary{background:var(--accent);border-color:var(--accent);color:#fff;box-shadow:0 5px 14px rgba(101,88,232,.16)}.actions .primary:hover{filter:brightness(.97)}.saved{color:var(--green);font-size:11px;opacity:0;align-self:center;transition:opacity .2s}
+.diag{margin-top:12px;min-height:96px;max-height:280px;overflow:auto;padding:13px 14px;background:#11151d;border:1px solid #202634;border-radius:12px;color:#c7cedb;font:11px/1.65 ui-monospace,SFMono-Regular,Consolas,monospace}.ok{color:var(--green)}.err{color:var(--red)}
+#custom-providers .notice{margin-bottom:12px}#custom-providers .grid[style]{margin-top:0!important}.field[style]{max-width:320px!important;margin-bottom:12px!important}.actions[style]{margin-top:8px!important}.notice[style]{margin-top:10px!important}
+@media(max-width:760px){.wrap{padding:24px 16px 56px}.grid{grid-template-columns:1fr}.wide{grid-column:auto}.intro{align-items:flex-start;flex-direction:column}}
+
+/* SUBIFY UI/UX REFRESH — visual-only layer. */
+:root{--bg:#080b10;--surface:#10151d;--surface2:#151c26;--surface3:#0c1118;--border:#222b38;--ink:#f5f7fa;--muted:#aab3c2;--accent:#7c5cff;--accent-ink:#b4a6ff;--accent-soft:#18152e;--green:#32d6a0;--red:#ff6878;--warning:#d6b46a;--warning-bg:#17140d;--danger-bg:#241115;--shadow:0 18px 50px rgba(0,0,0,.24)}
+:root[data-theme="light"]{--bg:#f5f6fa;--surface:#fff;--surface2:#f4f5f9;--surface3:#eceef4;--border:#e2e5ed;--ink:#161a24;--muted:#586174;--accent:#5446d8;--accent-ink:#5446d8;--accent-soft:#f0edff;--green:#0f6e52;--red:#b8323f;--warning:#8b6326;--warning-bg:#fff8e9;--danger-bg:#fff1f2;--shadow:0 14px 34px rgba(30,30,60,.08)}
+body{font-family:"VazirUI",sans-serif;background:radial-gradient(circle at 50% -10%,color-mix(in srgb,var(--accent) 8%,transparent),transparent 32%),var(--bg);color:var(--ink)}
+.wrap{max-width:1000px;padding:34px 28px 72px}
+header{padding:4px 0 22px;border-bottom:1px solid var(--border)}
+h1{font-family:"EstedadUI","VazirUI",sans-serif;font-size:28px;letter-spacing:-.025em}header p{font-size:11px}.theme-btn{border-radius:12px;background:var(--surface);box-shadow:0 5px 18px rgba(0,0,0,.08)}header .badge{border-radius:999px;background:var(--surface2);font-size:10px}
+.section{margin-top:22px}.section h2{font-family:"EstedadUI","VazirUI",sans-serif;font-size:12.5px;margin-bottom:9px}.section h2:before{width:3px;height:15px}
+.card{background:color-mix(in srgb,var(--surface) 97%,var(--accent) 3%);border:1px solid var(--border);border-radius:18px;box-shadow:var(--shadow);padding:19px}
+.intro{padding:22px}.intro strong{font-size:14px}.intro p{font-size:10.5px}
+.grid{gap:12px}.field{gap:6px}label{font-size:10.5px;color:var(--ink)}input,select{border-radius:11px;background:var(--surface);border-color:var(--border);min-height:40px;font-size:11.5px}input:focus,select:focus{border-color:var(--accent);box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 14%,transparent)}
+.hint{font-size:9.5px}.notice{border-radius:13px;font-size:10.5px;line-height:1.8;background:var(--warning-bg);border-color:color-mix(in srgb,var(--warning) 28%,var(--border));color:var(--warning)}
+.actions button{border-radius:11px;min-height:40px}.actions .primary{box-shadow:0 7px 18px color-mix(in srgb,var(--accent) 18%,transparent)}
+.check{border-radius:12px;background:var(--surface2)}.diag{border-radius:13px}
+
+/* SUBIFY AURORA GLASS 3.0 — Options visual layer only. */
+:root{
+  --bg:#05070c;--surface:rgba(13,18,28,.58);--surface2:rgba(20,27,40,.56);--surface3:rgba(8,12,19,.64);
+  --border:rgba(255,255,255,.085);--ink:#f6f8ff;--muted:#8c96a8;--accent:#8a6bff;--accent-soft:rgba(124,92,255,.13);
+  --green:#39e6b1;--red:#ff6d86;--warning:#e1bb71;--warning-bg:rgba(44,34,13,.55);--danger-bg:rgba(53,20,28,.55);
+  --shadow:0 26px 70px rgba(0,0,0,.34);
+}
+:root[data-theme="light"]{
+  --bg:#edf2f8;--surface:rgba(255,255,255,.62);--surface2:rgba(248,250,255,.64);--surface3:rgba(241,245,252,.72);
+  --border:rgba(30,38,55,.09);--ink:#161a24;--muted:#697285;--accent:#7359f6;--accent-soft:rgba(115,89,246,.09);
+  --green:#149a72;--red:#d84b60;--warning:#8b6326;--warning-bg:rgba(255,248,233,.74);--danger-bg:rgba(255,241,242,.80);
+  --shadow:0 26px 65px rgba(45,56,84,.13);
+}
+html,body{background:var(--bg)!important}
+body{position:relative;isolation:isolate;overflow-x:hidden;background:linear-gradient(180deg,#05070c,#080c14 55%,#05070c)!important}
+:root[data-theme="light"] body{background:linear-gradient(180deg,#f7f9fc,#edf2f8 72%,#eaf0f7)!important}
+body::before,body::after{content:"";position:fixed;inset:-28% -20%;z-index:-2;pointer-events:none;filter:blur(70px) saturate(135%);mix-blend-mode:screen;opacity:.48;will-change:transform}
+body::before{background:conic-gradient(from 216deg at 48% 54%,transparent 0 28deg,rgba(121,87,255,.48) 68deg,transparent 112deg,rgba(69,225,203,.34) 165deg,transparent 205deg,rgba(92,141,255,.25) 245deg,transparent 304deg,rgba(228,88,187,.20) 332deg,transparent 360deg);animation:opts-ribbon-a 50s ease-in-out infinite alternate}
+body::after{background:radial-gradient(closest-side at 22% 25%,rgba(74,224,207,.28),transparent 68%),radial-gradient(closest-side at 76% 32%,rgba(130,98,255,.34),transparent 68%),radial-gradient(closest-side at 52% 82%,rgba(255,109,196,.12),transparent 66%);animation:opts-ribbon-b 58s ease-in-out infinite alternate;opacity:.36}
+@keyframes opts-ribbon-a{0%{transform:translate(-4%,1%) rotate(-2deg) scale(1)}50%{transform:translate(3%,-2%) rotate(3deg) scale(1.05)}100%{transform:translate(-2%,4%) rotate(-1deg) scale(1.02)}}
+@keyframes opts-ribbon-b{0%{transform:translate(3%,-2%) scale(1)}50%{transform:translate(-2%,4%) scale(1.08)}100%{transform:translate(4%,1%) scale(1.03)}}
+
+.wrap{position:relative;z-index:1;max-width:1120px!important;padding:40px 32px 84px!important}
+header{padding:8px 0 24px!important;border-bottom:1px solid var(--border)!important;position:relative}
+header::after{content:"";position:absolute;left:0;right:0;bottom:-1px;height:1px;background:linear-gradient(90deg,transparent,rgba(138,107,255,.44),rgba(88,216,255,.18),transparent)}
+h1{font-size:31px!important;letter-spacing:-.04em!important}
+header p{font-size:11px!important;opacity:.82}
+header .header-actions{gap:8px!important}.theme-btn{background:rgba(255,255,255,.045)!important;border-color:var(--border)!important;border-radius:13px!important;backdrop-filter:blur(18px);box-shadow:inset 0 1px 0 rgba(255,255,255,.06),0 10px 26px rgba(0,0,0,.12)}
+header .badge{background:rgba(255,255,255,.045)!important;border-color:var(--border)!important;backdrop-filter:blur(18px);padding:7px 12px!important}
+.section{margin-top:28px!important}.section h2{font-size:13px!important;margin-bottom:11px!important}.section h2:before{background:linear-gradient(180deg,var(--accent),#58d8ff)!important;box-shadow:0 0 16px rgba(124,92,255,.35)}
+.card{
+  background:linear-gradient(180deg,rgba(255,255,255,.055),rgba(255,255,255,.018))!important;
+  border:1px solid var(--border)!important;border-radius:22px!important;box-shadow:var(--shadow),inset 0 1px 0 rgba(255,255,255,.06)!important;
+  backdrop-filter:blur(24px) saturate(135%)!important;-webkit-backdrop-filter:blur(24px) saturate(135%)!important;
+  padding:22px!important;
+}
+.intro{position:relative;overflow:hidden;padding:25px!important}.intro::before{content:"";position:absolute;width:260px;height:180px;left:-50px;top:-90px;background:radial-gradient(circle,rgba(124,92,255,.20),transparent 68%);filter:blur(10px);pointer-events:none}.intro strong{font-size:14px!important;position:relative}.intro p{font-size:10.7px!important;position:relative}
+.grid{gap:14px!important}.field{gap:7px!important}label{font-size:10.6px!important;color:var(--ink)!important}input,select{min-height:44px!important;border-radius:13px!important;background:rgba(6,10,16,.46)!important;border-color:var(--border)!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.04)!important;color:var(--ink)!important;font-size:11.6px!important;backdrop-filter:blur(14px)}
+:root[data-theme="light"] input,:root[data-theme="light"] select{background:rgba(255,255,255,.66)!important}
+input:focus,select:focus{border-color:rgba(138,107,255,.60)!important;box-shadow:0 0 0 3px rgba(124,92,255,.10),0 0 0 1px rgba(138,107,255,.18) inset!important}
+input[type="range"]{accent-color:var(--accent)!important}.hint{font-size:9.5px!important}
+.notice{border-radius:14px!important;font-size:10.3px!important;background:var(--warning-bg)!important;border-color:color-mix(in srgb,var(--warning) 24%,var(--border))!important;backdrop-filter:blur(14px)!important}
+.check{border-radius:14px!important;background:rgba(255,255,255,.035)!important;border-color:var(--border)!important}
+.actions button{border-radius:12px!important;min-height:42px!important;background:rgba(255,255,255,.04)!important;border-color:var(--border)!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.05)}
+.actions button:hover{transform:translateY(-1px);background:rgba(255,255,255,.07)!important;border-color:rgba(255,255,255,.14)!important}
+.actions .primary{background:linear-gradient(135deg,#6a4fe6,#5a3fd0)!important;border-color:rgba(164,146,255,.34)!important;box-shadow:0 11px 26px rgba(111,83,246,.23),inset 0 1px 0 rgba(255,255,255,.15)!important}
+.diag{border-radius:15px!important;background:rgba(5,9,14,.62)!important;border-color:var(--border)!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.035)}
+.divider{background:var(--border)!important}
+.subtle{opacity:.72}
+#custom-providers .card .notice{margin-bottom:12px!important}
+@media(max-width:760px){.wrap{padding:24px 15px 56px!important}}
+@media (prefers-reduced-motion:reduce){body::before,body::after{animation:none!important}.actions button{transition:none!important}}
+
+/* Checkboxes: small square boxes. The generic input rules above are for text fields and stretch them. */
+input[type=checkbox]{width:18px!important;height:18px!important;min-height:0!important;padding:0!important;margin:0;flex:none;accent-color:var(--accent);box-shadow:none!important;background:transparent!important;border-radius:5px}
+.check-row{display:flex;align-items:center;gap:10px;cursor:pointer;font-size:12px!important;color:var(--ink);padding:10px 12px;border:1px solid var(--border);border-radius:12px;background:var(--surface2)}
+.check-row span{font-size:12px}
+</style>
+
+<style>
+.custom-flow{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:12px 0 10px}
+.custom-flow span{display:flex;align-items:center;gap:7px;padding:9px 10px;border:1px solid var(--border);border-radius:12px;background:rgba(255,255,255,.035);font-size:10px;color:var(--ink)}
+.custom-flow b{display:grid;place-items:center;flex:none;width:22px;height:22px;border-radius:50%;background:linear-gradient(135deg,var(--accent),#58d8ff);color:#fff;font-size:9px}
+@media(max-width:760px){.custom-flow{grid-template-columns:1fr 1fr}}
+.section-heading-row{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.section-heading-row h2{margin:0}
+.section-badge{padding:5px 8px;border-radius:999px;border:1px solid rgba(124,92,255,.20);background:rgba(124,92,255,.07);color:var(--accent);font-size:9px;white-space:nowrap}
+.custom-management-card{overflow:hidden}
+.custom-intro{display:flex;align-items:flex-start;gap:11px;padding:2px 0 10px}
+.custom-intro-icon{width:42px;height:42px;border-radius:14px;display:grid;place-items:center;flex:none;font-size:21px;color:#fff;background:linear-gradient(145deg,var(--accent),#58d8ff);box-shadow:0 10px 24px rgba(111,83,246,.18)}
+.custom-intro h3{margin:0 0 4px;font-size:14px;color:var(--ink)}
+.custom-intro p{margin:0;color:var(--muted);font-size:10px;line-height:1.8}
+.novice-note{margin-top:6px!important}
+@media(max-width:760px){.section-heading-row{align-items:flex-start}.custom-intro h3{font-size:13px}}
+
+/* SUBIFY LIQUID GLASS CONTROLS 3.2 — options theme control + admin polish only. */
+#themeToggle{
+  position:relative!important;width:66px!important;height:34px!important;padding:0!important;border-radius:999px!important;
+  font-size:0!important;overflow:hidden;cursor:pointer!important;
+  background:linear-gradient(135deg,rgba(255,255,255,.13),rgba(255,255,255,.045))!important;
+  border:1px solid rgba(255,255,255,.16)!important;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.13),inset 0 -1px 0 rgba(0,0,0,.16),0 8px 22px rgba(0,0,0,.22)!important;
+  backdrop-filter:blur(16px) saturate(170%)!important;-webkit-backdrop-filter:blur(16px) saturate(170%)!important;
+  transition:background .28s ease,border-color .28s ease,box-shadow .28s ease,transform .18s ease!important;
+}
+#themeToggle::before{content:"";position:absolute;top:3px;right:3px;width:26px;height:26px;border-radius:50%;background:linear-gradient(145deg,rgba(255,255,255,.92),rgba(215,224,236,.64));border:1px solid rgba(255,255,255,.72);box-shadow:0 3px 10px rgba(0,0,0,.24),inset 0 1px 1px rgba(255,255,255,.9);transition:transform .36s cubic-bezier(.34,1.45,.5,1),background .28s ease}
+#themeToggle::after{content:"☾";position:absolute;left:10px;top:50%;transform:translateY(-52%);font-size:15px;line-height:1;color:rgba(255,255,255,.78);text-shadow:0 1px 5px rgba(0,0,0,.28);transition:.28s ease}
+#themeToggle:hover{transform:translateY(-1px) scale(1.02)!important;border-color:rgba(115,89,246,.42)!important}
+#themeToggle:active{transform:scale(.98)!important}
+:root[data-theme="light"] #themeToggle{background:linear-gradient(135deg,rgba(255,255,255,.88),rgba(225,232,244,.66))!important;border-color:rgba(50,63,84,.14)!important;box-shadow:inset 0 1px 0 #fff,0 8px 22px rgba(50,65,95,.13)!important}
+:root[data-theme="light"] #themeToggle::before{transform:translateX(-32px);background:linear-gradient(145deg,#fff,#e8eef7);box-shadow:0 3px 10px rgba(40,55,80,.18),inset 0 1px 1px #fff}
+:root[data-theme="light"] #themeToggle::after{content:"☀";left:auto;right:10px;color:#6d5bf3;text-shadow:none}
+
+/* Admin surfaces: same frosted language as the popup, without touching behavior. */
+.card,.intro,.custom-management-card{backdrop-filter:blur(22px) saturate(145%);-webkit-backdrop-filter:blur(22px) saturate(145%);box-shadow:var(--shadow),inset 0 1px 0 rgba(255,255,255,.07)!important}
+.section-heading-row{margin-bottom:2px}
+.custom-management-card{border-radius:22px!important;background:linear-gradient(145deg,rgba(255,255,255,.075),rgba(255,255,255,.025))!important}
+.custom-intro-icon{border-radius:16px!important;box-shadow:0 12px 28px rgba(111,83,246,.22),inset 0 1px 0 rgba(255,255,255,.20)!important}
+.custom-flow span{backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);box-shadow:inset 0 1px 0 rgba(255,255,255,.06)}
+.actions .primary{box-shadow:0 10px 26px color-mix(in srgb,var(--accent) 22%,transparent),inset 0 1px 0 rgba(255,255,255,.14)!important}
+.subify-site-link{display:inline-flex;align-items:center;gap:7px;margin-top:18px;color:var(--muted)!important;text-decoration:none;font-size:11px;opacity:.82;transition:.18s ease}
+.subify-site-link:hover{color:var(--accent)!important;opacity:1}
+</style>
+<link rel="stylesheet" href="starfield.css"/><style id="sfy-sky">html:not([data-theme="light"]){background:radial-gradient(ellipse at 50% -10%,#1B2735,#090A0F) fixed!important}html[data-theme="light"]{background:#fafafa!important}body{background:transparent!important;isolation:isolate}body>.sfy-stars{z-index:-1}</style><style id="sfy-dash">
+/* SUBIFY EXTENSION MANAGEMENT PANEL — layout + navigation (spec 21, 22, 51, 54).
+   Same tokens, glass cards and fonts as the rest of the options page; only the structure changes. */
+.wrap{max-width:1180px!important}
+.dash-layout{display:grid;grid-template-columns:212px minmax(0,1fr);gap:26px;align-items:start;margin-top:26px}
+.dash-main{min-width:0}
+.dash-nav{position:sticky;top:18px;display:flex;flex-direction:column;gap:4px;padding:10px;border-radius:22px;border:1px solid var(--border);background:linear-gradient(180deg,rgba(255,255,255,.055),rgba(255,255,255,.018));box-shadow:var(--shadow);backdrop-filter:blur(22px) saturate(140%);-webkit-backdrop-filter:blur(22px) saturate(140%)}
+.dash-nav a{display:flex;align-items:center;gap:11px;min-height:42px;padding:8px 12px;border-radius:14px;color:var(--muted);text-decoration:none;font-size:12px;font-weight:600;white-space:nowrap;transition:background-color .16s,color .16s,box-shadow .16s}
+.dash-nav a:hover{color:var(--ink);background:rgba(255,255,255,.05)}
+.dash-nav a:focus-visible,.quick-links a:focus-visible,.help-link:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.dash-nav a.is-active{color:var(--ink);background:linear-gradient(135deg,rgba(124,92,255,.24),rgba(88,216,255,.07));box-shadow:inset 0 0 0 1px rgba(138,107,255,.36)}
+.dash-nav svg{width:18px;height:18px;flex:none;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.dash-panel{display:none}
+.dash-panel.is-active{display:block}
+.dash-panel .section{margin-top:20px!important}
+.dash-panel .section:first-child{margin-top:0!important}
+.panel-title{margin:0 0 4px}
+.panel-title h2{margin:0;font:700 22px/1.3 "EstedadUI","VazirUI",sans-serif;letter-spacing:-.02em;color:var(--ink)}
+.panel-title p{margin:5px 0 0;color:var(--muted);font-size:11px;line-height:1.85;max-width:620px}
+.kpi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(168px,1fr));gap:12px;margin-top:18px}
+.kpi{padding:16px!important;display:flex;flex-direction:column;gap:5px;min-width:0}
+.kpi-label{font-size:10.5px;color:var(--muted)}
+.kpi b{font:700 18px/1.35 "EstedadUI","VazirUI",sans-serif;color:var(--ink);overflow-wrap:anywhere}
+.kpi small{font-size:10px;color:var(--muted);line-height:1.65;overflow-wrap:anywhere}
+.quick-links{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px}
+.quick-links a{display:flex;flex-direction:column;gap:4px;padding:14px;border-radius:16px;border:1px solid var(--border);background:rgba(255,255,255,.035);color:var(--ink);text-decoration:none;font-size:12px;font-weight:700;min-width:0;transition:border-color .16s,transform .16s}
+.quick-links a small{font-weight:400;color:var(--muted);font-size:10.5px;line-height:1.7;overflow-wrap:anywhere}
+.quick-links a:hover{border-color:rgba(138,107,255,.5);transform:translateY(-1px)}
+.learn-tools-lang{margin:0 0 12px;display:flex;flex-wrap:wrap;gap:6px;align-items:baseline;font-size:14px}
+.learn-tools-lang b{font-weight:700}
+.kv-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:14px 16px}
+.kv{min-width:0}
+.kv label{display:block;margin-bottom:3px;color:var(--muted)}
+.kv div{font-size:12px;color:var(--ink);overflow-wrap:anywhere}
+.mini-table{display:grid;gap:6px;font-size:11.5px}
+.mini-row{display:grid;grid-template-columns:minmax(0,1.2fr) repeat(3,minmax(0,1fr));gap:8px;padding:8px 10px;border-radius:12px;background:rgba(255,255,255,.03);border:1px solid var(--border);align-items:center;min-width:0}
+.mini-row.head{background:none;border:0;color:var(--muted);font-size:10px;padding:0 10px}
+.mini-row span{min-width:0;overflow-wrap:anywhere}
+.bar-row{display:grid;gap:5px;margin-bottom:10px}
+.bar-row .bar{height:7px;border-radius:99px;background:var(--surface2);overflow:hidden}
+.bar-row .bar i{display:block;height:100%;border-radius:99px;background:linear-gradient(90deg,var(--accent),#58d8ff)}
+.bar-row span{font-size:11px;color:var(--ink)}
+.bar-row span b{color:var(--muted);font-weight:600}
+.sfy-status-list{display:grid;gap:0}
+.sfy-status-row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 0;border-bottom:1px solid var(--border)}
+.sfy-status-row:last-child{border-bottom:0}
+.sfy-status-row>span:first-child{min-width:0}
+.sfy-pill{flex:none;display:inline-flex;align-items:center;padding:4px 10px;border-radius:999px;border:1px solid var(--border);font-size:10.5px;font-weight:700;color:var(--muted)}
+.sfy-pill.ok{color:var(--green);border-color:color-mix(in srgb,var(--green) 42%,transparent);background:color-mix(in srgb,var(--green) 9%,transparent)}
+.sfy-pill.bad{color:var(--red);border-color:color-mix(in srgb,var(--red) 42%,transparent);background:color-mix(in srgb,var(--red) 9%,transparent)}
+.adv-details{margin-top:20px;border:1px solid var(--border);border-radius:20px;padding:6px 18px 18px;background:rgba(255,255,255,.02)}
+.adv-details summary{cursor:pointer;padding:12px 0;font-weight:700;font-size:12.5px;color:var(--ink);list-style-position:inside}
+.adv-details .card{margin-top:4px}
+/* Collapsible boxes: every titled section folds, its title is the toggle. */
+.fold>summary{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:0 -6px;padding:4px 6px 6px;border-radius:14px;cursor:pointer;list-style:none;user-select:none;-webkit-tap-highlight-color:transparent;transition:background-color .16s}
+.fold>summary::-webkit-details-marker{display:none}
+.fold>summary:hover{background:color-mix(in srgb,var(--accent) 6%,transparent)}
+.fold>summary:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.fold>summary h2{margin:0!important;min-width:0;flex:1}
+.fold-chev{flex:none;position:relative;width:30px;height:30px;border-radius:999px;border:1px solid var(--border);background:var(--surface);box-shadow:var(--shadow);transition:transform .24s cubic-bezier(.2,.7,.2,1),border-color .16s}
+.fold-chev::before{content:"";position:absolute;left:50%;top:46%;width:7px;height:7px;border-right:2px solid var(--muted);border-bottom:2px solid var(--muted);transform:translate(-50%,-50%) rotate(45deg)}
+.fold[open] .fold-chev{transform:rotate(180deg);border-color:color-mix(in srgb,var(--accent) 35%,var(--border))}
+.fold-body{padding-top:12px;animation:foldIn .28s cubic-bezier(.2,.7,.2,1) both}
+@keyframes foldIn{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:none}}
+@media (prefers-reduced-motion:reduce){.fold-body,.fold-chev{animation:none!important;transition:none!important}}
+.kw{color:var(--accent);font-weight:700;padding:1px 8px;margin:0 2px;border-radius:999px;background:color-mix(in srgb,var(--accent) 13%,transparent);white-space:nowrap}
+html[data-theme="light"] .actions .primary{background:linear-gradient(135deg,#6a4fe6,#5a3fd0)!important;border-color:transparent!important;color:#fff!important}
+
+.dash-actions-row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.dash-actions-row .saved{margin-inline-start:4px}
+.dash-panel .grid .wide.actions{margin-top:4px}
+@media(max-width:900px){
+  .dash-layout{grid-template-columns:minmax(0,1fr);gap:14px;margin-top:20px}
+  .dash-nav{position:static;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:4px;margin:0;padding:7px;border-radius:18px}
+  .dash-nav a{flex-direction:column;justify-content:center;gap:4px;min-height:58px;padding:8px 4px;font-size:11px;text-align:center;white-space:normal}
+  .dash-nav a span{line-height:1.3}
+}
+@media(max-width:760px){
+  .panel-title h2{font-size:19px}
+  .mini-row{font-size:10.5px;gap:6px;padding:8px}
+}
+@media(max-width:480px){
+  header{flex-wrap:wrap;gap:14px}header>div:first-child{flex:1 1 100%}header .header-actions{flex-wrap:wrap;gap:8px}
+  .kpi-grid{grid-template-columns:1fr 1fr;gap:10px}
+  .kv-grid{grid-template-columns:1fr 1fr;gap:12px}
+  header p{display:none}
+  .kpi{padding:13px!important}
+  .kpi b{font-size:15px}
+  .quick-links{grid-template-columns:1fr 1fr}
+  .wrap{padding-inline:14px!important}
+  header h1{font-size:25px!important}
+  .mini-row{grid-template-columns:minmax(0,1.1fr) repeat(3,minmax(0,1fr))}
+}
+</style>
+<style id="key-guide-style">
+.key-guide{margin:0 0 16px;border:1px solid var(--border);border-radius:16px;padding:2px 18px 16px;background:rgba(255,255,255,.025)}
+.key-guide summary{cursor:pointer;font-weight:700;font-size:12.5px;padding:12px 0;color:var(--ink)}
+.key-guide p{margin:8px 0 0;font-size:11px;line-height:1.85;color:var(--ink)}
+.key-guide h4{margin:16px 0 4px;font-size:12px;color:var(--ink)}
+.key-guide ol{margin:6px 0 0;padding-inline-start:20px;font-size:11.5px;line-height:1.95;color:var(--ink)}
+.key-guide a{color:var(--accent);word-break:break-all}
+.key-guide-note{color:var(--muted)!important;font-size:10.5px!important}
+</style>
+<style id="r18-a11y">
+/* r18 contrast and focus: text colours that pass 4.5:1 on the cards in both themes; visible focus rings. */
+:root{--muted:#aab3c2;--accent-ink:#b4a6ff}
+:root[data-theme="light"]{--muted:#586174;--accent:#5446d8;--accent-ink:#5446d8;--red:#b8323f;--green:#0f6e52}
+header p{opacity:1}
+#account [style*="opacity:.7"],#account [style*="opacity:.8"]{opacity:1!important}
+.key-guide a{color:var(--accent-ink)}
+:root[data-theme="light"] .diag{background:#f1f4f9!important;color:#1d2433!important;border-color:#dfe4ee!important}
+:root[data-theme="light"] ::placeholder{color:#687082}
+.kw{color:var(--accent-ink)}
+.subtle{opacity:1}
+.custom-intro-icon{background:linear-gradient(145deg,#6a4fe6,#4a6fd8)!important}
+.custom-flow b{background:linear-gradient(135deg,#6a4fe6,#4a6fd8)!important}
+button:focus-visible,a:focus-visible,summary:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible,[role="switch"]:focus-visible,[tabindex]:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+</style>
+</head>
+<body><div class="sfy-stars" aria-hidden="true"><i class="l1"></i><i class="l2"></i><i class="l3"></i><i class="l4"></i></div>
+<main class="wrap">
+<header>
+  <div><h1>Subify lite</h1><p>پنل مدیریت افزونه · حساب، وضعیت، آمار و تنظیمات</p></div>
+  <div class="header-actions"><button id="themeToggle" class="theme-btn" type="button" title="تغییر پوسته" aria-label="تغییر پوسته">☀️</button><span class="badge">نسخهٔ مستقل</span></div>
+</header>
+
+<div class="dash-layout">
+  <nav class="dash-nav" aria-label="بخش‌های پنل">
+    <a href="#dashboard" data-nav="dashboard"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="2"/><rect x="14" y="3" width="7" height="7" rx="2"/><rect x="3" y="14" width="7" height="7" rx="2"/><rect x="14" y="14" width="7" height="7" rx="2"/></svg><span>داشبورد</span></a>
+    <a href="#account" data-nav="account"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6"/></svg><span>حساب من</span></a>
+    <a href="#extension" data-nav="extension"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="4"/><path d="M9 12h6M12 9v6"/></svg><span>افزونه</span></a>
+    <a href="#statistics" data-nav="statistics"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 20V12M12 20V5M19 20v-9"/></svg><span>آمار</span></a>
+    <a href="#learning" data-nav="learning"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3"/></svg><span>یادگیری</span></a>
+    <a href="#settings" data-nav="settings"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h10M18 7h2M4 17h2M10 17h10"/><circle cx="16" cy="7" r="2"/><circle cx="8" cy="17" r="2"/></svg><span>تنظیمات</span></a>
+    <a href="#help" data-nav="help"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M9.5 9.5a2.5 2.5 0 1 1 3.5 2.3c-.6.3-1 .9-1 1.6v.6M12 17h.01"/></svg><span>راهنما</span></a>
+  </nav>
+
+  <div class="dash-main">
+
+    <section class="dash-panel" data-panel="dashboard" id="dashboard">
+      <div class="panel-title"><h2>داشبورد</h2><p>خلاصهٔ حساب، وضعیت افزونه و مصرف تو در یک نگاه. همهٔ اعداد از داده‌های ذخیره‌شدهٔ همین دستگاه خوانده می‌شن.</p></div>
+      <div class="kpi-grid">
+        <div class="card kpi"><span class="kpi-label">حساب</span><b id="dbAccount">…</b><small id="dbAccountSub"></small></div>
+        <div class="card kpi"><span class="kpi-label">موتور دوبله</span><b id="dbEngine">…</b><small id="dbEngineSub"></small></div>
+        <div class="card kpi"><span class="kpi-label">دقیقهٔ صدای پردازش‌شده</span><b id="dbSeconds">…</b><small id="dbSecondsSub"></small></div>
+        <div class="card kpi"><span class="kpi-label">لغت‌های ذخیره‌شده</span><b id="dbWords">…</b><small id="dbDue"></small></div>
+      </div>
+      <div class="section"><h2>امروز</h2><div class="card"><div id="dbToday" class="kv-grid"><span class="hint">در حال خواندن…</span></div></div></div>
+      <div class="section"><div class="quick-links"><a href="whatsnew.html" target="_blank" rel="noopener"><span>تازه‌های این نسخه</span><small>What's new · تغییرات این نسخه</small></a></div></div>
+    </section>
+
+    <section class="dash-panel" data-panel="account" id="account">
+      <div class="panel-title"><h2>حساب من</h2><p>وضعیت ورودت و پشتیبانی اینجاست. بدون ورود هم افزونه کار می‌کنه.</p></div>
+      <div class="section">
+        <div id="sfy-account-host"><div class="card"><span class="hint">در حال بررسی حساب…</span></div></div>
+        <div class="card" style="margin-top:12px"><div id="sfy-ext-status" class="sfy-status-list"><span class="hint">در حال بررسی…</span></div></div>
+      </div>
+    </section>
+
+    <section class="dash-panel" data-panel="extension" id="extension">
+      <div class="panel-title"><h2>افزونه</h2><p>نسخه، مسیرهای فعال و تغییرات همین نسخه.</p></div>
+      <div class="section"><h2>این نسخه</h2><div class="card">
+        <div class="notice">این نسخه مخصوص Firefox و Firefox Android است و مسیر دوبلهٔ صوتی با سازوکار سازگار با Firefox فعال است.</div>
+        <div class="kv-grid" style="margin-top:14px">
+          <div class="kv"><label>نسخه</label><div id="extVersion">…</div></div>
+          <div class="kv"><label>ترجمهٔ زیرنویس</label><div id="extSubProvider">…</div></div>
+        </div>
+        <div class="quick-links" style="margin-top:14px">
+          <a href="storyboard.html" target="_blank" rel="noopener"><span>Storyboard</span><small>صفحهٔ Storyboard افزونه</small></a>
+        </div>
+      </div></div>
+    </section>
+
+    <section class="dash-panel" data-panel="statistics" id="statistics">
+      <div class="panel-title"><h2>آمار</h2><p>فقط اعدادی نشان داده می‌شن که این افزونه واقعاً اندازه گرفته. هیچ عددی حدس زده یا ساخته نمی‌شه.</p></div>
+
+      <div class="section"><h2>استفاده و برآورد هزینه</h2><div class="card">
+        <div class="notice">اعداد زیر مصرف واقعیِ همین افزونه‌ست.</div>
+        <div id="statsSummary" class="grid" style="margin-top:12px"></div>
+        <p class="hint" id="statsEmpty" style="display:none">هنوز هیچ ترجمه یا دوبله‌ای ثبت نشده.</p>
+        <div class="divider"></div>
+        <div class="field"><label>فعالیت ۷ روز اخیر</label><div id="statsActivity" class="mini-table"></div></div>
+        <div class="divider"></div>
+        <div class="notice">برای برآورد هزینه، نرخ هر سرویس رو خودت جلوش وارد کن، چون قیمت‌ها بین سرویس‌ها/مدل‌ها فرق داره و مدام تغییر می‌کنه، اینجا هیچ عددی حدس زده نمی‌شه؛ فقط مصرف تو در نرخی که خودت می‌دی ضرب می‌شه.</div>
+        <div class="field" style="max-width:280px;margin:12px 0 10px"><label for="costUnit">واحد نرخ‌گذاری</label><select id="costUnit"><option value="chars">هر ۱۰۰۰ کاراکتر</option><option value="tokens">هر ۱ میلیون توکن (تخمینی)</option></select></div>
+        <div id="statsProviders"></div>
+      </div></div>
+
+      <div class="section"><h2>قابلیت‌ها و پلتفرم‌ها</h2><div class="card grid">
+        <div class="field wide"><label>پرمصرف‌ترین قابلیت‌ها (تعداد ثبت‌شده)</label><div id="statsFeatures"></div></div>
+        <div class="field wide"><label>پلتفرم‌های پرکاربرد (ثانیه‌های پردازش‌شدهٔ صدا)</label><div id="lrnPlatforms">…</div></div>
+      </div></div>
+    </section>
+
+    <section class="dash-panel" data-panel="learning" id="learning">
+      <div class="panel-title"><h2>یادگیری</h2><p>مرور لغت‌های ذخیره‌شده و تنظیمات یادگیری. دکمهٔ «یادگیری» توی پاپ‌آپ افزونه مستقیم صفحهٔ مرور لغت‌ها رو باز می‌کنه.</p></div>
+      <div class="section" id="learn-tools">
+        <h2>یادگیری و ابزارها</h2>
+        <div class="card">
+          <p class="hint">این ابزارها را از همین‌جا باز کن.</p>
+          <p class="learn-tools-lang"><span>زبان یادگیری فعلی</span> <b id="toolsLangView">…</b></p>
+          <div class="quick-links">
+            <a href="learn.html" target="_blank" rel="noopener"><span>یادگیری و مرور لغت</span><small>لغت‌های ذخیره‌شده را با مرور هوشمند یاد بگیر و خروجی Anki بگیر.</small></a>
+            <a href="storyboard.html" target="_blank" rel="noopener"><span>Storyboard</span><small>صحنه‌های ترجمه‌شدهٔ ویدیو را کنار هم نگه دار.</small></a>
+            <a href="roleplay.html" target="_blank" rel="noopener"><span>نقش‌آفرینی</span><small>با یک نقش، گفت‌وگوی واقعی تمرین کن.</small></a>
+            <a href="writer.html" target="_blank" rel="noopener"><span>نوشتن از ویدیو</span><small>از روی ویدیو بنویس و نوشته‌ات را اصلاح بگیر.</small></a>
+            <a href="shadow.html" target="_blank" rel="noopener"><span>تمرین تلفظ</span><small>جمله را بشنو و همان‌طور تکرار کن.</small></a>
+            <a href="chat.html" target="_blank" rel="noopener"><span>گفت‌وگو با ویدیو</span><small>دربارهٔ ویدیو سؤال بپرس و جواب بگیر.</small></a>
+            <a href="summary.html" target="_blank" rel="noopener"><span>خلاصهٔ ویدیو</span><small>خلاصه و لغت‌های مهم ویدیو را بگیر.</small></a>
+          </div>
+        </div>
+      </div>
+      <div class="section"><div class="quick-links"><a href="learn.html" target="_blank" rel="noopener"><span>مرور لغت‌ها</span><small>صفحهٔ کامل لغت‌ها و مرور</small></a></div></div>
+
+      <div class="section" id="vocab-review"><h2>مرور لغت</h2><div class="card">
+        <div class="notice">همهٔ اعداد زیر از داده‌های ذخیره‌شدهٔ همین دستگاه خوانده می‌شن و چیزی تخمین زده نمی‌شه. زمان تماشای ویدیو اندازه‌گیری نمی‌شه، پس نشان داده نمی‌شه.</div>
+        <div id="lrnStats" class="grid" style="margin-top:12px"></div>
+        <div class="divider"></div>
+        <div class="grid">
+          <div class="field"><label>زبان‌های لغت‌ها</label><div id="lrnLangs">…</div></div>
+        </div>
+        <div class="divider"></div>
+        <div class="field"><label>آخرین لغت‌های ذخیره‌شده</label><div id="lrnRecent">…</div></div>
+      </div></div>
+
+      <div class="section" id="learning-settings"><h2>تنظیمات یادگیری</h2><div class="card">
+        <div class="notice">این تنظیمات روی زیرنویس سایت‌های پشتیبانی‌شده اعمال می‌شن. لغت‌های ذخیره‌شده طبق وضعیت مرورشان هایلایت می‌شن؛ «تازه» یعنی هنوز یک‌بار هم مرور نشده.</div>
+        <div class="grid" style="margin-top:12px">
+          <div class="field"><label for="lrnSmart">حالت تماشا (Smart Watching)</label>
+            <select id="lrnSmart">
+              <option value="relaxed">آرام (تماشای عادی)</option>
+              <option value="learning">یادگیری (هایلایت + پخش دوباره)</option>
+              <option value="active">فعال، یادگیری + توقف بعد از هر جمله</option>
+            </select><div class="hint" id="lrnSmartNote">حالت فعال روی پخش زنده کار می‌کند. با مکث، زیرنویس‌ها متوقف می‌شوند و اگر ویدیو قابل مکث باشد، پخش هم مکث می‌شود.</div></div>
+          <div class="field"><label for="lrnHighlight">هایلایت لغت‌های ذخیره‌شده</label>
+            <select id="lrnHighlight">
+              <option value="off">بدون هایلایت</option>
+              <option value="saved">همهٔ لغت‌های ذخیره‌شده</option>
+              <option value="new">تازه‌ها (هنوز مرور نشده)</option>
+              <option value="learning">در حال یادگیری</option>
+              <option value="mastered">یادگرفته‌شده</option>
+              <option value="spotlight">نوبت مرور</option>
+            </select><div class="hint"><span class="kw">نوبت مرور</span>: لغت‌هایی که امروز وقت مرورشون رسیده.</div></div>
+          <div class="field"><label for="lrnSpeed">سرعت پخش دوبارهٔ جمله</label>
+            <select id="lrnSpeed"><option value="0.75">۰٫۷۵×</option><option value="0.85">۰٫۸۵×</option><option value="1">۱×</option></select></div>
+          <div class="field"><label class="check-row" for="lrnReplay"><input type="checkbox" id="lrnReplay"><span>دکمهٔ «پخش دوباره» کنار هر جمله</span></label></div>
+          <div class="field wide"><label class="check-row" for="lrnPause"><input type="checkbox" id="lrnPause"><span>فقط در حالت فعال: بعد از هر جمله متوقف شو</span></label></div>
+          <div class="field"><label for="lrnNative">زبان بومی من</label>
+            <select id="lrnNative"><option value="fa">فارسی</option><option value="en">انگلیسی</option><option value="ar">عربی</option><option value="tr">ترکی</option><option value="es">اسپانیایی</option><option value="fr">فرانسوی</option><option value="de">آلمانی</option><option value="it">ایتالیایی</option><option value="pt">پرتغالی</option><option value="ru">روسی</option><option value="ja">ژاپنی</option><option value="ko">کره‌ای</option><option value="zh">چینی</option><option value="hi">هندی</option></select>
+            <div class="hint">زیرنویس، دوبله و توضیح گرامر به این زبان ترجمه می‌شن.</div></div>
+          <div class="field"><label for="lrnTarget">زبان ویدیو (زبانی که یاد می‌گیری)</label>
+            <select id="lrnTarget"><option value="fa">فارسی</option><option value="en">انگلیسی</option><option value="ar">عربی</option><option value="tr">ترکی</option><option value="es">اسپانیایی</option><option value="fr">فرانسوی</option><option value="de">آلمانی</option><option value="it">ایتالیایی</option><option value="pt">پرتغالی</option><option value="ru">روسی</option><option value="ja">ژاپنی</option><option value="ko">کره‌ای</option><option value="zh">چینی</option><option value="hi">هندی</option></select>
+            <div class="hint">هایلایت لغت‌ها و دکمهٔ گرامر فقط روی زیرنویس این زبان فعال می‌شن.</div></div>
+          <div class="field"><label for="lrnCefr">سطح CEFR</label>
+            <select id="lrnCefr"><option value="A1">A1</option><option value="A2">A2</option><option value="B1">B1</option><option value="B2">B2</option><option value="C1">C1</option><option value="C2">C2</option></select></div>
+          <div class="field"><label for="lrnExplain">زبان توضیح گرامر</label>
+            <select id="lrnExplain"><option value="fa">فارسی</option><option value="en">انگلیسی</option><option value="ar">عربی</option><option value="tr">ترکی</option><option value="es">اسپانیایی</option><option value="fr">فرانسوی</option><option value="de">آلمانی</option><option value="it">ایتالیایی</option><option value="pt">پرتغالی</option><option value="ru">روسی</option><option value="ja">ژاپنی</option><option value="ko">کره‌ای</option><option value="zh">چینی</option><option value="hi">هندی</option></select></div>
+        </div>
+        <div class="hint" id="lrnSaved" style="margin-top:8px"></div>
+      </div></div>
+    </section>
+
+    <section class="dash-panel" data-panel="settings" id="settings">
+      <div class="panel-title"><h2>تنظیمات</h2><p>موتور و صدای دوبله، کلیدهای API و سرویس‌های اختصاصی، داده‌های ذخیره‌شده و گزارش فنی روی این دستگاه.</p></div>
+
+      <div class="section"><h2>دوبله</h2><div class="card grid">
+        <div class="field"><label for="engine">موتور دوبله</label><select id="engine"><option value="live">Live Translate</option><option value="chunked">Chunked fallback</option></select></div>
+        <div class="field"><label for="liveModel">مدل Live</label><select id="liveModel"><option value="gemini-3.5-live-translate-preview">gemini-3.5-live-translate-preview</option></select></div>
+        <div class="field"><label for="liveVoice">صدای Live</label><select id="liveVoice"><option value="auto">Auto، هماهنگ با گوینده</option><option value="Charon">Charon</option><option value="Puck">Puck</option><option value="Fenrir">Fenrir</option><option value="Orus">Orus</option><option value="Leda">Leda</option><option value="Kore">Kore</option><option value="Aoede">Aoede</option><option value="Zephyr">Zephyr</option></select></div>
+        <div class="field"><label for="sttModel">مدل تشخیص (STT)</label><select id="sttModel"><option value="gemini-3.5-flash">gemini-3.5-flash (پیش‌فرض)</option><option value="gemini-3-flash">gemini-3-flash</option><option value="gemini-3.1-flash-lite">gemini-3.1-flash-lite</option></select><div class="hint">پیش‌فرض روی gemini-3.5-flash قرار دارد.</div></div>
+        <div class="field"><label for="ttsModel">مدل صدا (TTS)</label><select id="ttsModel"><option value="gemini-3.1-flash-tts-preview">gemini-3.1-flash-tts-preview (پیش‌فرض)</option><option value="gemini-2.5-flash-preview-tts">gemini-2.5-flash-preview-tts</option></select><div class="hint">پیش‌فرض روی gemini-3.1-flash-tts-preview قرار دارد.</div></div>
+        <div class="field"><label for="recordMaxSeconds">حداکثر ضبط، دقیقه</label><input id="recordMaxSeconds" type="number" min="5" max="240" step="5"></div>
+        <div class="field check"><input id="autoFallback" type="checkbox"><label for="autoFallback">اگر Live در دسترس نبود، خودکار به Chunked برود</label></div>
+        <div class="field check"><input id="recordSession" type="checkbox"><label for="recordSession">جلسهٔ دوبله برای خروجی ذخیره شود</label></div>
+        <div class="field check wide"><input id="skipPersian" type="checkbox"><label for="skipPersian">اگر منبع فارسی است، دوبله انجام نشود</label></div>
+        <div class="actions wide dash-actions-row"><button id="saveBtn" class="primary" type="button">ذخیره تنظیمات</button><span id="saved" class="saved">ذخیره شد</span></div>
+      </div></div>
+
+      <div class="section" id="api-keys"><h2>کلیدهای API و سرویس‌ها</h2><div class="card">
+        <div class="notice">کلیدها فقط روی همین دستگاه (Storage محلی مرورگر) ذخیره می‌شن و جز به همان سرویسی که انتخاب کردی ارسال نمی‌شن. مدل هر سرویس از تب «ترجمه» در پاپ‌آپ انتخاب می‌شه.</div>
+        <div class="key-guide">
+          <h4>کلید Gemini رو بگیر (رایگان، حدود ۳ دقیقه)</h4>
+          <ol>
+            <li>این صفحه رو باز کن و با حساب گوگلت وارد شو: <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener">aistudio.google.com/app/apikey</a></li>
+            <li>روی Create API key بزن. اگه پرسید پروژه می‌خوای، یه پروژهٔ جدید انتخاب کن.</li>
+            <li>کلید رو کپی کن و توی کادر Gemini بالا بذار.</li>
+            <li>«ذخیره کلیدها» رو بزن.</li>
+          </ol>
+          <p class="key-guide-note">کلید Gemini برای همه‌چیز لازمه: زیرنویس، دوبله، واژه‌نامه و ترجمهٔ زنده. پلن رایگان سقف درخواست داره؛ اگه خطای quota دیدی، یه دقیقه صبر کن.</p>
+          <p class="key-guide-note">OpenRouter و OpenAI اختیاری‌ان. اگه کلید داری، همون کادرها رو پر کن.</p>
+        </div>
+        <div class="grid" style="margin-top:12px">
+          <div class="field wide"><label for="pk-gemini">Gemini API Key</label><input id="pk-gemini" type="password" placeholder="کلید Gemini" autocomplete="off"><div class="hint">نکته مهم: برای استفاده از Gemini، IP شما باید بدون نشتی (IP Leak) باشد.</div></div>
+          <div class="field wide"><label for="pk-openrouter">OpenRouter API Key</label><input id="pk-openrouter" type="password" placeholder="کلید OpenRouter" autocomplete="off"></div>
+          <div class="field wide"><label for="pk-openai">OpenAI API Key</label><input id="pk-openai" type="password" placeholder="sk-..." autocomplete="off"></div>
+        </div>
+        <div class="actions" style="margin-top:10px">
+          <button id="pk-save" type="button" class="primary">ذخیره کلیدها</button>
+          <button id="pk-test-gemini" type="button">تست Gemini</button>
+          <button id="pk-test-openrouter" type="button">تست OpenRouter</button>
+          <button id="pk-test-openai" type="button">تست OpenAI</button>
+        </div>
+        <p class="hint" id="pk-status" style="margin-top:8px"></p>
+      </div>
+
+      <div class="card custom-management-card" id="custom-providers" style="margin-top:14px">
+          <div class="custom-intro">
+            <div class="custom-intro-icon">＋</div>
+            <div>
+              <h3>API اختصاصی: سرویس خودت را اضافه کن</h3>
+              <p>این بخش فقط برای سرویس‌هایی است که <b>Gemini، OpenRouter یا OpenAI</b> نیستند. اطلاعات API را از سایت همان سرویس کپی کن و اینجا وارد کن.</p>
+            </div>
+          </div>
+          <div class="notice novice-note"><strong>فقط همین ۴ چیز لازم است:</strong> اسم سرویس، آدرس API، کلید API و کد مدل. بعد «ذخیره و فعال‌سازی سرویس» را بزن.</div>
+          <div class="custom-flow" aria-label="مراحل افزودن سرویس"><span><b>۱</b> اطلاعات را وارد کن</span><span><b>۲</b> ذخیره و فعال‌سازی سرویس</span><span><b>۳</b> اتصال را تست کن</span><span><b>۴</b> در «ترجمه» انتخابش کن</span></div>
+          <div class="grid" style="margin-top:10px">
+            <div class="field"><label for="cp-name">اسم سرویس</label><input id="cp-name" type="text" placeholder="مثلاً سرویس من"><div class="hint">یک اسم ساده انتخاب کن؛ مثلاً «سرویس من».</div></div>
+            <div class="field wide"><label for="cp-base">آدرس API</label><input id="cp-base" type="text" placeholder="مثلاً https://example.com/v1"><div class="hint">آدرس API را دقیقاً از سایت سرویس کپی کن.</div></div>
+            <div class="field wide"><label for="cp-key">کلید API</label><input id="cp-key" type="password" placeholder="کلید سرویس"><div class="hint">کلیدی که سرویس به تو داده را وارد کن.</div></div>
+            <div class="field wide"><label for="cp-model">کد مدل</label><input id="cp-model" type="text" placeholder="مثلاً model-name"><div class="hint">کد مدل را دقیقاً از سایت سرویس کپی کن. اگر سرویس دکمه «دریافت مدل‌ها» دارد، می‌توانی از همان استفاده کنی.</div></div>
+          </div>
+          <div class="actions" style="margin-top:10px">
+            <button id="cp-save" type="button" class="primary">ذخیره و فعال‌سازی سرویس</button>
+            <button id="cp-test" type="button">تست اتصال</button>
+            <button id="cp-models" type="button">دریافت مدل‌ها</button>
+            <button id="cp-new" type="button">+ سرویس جدید</button>
+            <button id="cp-delete" type="button">حذف سرویس</button>
+          </div>
+          <div class="grid" style="margin-top:10px">
+            <div class="field wide"><label for="cp-list">سرویس‌های اضافه‌شده</label><select id="cp-list"></select></div>
+            <div class="field wide" id="cp-model-list-wrap" style="display:none"><label for="cp-model-list">مدل‌های پیداشده</label><select id="cp-model-list"></select></div>
+          </div>
+          <p class="hint" id="cp-status" style="margin-top:8px"></p>
+      </div>
+      </div>
+
+      <div class="section"><h2>حریم خصوصی و داده‌ها</h2><div class="card">
+        <div class="notice">کلیدهای API و تمام تنظیمات فقط روی همین دستگاه (Storage محلی مرورگر) ذخیره می‌شن و جز به همون سرویسی که خودت انتخاب کردی (Gemini/OpenRouter/OpenAI/Custom) به‌جای دیگه‌ای ارسال نمی‌شن. جزئیات کامل در فایل PRIVACY.md همراه افزونه.</div>
+        <div class="actions">
+          <button id="clearDataBtn" type="button">پاک‌کردن کامل داده‌ها</button>
+          <span id="clearDataStatus" class="hint"></span>
+        </div>
+        <div id="clearConfirm" class="notice" style="display:none;margin-top:10px;border-color:#eb9c9c;background:#fdf0ef;color:#7a2c22">
+          این کار کلیدهای API، تنظیمات، آمار مصرف، دیکشنری و حافظهٔ ترجمهٔ ذخیره‌شده روی این دستگاه رو برای همیشه پاک می‌کنه، قابل بازگشت نیست.
+          <div class="actions" style="margin-top:8px">
+            <button id="clearDataConfirmBtn" type="button" class="primary" style="background:var(--red);border-color:var(--red)">بله، همه‌چیز پاک شود</button>
+            <button id="clearDataCancelBtn" type="button">انصراف</button>
+          </div>
+        </div>
+      </div></div>
+
+      <div class="section" id="tech-report"><h2>گزارش فنی</h2><div class="card">
+        <div class="notice">گزارش فنی آخرین رویدادهای افزونه روی همین دستگاه است. برای پشتیبانی، گزارش را کپی کن و برایمان بفرست. تست Live و تست صدای دوبله فقط مسیر دوبله را امتحان می‌کنن؛ تست کلیدهای Gemini، OpenRouter و OpenAI در بخش «کلیدهای API» است.</div>
+        <div class="actions" style="margin-top:12px">
+          <button id="testLive" type="button" disabled>تست Live دوبله</button>
+          <button id="selfTest" type="button" disabled>تست صدای دوبله</button>
+          <button id="showLog" type="button">نمایش گزارش</button>
+          <button id="copyLog" type="button">کپی گزارش</button>
+        </div>
+        <div id="diag" class="diag">هنوز تستی اجرا نشده است.</div>
+        <div id="techLog" class="hint" dir="ltr" style="display:none;max-height:260px;overflow:auto;margin-top:10px;text-align:left;white-space:pre-wrap;font-size:11px;line-height:1.6"></div>
+      </div></div>
+    </section>
+
+    <section class="dash-panel" data-panel="help" id="help">
+      <div class="panel-title"><h2>راهنما و پشتیبانی</h2><p>برای گزارش مشکل، ابتدا وارد حساب شو تا تیکت ثبت کنی؛ یا مستقیم در تلگرام پیام بده.</p></div>
+      <div class="section"><div class="card quick-links">
+        <a href="https://t.me/subifysupp" target="_blank" rel="noopener noreferrer"><span>پشتیبانی تلگرام</span><small>t.me/subifysupp</small></a>
+        <a href="#account"><span>ثبت تیکت</span><small>از داخل حساب من</small></a>
+        <a href="https://sub-ify.site/docs/" target="_blank" rel="noopener noreferrer"><span>مستندات</span><small>راهنمای گام‌به‌گام</small></a>
+        <a href="https://sub-ify.site/privacy/" target="_blank" rel="noopener noreferrer"><span>حریم خصوصی</span><small>داده‌ها و مجوزها</small></a>
+        <a href="https://sub-ify.site/" target="_blank" rel="noopener noreferrer"><span>سایت Subify</span><small>sub-ify.site</small></a>
+      </div></div>
+      <p class="subtle" style="text-align:start;margin-top:18px">برای کنترل سریع زیرنویس، موتور ترجمه و استایل از پاپ‌آپ افزونه استفاده کن؛ کلیدها و سرویس‌ها را اینجا در «تنظیمات» وارد کن.</p>
+      <div class="section" id="about"><h2>درباره Subify</h2><div class="card">
+        <p style="margin:0 0 6px;font-size:15px;font-weight:700;line-height:1.9">داستان Subify</p>
+        <p style="margin:0 0 16px;line-height:1.9;color:var(--muted);max-width:64ch">از یه مشکل شخصی تا ساخت چیزی بزرگ‌تر</p>
+        <p style="margin:0 0 12px;line-height:2.05;max-width:64ch">من مبین‌ام، سازنده Subify</p>
+        <p style="margin:0 0 12px;line-height:2.05;max-width:64ch">داستان Subify از زمانی شروع شد که داشتم زبان اسپانیایی یاد می‌گرفتم و برای یادگیری و آمادگی کنکور، خیلی از ویدیوهای آموزشی YouTube رو می‌دیدم. یه مشکل بزرگ داشتم؛ زبانم هنوز اون‌قدر خوب نبود که بتونم همه ویدیوها رو راحت بفهمم</p>
+        <p style="margin:0 0 12px;line-height:2.05;max-width:64ch">خیلی از ویدیوها ترجمه فارسی نداشتن، بعضی از زیرنویس‌ها هم قابل‌فهم نبودن و پیدا کردن دوبله مناسب تقریباً غیرممکن بود. برای فهمیدن هر جمله باید ویدیو رو متوقف می‌کردم، متن رو کپی می‌کردم، می‌رفتم سراغ مترجم یا یه ابزار هوش مصنوعی و بعد دوباره برمی‌گشتم به ویدیو. چند دقیقه بعد هم همین داستان تکرار می‌شد!</p>
+        <p style="margin:0 0 12px;line-height:2.05;max-width:64ch">به‌جای اینکه روی یادگیری تمرکز کنم، مدام بین ویدیو و ابزارهای مختلف جابه‌جا می‌شدم. خلاصه اینکه یادگیری خودش تبدیل شده بود به یه پروژه جداگانه</p>
+        <p style="margin:0 0 12px;line-height:2.05;max-width:64ch">اما چیزی که باعث شد این موضوع رو جدی‌تر دنبال کنم، هستی بود. اون هم با همین مشکل روبه‌رو بود و وقتی دیدم این چالش فقط برای من نیست، بیشتر به این فکر کردم که چرا نباید راه ساده‌تری برای فهمیدن ویدیوها وجود داشته باشه؟</p>
+        <p style="margin:0 0 12px;line-height:2.05;max-width:64ch">همین شد که تصمیم گرفتم Subify رو بسازم</p>
+        <p style="margin:0 0 12px;line-height:2.05;max-width:64ch">راستش اون موقع فکر نمی‌کردم این ایده تا این اندازه بزرگ بشه. هدفم این بود که ابزاری داشته باشم که ترجمه و فهمیدن ویدیوها رو راحت‌تر کنه، بدون اینکه لازم باشه برای هر جمله سراغ چند ابزار مختلف برم</p>
+        <p style="margin:0 0 12px;line-height:2.05;max-width:64ch">از هستی هم واقعاً ممنونم، چون تجربه مشترکمون نقش مهمی در جدی شدن این ایده داشت. شاید بدون اون هم یه روزی به فکر ساخت چنین ابزاری می‌افتادم، اما دوست دارم همیشه یادم بمونه که این مسیر چطور شروع شد</p>
+        <p style="margin:0 0 12px;line-height:2.05;max-width:64ch">ولی داستان همین‌جا تموم نشد</p>
+        <p style="margin:0 0 12px;line-height:2.05;max-width:64ch">هرچی بیشتر روی Subify کار کردم، بیشتر متوجه شدم که مشکل فقط ترجمه ویدیو نیست</p>
+        <p style="margin:0 0 12px;line-height:2.05;max-width:64ch">کسی که زبان یاد می‌گیره، ممکنه به توضیح گرامر نیاز داشته باشه. یکی دیگه دنبال معنی یه کلمه‌ست، یکی می‌خواد با هوش مصنوعی صحبت کنه و سؤال بپرسه و یکی هم ترجیح می‌ده به‌جای خوندن زیرنویس، ویدیو رو به زبان خودش بشنوه</p>
+        <p style="margin:0 0 12px;line-height:2.05;max-width:64ch">از طرفی، هوش مصنوعی هر روز امکانات جدیدتری در اختیارمون می‌ذاره و به نظرم حیف بود Subify رو به یه ابزار ساده برای ترجمه زیرنویس محدود کنم</p>
+        <p style="margin:0 0 12px;line-height:2.05;max-width:64ch">برای همین، کم‌کم شروع کردم به گسترش ایده اولیه و ساخت قابلیت‌های جدید. چیزی که با یه نیاز شخصی شروع شده بود، به محصولی تبدیل شد که امروز بخش‌های مختلفی از یادگیری زبان، ترجمه و تعامل با هوش مصنوعی رو کنار هم قرار می‌ده</p>
+        <p style="margin:0 0 12px;line-height:2.05;max-width:64ch">الان Subify فقط برای ترجمه ویدیو نیست. توی وب‌اپلیکیشنش می‌تونی با هوش مصنوعی چت کنی، گرامر زبان یاد بگیری، معنی و ترجمه لغات رو پیدا کنی، از ابزارهای یادگیری زبان استفاده کنی و با کمک قابلیت‌های ترجمه و دوبله هوش مصنوعی، محتوای ویدیویی رو راحت‌تر دنبال کنی</p>
+        <p style="margin:0 0 12px;line-height:2.05;max-width:64ch">در کنار این‌ها، قابلیت‌هایی مثل زیرنویس دوزبانه، ترجمه زنده در محیط‌های پشتیبانی‌شده و خروجی گرفتن از زیرنویس‌ها هم بخشی از امکانات Subify هستن</p>
+        <p style="margin:0 0 12px;line-height:2.05;max-width:64ch">از همون اول هم نمی‌خواستم Subify فقط به YouTube محدود بمونه. هدفم این بوده که تجربه استفاده از محتوای چندزبانه رو در پلتفرم‌های مختلف ساده‌تر کنم؛ از ویدیوهای آموزشی و دوره‌های آنلاین گرفته تا محتوای سرگرمی و چیزهایی که هر روز توی اینترنت می‌بینیم</p>
+        <p style="margin:0 0 12px;line-height:2.05;max-width:64ch">البته ساختن چنین محصولی مسیر ساده‌ای نیست. از توسعه و طراحی گرفته تا کار با مدل‌های هوش مصنوعی، پیدا کردن راه‌حل‌های بهتر و بهتر کردن تجربه کاربر، هنوز کلی چیز برای یاد گرفتن و بهتر کردن وجود داره</p>
+        <p style="margin:0 0 12px;line-height:2.05;max-width:64ch">اما دقیقاً همین بخش ماجراست که برام جذابه؛ اینکه یه ایده رو مرحله‌به‌مرحله به محصولی تبدیل کنم که واقعاً به درد آدم‌ها بخوره</p>
+        <p style="margin:0 0 12px;line-height:2.05;font-weight:700;max-width:64ch">هدفم از ساخت Subify چیه؟</p>
+        <p style="margin:0 0 12px;line-height:2.05;max-width:64ch">وقتی به این موضوع فکر می‌کنم، می‌بینم آدم‌های زیادی در سراسر دنیا به محتوایی دسترسی دارن که نمی‌تونن به‌خوبی ازش استفاده کنن، فقط به این دلیل که به زبان دیگه‌ایه</p>
+        <p style="margin:0 0 12px;line-height:2.05;max-width:64ch">ممکنه یه نفر بخواد از یه دوره آموزشی چیزی یاد بگیره، یکی دنبال یادگیری یه زبان جدید باشه و یکی دیگه فقط بخواد فیلم یا ویدیوی موردعلاقه‌ش رو بدون دردسر بفهمه</p>
+        <p style="margin:0 0 12px;line-height:2.05;max-width:64ch">من دوست دارم Subify کمک کنه این فاصله کمتر بشه</p>
+        <p style="margin:0 0 12px;line-height:2.05;max-width:64ch">تمرکز فعلی من روی بهتر کردن تجربه کاربران فارسی‌زبانه، اما چشم‌اندازم خیلی فراتر از اینه. می‌خوام Subify به یه محصول بین‌المللی تبدیل بشه که آدم‌ها با زبان‌های مختلف بتونن ازش استفاده کنن و برای یادگیری، ترجمه و درک محتوای جهانی بهش دسترسی داشته باشن</p>
+        <p style="margin:0 0 12px;line-height:2.05;max-width:64ch">برای من، Subify فقط یه پروژه نرم‌افزاری نیست؛ محصولیه که از یه مشکل واقعی شروع شده و می‌خوام با توسعه و بهتر کردنش، به افراد بیشتری کمک کنم</p>
+        <p style="margin:0 0 12px;line-height:2.05;max-width:64ch">شاید اولش فقط می‌خواستم خودم راحت‌تر زبان یاد بگیرم، اما حالا هدفم اینه که آدم‌های بیشتری بتونن از محتوایی استفاده کنن که قبلاً به خاطر زبان براشون سخت یا حتی غیرقابل‌دسترس بوده</p>
+        <p style="margin:0 0 12px;line-height:2.05;max-width:64ch">و فکر می‌کنم این همون چیزیه که ارزش ادامه دادن این مسیر رو داره</p>
+        <p style="margin:0 0 12px;line-height:2.05;max-width:64ch">من مبین‌ام و Subify رو با این ایده ساختم که زبان نباید مانع یادگیری باشه</p>
+        <p style="margin:0 0 12px;line-height:2.05;max-width:64ch">این تازه شروع راهه</p>
+        <p style="margin:6px 0 0;line-height:2.05;font-weight:700;max-width:64ch">Subify؛ محتوای بیشتر، موانع زبانی کمتر</p>
+        <div class="quick-links" style="grid-template-columns:1fr;margin-top:16px">
+          <a href="https://app.sub-ify.site" target="_blank" rel="noopener noreferrer"><span>ورود به وب‌اپلیکیشن Subify</span><small>app.sub-ify.site</small></a>
+          <a href="https://github.com/mobinbiback/Subify" target="_blank" rel="noopener noreferrer"><span>مشاهده پروژه در GitHub</span><small>github.com/mobinbiback/Subify</small></a>
+          <a href="https://linkedin.com/in/mobinbibak" target="_blank" rel="noopener noreferrer"><span>ارتباط با من در LinkedIn</span><small>linkedin.com/in/mobinbibak</small></a>
+        </div>
+      </div></div>
+    </section>
+
+  </div>
+</div>
+</main>
+
+<script src="ui-language.js"></script><script src="select-menu.js"></script><script src="account-gate.js"></script><script src="learning-core.js"></script><script src="options.js"></script>
+</body>
+</html>

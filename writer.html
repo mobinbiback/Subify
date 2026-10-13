@@ -1,0 +1,159 @@
+<!doctype html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Subify • نوشتن از ویدیو</title>
+<link rel="stylesheet" href="ai-pages.css">
+<link rel="stylesheet" href="starfield.css">
+<style id="sfy-sky">html:not([data-theme="light"]){background:radial-gradient(ellipse at 50% -10%,#1B2735,#090A0F) fixed!important}html[data-theme="light"]{background:#fafafa!important}body{background:transparent!important;isolation:isolate}body>.sfy-stars{z-index:-1}</style>
+</head>
+<body>
+<div class="sfy-stars" aria-hidden="true"><i class="l1"></i><i class="l2"></i><i class="l3"></i><i class="l4"></i></div>
+<a class="skip" href="#main">رفتن به محتوا</a>
+<header class="ai-head">
+  <div>
+    <h1>نوشتن از ویدیو</h1>
+    <p class="ai-sub">یک متن کوتاه به زبان ویدیو بنویس. اصلاح، بازنویسی طبیعی، تخمین سطح و چند نکته می‌گیری.</p>
+  </div>
+  <div class="header-actions"></div>
+</header>
+<nav class="ai-nav" aria-label="بخش‌های هوش مصنوعی">
+  <a href="chat.html">گفت‌وگو</a>
+  <a href="summary.html">خلاصه</a>
+  <a href="roleplay.html">نقش‌آفرینی</a>
+  <a href="writer.html" aria-current="page">نوشتن</a>
+  <a href="shadow.html">تلفظ</a>
+</nav>
+<main id="main" class="ai-main">
+  <section id="ctx" class="ai-ctx" aria-live="polite"></section>
+
+  <form id="form" class="ai-card ai-stack" autocomplete="off" aria-labelledby="form-title">
+    <h2 id="form-title">متن تو</h2>
+    <div class="ai-field">
+      <span id="task-label">کار نوشتن</span>
+      <div id="tasks" class="ai-chips" role="group" aria-labelledby="task-label"></div>
+      <p id="task-text" class="ai-block ai-muted" hidden></p>
+    </div>
+    <div class="ai-field">
+      <label for="text">متنت را اینجا بنویس</label>
+      <textarea id="text" class="ai-textarea" rows="7" maxlength="3000" aria-describedby="count"></textarea>
+      <p id="count" class="ai-muted ai-small">۰ کلمه</p>
+    </div>
+
+    <div class="ai-grid2">
+      <div class="ai-field">
+        <label for="tone">لحن</label>
+        <select id="tone" class="ai-select">
+          <option value="formal">رسمی</option>
+          <option value="neutral" selected>خنثی</option>
+          <option value="friendly">دوستانه</option>
+        </select>
+      </div>
+      <div class="ai-field">
+        <label for="words">کلماتی که می‌خواهی تمرین کنی (با ویرگول)</label>
+        <input id="words" class="ai-input" type="text" placeholder="مثلاً: deal, reservation">
+      </div>
+    </div>
+
+    <div class="ai-grid2">
+      <div class="ai-field">
+        <label for="goal">هدف نوشتن</label>
+        <select id="goal" class="ai-select">
+          <option value="general" selected>تمرین عمومی</option>
+          <option value="exam">نوشتن مثل آزمون (IELTS، TOEFL)</option>
+          <option value="business">ایمیل کاری</option>
+          <option value="academic">متن دانشگاهی</option>
+          <option value="casual">پیام دوستانه</option>
+        </select>
+      </div>
+      <div class="ai-field">
+        <label for="target-level">سطح هدف</label>
+        <select id="target-level" class="ai-select">
+          <option>A1</option>
+          <option>A2</option>
+          <option selected>B1</option>
+          <option>B2</option>
+          <option>C1</option>
+          <option>C2</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="ai-field">
+      <span id="pick-label">کلمه‌های این ویدیو</span>
+      <div id="pick" class="ai-chips" role="group" aria-labelledby="pick-label"></div>
+      <p id="pick-note" class="ai-muted ai-small">کلمه‌ها از زیرنویس همین ویدیو پیدا شده‌اند. روی هرکدام بزن تا به فهرست اضافه شود.</p>
+    </div>
+
+    <div class="ai-row ai-row-between">
+      <span class="ai-muted ai-small">بازخورد به زبان خودت است.</span>
+      <button id="check" class="ai-btn ai-btn--primary" type="submit">بررسی متن</button>
+    </div>
+    <p id="status" class="ai-status" role="status"></p>
+  </form>
+
+  <div id="result" class="ai-stack" hidden>
+    <section class="ai-card" aria-labelledby="level-title">
+      <h2 id="level-title">سطح تقریبی</h2>
+      <div class="ai-row ai-block">
+        <span id="level" class="ai-tag ai-tag--ok"></span>
+      </div>
+      <ul id="reasons" class="ai-list ai-block"></ul>
+    </section>
+
+    <section class="ai-card" aria-labelledby="corrected-title">
+      <div class="ai-card-head">
+        <h2 id="corrected-title">نسخهٔ اصلاح‌شده</h2>
+        <button id="speak-corrected" class="ai-btn ai-btn--ghost" type="button">بلند بخوان</button>
+      </div>
+      <p id="corrected" class="ai-block ai-pre" dir="auto"></p>
+      <div id="diff-block" hidden>
+        <h3 id="diff-title" class="ai-small">تفاوت‌ها با متن تو</h3>
+        <p id="diff-legend" class="ai-muted ai-small">خط‌خورده: حذف شده. زیرخط‌دار: اضافه شده.</p>
+        <p id="diff" class="ai-block ai-pre ai-diff" dir="auto"></p>
+      </div>
+      <p id="diff-same" class="ai-muted ai-small" hidden>تغییری لازم نبود.</p>
+    </section>
+
+    <section class="ai-card" aria-labelledby="fix-title">
+      <h2 id="fix-title">اصلاح‌ها</h2>
+      <div id="fixes" class="ai-list ai-block"></div>
+    </section>
+
+    <section class="ai-card" aria-labelledby="rewrite-title">
+      <div class="ai-card-head">
+        <h2 id="rewrite-title">بازنویسی طبیعی</h2>
+        <div class="ai-btnrow">
+          <button id="speak-rewrite" class="ai-btn ai-btn--ghost" type="button">بلند بخوان</button>
+          <button id="copy" class="ai-btn" type="button">کپی متن</button>
+        </div>
+      </div>
+      <p id="rewrite" class="ai-ltr ai-block ai-pre"></p>
+    </section>
+
+    <section id="upgrade-card" class="ai-card" aria-labelledby="upgrade-title" hidden>
+      <h2 id="upgrade-title">کلمه‌هایی که می‌شود بهتر گفت</h2>
+      <div id="upgrades" class="ai-list ai-block"></div>
+    </section>
+
+    <section class="ai-card" aria-labelledby="tips-title">
+      <h2 id="tips-title">نکته‌های کوتاه</h2>
+      <ul id="tips" class="ai-list ai-block"></ul>
+      <div id="wordcheck" class="ai-chips ai-block" hidden></div>
+    </section>
+
+    <div class="ai-btnrow">
+      <button id="copy-all" class="ai-btn ai-btn--primary" type="button">کپی همه</button>
+      <button id="word" class="ai-btn" type="button">دانلود Word</button>
+    </div>
+  </div>
+</main>
+<script src="learning-core.js"></script>
+<script src="ui-language.js"></script>
+<script src="select-menu.js"></script>
+<script src="ai-core.js"></script>
+<script src="word-export.js"></script>
+<script src="writer.js"></script>
+</body>
+</html>

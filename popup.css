@@ -1,0 +1,603 @@
+/* Subify popup stylesheet. One file for Chrome and Firefox.
+   Tokens mirror the web app (app.css): ink surfaces, violet and cyan accents, 12 to 20px radii.
+   The web app stylesheet is not imported here; the values are copied. Dark is the default;
+   light follows html[data-theme="light"] (set by ui-language.js on every extension page). */
+@font-face{font-family:"VazirUI";src:url("fonts/Vazirmatn-Regular.ttf") format("truetype");font-weight:400;font-style:normal;font-display:swap}
+@font-face{font-family:"VazirUI";src:url("fonts/Vazirmatn-Medium.ttf") format("truetype");font-weight:500 700;font-style:normal;font-display:swap}
+@font-face{font-family:"VazirUI";src:url("fonts/Vazirmatn-Light.ttf") format("truetype");font-weight:100 300;font-style:normal;font-display:swap}
+@font-face{font-family:"EstedadUI";src:url("fonts/Estedad-Regular.ttf") format("truetype");font-weight:400;font-style:normal;font-display:swap}
+@font-face{font-family:"EstedadUI";src:url("fonts/Estedad-Medium.ttf") format("truetype");font-weight:500 900;font-style:normal;font-display:swap}
+@font-face{font-family:"Lalezar";src:url("fonts/Lalezar-Regular.ttf") format("truetype");font-weight:100 900;font-style:normal;font-display:swap}
+@font-face{font-family:"IRANYekanX";src:url("fonts/IRANYekanX-Regular.ttf") format("truetype");font-weight:400;font-style:normal;font-display:swap}
+@font-face{font-family:"IRANYekanX";src:url("fonts/IRANYekanX-Medium.ttf") format("truetype");font-weight:500 600;font-style:normal;font-display:swap}
+@font-face{font-family:"IRANYekanX";src:url("fonts/IRANYekanX-Bold.ttf") format("truetype");font-weight:700 900;font-style:normal;font-display:swap}
+@font-face{font-family:"DigiTitr";src:url("fonts/Digi-Titr-Plus-Bold-Circle.ttf") format("truetype");font-weight:700;font-style:normal;font-display:swap}
+@font-face{font-family:"Sahel";src:url("fonts/Sahel.ttf") format("truetype");font-weight:100 600;font-style:normal;font-display:swap}
+@font-face{font-family:"Sahel";src:url("fonts/Sahel-Bold.ttf") format("truetype");font-weight:700 900;font-style:normal;font-display:swap}
+@font-face{font-family:"Peyda";src:url("fonts/Peyda-Medium.ttf") format("truetype");font-weight:100 600;font-style:normal;font-display:swap}
+@font-face{font-family:"Peyda";src:url("fonts/Peyda-Bold.ttf") format("truetype");font-weight:700 900;font-style:normal;font-display:swap}
+@font-face{font-family:"VazirmatnVariable";src:url("fonts/Vazirmatn-VariableFont_wght.ttf") format("truetype");font-weight:100 900;font-style:normal;font-display:swap}
+@font-face{font-family:"AradFDRegular";src:url("fonts/AradFD-Regular.woff2") format("woff2");font-weight:100 900;font-style:normal;font-display:swap}
+@font-face{font-family:"AradFDLight";src:url("fonts/AradFD-Light.woff2") format("woff2");font-weight:100 900;font-style:normal;font-display:swap}
+@font-face{font-family:"AradFDMedium";src:url("fonts/AradFD-Medium.woff2") format("woff2");font-weight:100 900;font-style:normal;font-display:swap}
+@font-face{font-family:"AradFDBold";src:url("fonts/AradFD-Bold.woff2") format("woff2");font-weight:100 900;font-style:normal;font-display:swap}
+@font-face{font-family:"Inter";src:url("fonts/Inter-400.woff2") format("woff2");font-weight:100 600;font-style:normal;font-display:swap}
+@font-face{font-family:"Inter";src:url("fonts/Inter-700.woff2") format("woff2");font-weight:700 900;font-style:normal;font-display:swap}
+@font-face{font-family:"Poppins";src:url("fonts/Poppins-500.woff2") format("woff2");font-weight:100 600;font-style:normal;font-display:swap}
+@font-face{font-family:"Poppins";src:url("fonts/Poppins-700.woff2") format("woff2");font-weight:700 900;font-style:normal;font-display:swap}
+@font-face{font-family:"Montserrat";src:url("fonts/Montserrat-500.woff2") format("woff2");font-weight:100 700;font-style:normal;font-display:swap}
+@font-face{font-family:"Montserrat";src:url("fonts/Montserrat-800.woff2") format("woff2");font-weight:800 900;font-style:normal;font-display:swap}
+
+/* ---------- tokens (values from web-app/src/styles/app.css) ---------- */
+:root{
+  --bg:#080a10;
+  --card:#10151f;
+  --card-line:#222b3a;
+  --row-line:#1e2634;
+  --control:#151b24;
+  --control-hi:#1b2433;
+  --field:#111621;
+  --field-line:#2a3447;
+  --menu:#101620;
+  --text:#eef1f8;
+  --muted:#8b97aa;
+  --muted-2:#788498;
+  --solid:#6b52e8;
+  --solid-ink:#ffffff;
+  --accent:#7c5cff;
+  --accent-ink:#b4aaff;
+  --accent-soft:rgba(124,92,255,.16);
+  --accent-ring:rgba(124,92,255,.15);
+  --cyan-ink:#68d2ff;
+  --cyan-soft:rgba(76,194,255,.14);
+  --mint-ink:#40e5b0;
+  --mint-soft:rgba(37,216,160,.12);
+  --ok:#40e5b0;
+  --danger:#ff8a8a;
+  --dock:rgba(9,12,18,.9);
+  --dock-line:#1e2634;
+  --dock-shadow:0 14px 34px rgba(0,0,0,.42);
+  --pill-on:rgba(124,92,255,.22);
+  --screen:#0b1018;
+  --screen-line:#1e2634;
+  --screen-veil:rgba(4,8,11,.42);
+  --scene-a:rgba(124,92,255,.16);
+  --scene-b:rgba(76,194,255,.12);
+  --ring-track:#2a3447;
+  --radius-lg:22px;
+  --radius:20px;
+  --radius-md:14px;
+  --radius-sm:12px;
+  color-scheme:dark;
+}
+:root[data-theme="light"]{
+  --bg:#f5f6fa;
+  --card:#ffffff;
+  --card-line:#e9ecf1;
+  --row-line:#e6e9ef;
+  --control:#f2f4f7;
+  --control-hi:#eceff4;
+  --field:#fcfdfd;
+  --field-line:#dce1e9;
+  --menu:#ffffff;
+  --text:#101522;
+  --muted:#4f5866;
+  --muted-2:#5d6675;
+  --solid:#6b52e8;
+  --solid-ink:#ffffff;
+  --accent:#7c5cff;
+  --accent-ink:#100757;
+  --accent-soft:rgba(124,92,255,.12);
+  --accent-ring:rgba(124,92,255,.14);
+  --cyan-ink:#0b5f83;
+  --cyan-soft:rgba(76,194,255,.14);
+  --mint-ink:#1a7a5c;
+  --mint-soft:rgba(37,216,160,.14);
+  --ok:#1a7a5c;
+  --danger:#a51d3a;
+  --dock:rgba(232,236,243,.92);
+  --dock-line:#dce1e9;
+  --dock-shadow:0 12px 30px rgba(30,40,60,.14);
+  --pill-on:#ffffff;
+  --screen:#e9edf4;
+  --screen-line:#dce1e9;
+  --screen-veil:rgba(246,247,251,.55);
+  --scene-a:rgba(124,92,255,.12);
+  --scene-b:rgba(76,194,255,.12);
+  --ring-track:#dce1e9;
+  color-scheme:light;
+}
+
+/* ---------- base ---------- */
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+html{background:var(--bg)}
+body{
+  width:360px;max-height:600px;overflow-x:hidden;overflow-y:auto;position:relative;
+  background:var(--bg);color:var(--text);
+  font:400 12.5px/1.5 "VazirUI",Tahoma,sans-serif;direction:rtl;text-align:right;
+  -webkit-font-smoothing:antialiased;
+}
+button,input,select{font-family:"VazirUI",Tahoma,sans-serif}
+svg{flex:none}
+[hidden]{display:none!important}
+h1,h2,h3{font-family:"EstedadUI","VazirUI",sans-serif}
+
+/* ---------- header: logo, then the controls (language, theme, account) ---------- */
+header{
+  display:flex;align-items:center;justify-content:space-between;gap:10px;
+  padding:8px 14px 2px;
+}
+.brand{display:flex;align-items:center;gap:10px;min-width:0}
+.brand-mark{
+  width:32px;height:32px;border-radius:11px;display:grid;place-items:center;flex:none;overflow:hidden;
+  background:var(--card);border:1px solid var(--card-line);box-shadow:0 8px 24px rgba(124,92,255,.28);
+}
+.brand-mark img{width:24px;height:24px;display:block;border-radius:8px}
+.brand-copy{min-width:0}
+.brand-copy h1{margin:0;font:700 17px/1.2 "Inter","VazirUI",sans-serif;color:var(--text)}
+.header-actions{display:flex;align-items:center;gap:8px;min-width:0}
+
+.icon-btn,#subify-account-btn{
+  width:34px;height:34px;min-height:0;padding:0;border:1px solid var(--field-line);border-radius:999px;
+  display:grid;place-items:center;background:var(--control);color:var(--text);cursor:pointer;
+  transition:background-color .2s ease,color .2s ease,border-color .2s ease;
+}
+.icon-btn svg,#subify-account-btn svg{width:17px;height:17px;display:block}
+.icon-btn:hover,#subify-account-btn:hover{background:var(--control-hi);color:var(--accent-ink);border-color:rgba(124,92,255,.6)}
+
+/* the language picker and theme switch are built by ui-language.js; these rules only restyle them here */
+.header-controls{gap:8px!important;margin-inline-start:0!important}
+.header-controls .lang-trigger{
+  width:36px!important;height:36px!important;min-width:0!important;min-height:0!important;padding:0!important;
+  border:1px solid var(--field-line)!important;border-radius:999px!important;
+  display:grid!important;place-items:center;background:var(--control)!important;color:var(--text)!important;box-shadow:none!important;
+}
+.header-controls .lang-trigger:hover,.header-controls .lang-picker[data-open="true"] .lang-trigger{
+  background:var(--control-hi)!important;color:var(--accent-ink)!important;border-color:rgba(124,92,255,.6)!important;box-shadow:none!important;
+}
+.header-controls .lang-trigger-name,.header-controls .lang-trigger-chev,.header-controls .hide-mobile{display:none!important}
+.header-controls .lang-trigger-globe{display:grid;place-items:center;color:inherit!important}
+.header-controls .lang-trigger-globe svg{width:17px!important;height:17px!important}
+.header-controls .theme-toggle{
+  position:relative;width:60px!important;height:34px!important;min-height:0!important;padding:0 9px!important;
+  border:1px solid var(--field-line)!important;border-radius:999px!important;background:var(--control)!important;box-shadow:none!important;
+  display:flex!important;align-items:center;justify-content:space-between;direction:ltr;
+}
+.header-controls .theme-toggle:hover{border-color:rgba(124,92,255,.6)!important}
+.header-controls .theme-toggle-knob{
+  position:absolute;top:3px;left:3px;width:26px;height:26px;border-radius:50%;
+  background:var(--solid)!important;box-shadow:0 3px 10px rgba(106,82,240,.35)!important;transition:transform .32s cubic-bezier(.2,.8,.2,1);
+}
+.header-controls .theme-toggle[aria-checked="true"] .theme-toggle-knob{transform:translateX(26px)}
+.header-controls .theme-toggle-icon{position:relative;z-index:1;width:16px!important;height:16px!important;color:var(--muted)!important;display:grid;place-items:center;transition:color .25s}
+.header-controls .theme-toggle-icon svg{width:15px!important;height:15px!important;display:block}
+.header-controls .theme-toggle[aria-checked="false"] .moon,.header-controls .theme-toggle[aria-checked="true"] .sun{color:var(--solid-ink)!important}
+
+/* ---------- navigation: floating glass pill, the active tab is a lighter pill ---------- */
+.tabs{
+  position:fixed;left:12px;right:12px;bottom:10px;top:auto;z-index:20;
+  display:grid;grid-template-columns:repeat(4,1fr);gap:4px;padding:4px;
+  border-radius:999px;background:var(--dock);border:1px solid var(--dock-line);box-shadow:var(--dock-shadow);
+  -webkit-backdrop-filter:blur(22px);backdrop-filter:blur(22px);
+}
+.tab{
+  height:44px;min-height:0;padding:0 2px;border:0;border-radius:999px;background:transparent;box-shadow:none;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;
+  color:var(--muted);font:600 11.5px/1.2 "VazirUI",sans-serif;cursor:pointer;
+  transition:background-color .22s ease,color .22s ease;
+}
+.tab:hover{background:transparent;color:var(--text)}
+.tab.active{background:var(--pill-on);color:var(--text);box-shadow:0 1px 0 rgba(255,255,255,.04) inset}
+:root[data-theme="light"] .tab.active{box-shadow:0 4px 14px rgba(30,40,60,.10)}
+.tab.active .tab-ico{color:var(--accent-ink)}
+:root[data-theme="light"] .tab.active .tab-ico{color:var(--accent-ink)}
+.tab-ico{display:grid;place-items:center;width:20px;height:20px}
+.tab-ico svg{width:18px;height:18px;display:block}
+.tab:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+/* ---------- panels ---------- */
+main{padding:0 14px}
+.tab-panel{display:none}
+.tab-panel.active{display:block;animation:sfy-in .24s ease both}
+@keyframes sfy-in{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+@media (prefers-reduced-motion:reduce){.tab-panel.active{animation:none}}
+/* starfield: static stars on the popup; the light theme uses the plain page surface */
+.sfy-stars i,.sfy-stars i::after{animation:none!important}
+:root[data-theme="light"] .sfy-stars{display:none}
+
+/* ---------- surfaces: one card style, one radius ---------- */
+.modes,.disclosure,.style-accordion,.page-translate-card,.source-group,.keys-hero,.tool,.ob-step{
+  background:var(--card);border:1px solid var(--card-line);border-radius:var(--radius);
+}
+:root[data-theme="light"] .modes,:root[data-theme="light"] .disclosure,:root[data-theme="light"] .style-accordion,
+:root[data-theme="light"] .page-translate-card,:root[data-theme="light"] .source-group,:root[data-theme="light"] .keys-hero,
+:root[data-theme="light"] .tool{box-shadow:0 1px 2px rgba(20,30,50,.04)}
+
+/* ---------- hero: the video frame with the power switch ---------- */
+.hero{display:flex;flex-direction:column;align-items:center;gap:8px;margin:2px 0 10px}
+.screen{
+  position:relative;width:100%;height:98px;border-radius:var(--radius-lg);overflow:hidden;isolation:isolate;
+  background:var(--screen);border:1px solid var(--screen-line);
+}
+.screen::before{
+  content:"";position:absolute;inset:0;z-index:0;pointer-events:none;
+  background:radial-gradient(60% 70% at 28% 22%,var(--scene-a),transparent 70%),radial-gradient(55% 60% at 82% 92%,var(--scene-b),transparent 70%);
+}
+.screen::after{
+  content:"";position:absolute;inset:0;z-index:1;pointer-events:none;background:var(--screen-veil);transition:opacity .35s ease;
+}
+.hero:has(#toggle.on) .screen::after{opacity:0}
+.screen .power{position:absolute!important;inset:0;margin:auto!important;z-index:2}
+.state{margin:0;font-size:12.5px;line-height:1.4;font-weight:600;color:var(--muted);text-align:center;max-width:300px}
+.state.on{color:var(--ok)}
+.hero>.status{width:100%;margin:0;text-align:center}
+
+/* ---------- power: Uiverse switch design (kept as approved) ---------- */
+.power{
+  width:52px!important;height:52px!important;min-width:0!important;min-height:0!important;padding:0!important;margin:0!important;
+  border-radius:50%!important;display:flex!important;align-items:center!important;justify-content:center!important;position:relative!important;
+  background:rgb(99,99,99)!important;border:2px solid rgb(126,126,126)!important;box-shadow:0px 0px 3px rgb(2,2,2) inset!important;
+  color:rgb(48,48,48)!important;font-size:18px!important;cursor:pointer;transform:none!important;
+  transition:box-shadow .25s ease,border-color .25s ease,background-color .25s ease!important;
+}
+.power::before,.power::after{display:none!important;content:none!important}
+.power svg.power-icon{width:1.2em;height:1.2em;display:block;pointer-events:none;overflow:visible}
+.power svg.power-icon path{fill:rgb(48,48,48);transition:fill .25s ease}
+.power:hover{transform:none!important;border-color:rgb(126,126,126)!important;box-shadow:0px 0px 3px rgb(2,2,2) inset!important}
+.power:active{transform:scale(.97)!important}
+.power:focus-visible{outline:2px solid rgb(151,243,255);outline-offset:4px}
+.power.on,
+:root[data-theme="light"] .power.on{
+  border:2px solid rgb(255,255,255)!important;background:rgb(146,180,184)!important;color:rgb(255,255,255)!important;
+  /* outer glow 60px (was 100px): at 2x the wider blur was clipped to a hard vertical seam in the frame */
+  box-shadow:0px 0px 1px rgb(151,243,255) inset,0px 0px 2px rgb(151,243,255) inset,0px 0px 10px rgb(151,243,255) inset,0px 0px 40px rgb(151,243,255),0px 0px 60px rgb(151,243,255),0px 0px 5px rgb(151,243,255)!important;
+}
+.power.on svg.power-icon{filter:drop-shadow(0px 0px 5px rgb(151,243,255))}
+.power.on svg.power-icon path{fill:rgb(255,255,255)}
+/* live status: progress ring around the power button, provider chip in the frame corner */
+.screen .progress-ring{position:absolute;left:50%;top:50%;width:70px;height:70px;transform:translate(-50%,-50%) rotate(-90deg);z-index:2;pointer-events:none;display:none;overflow:visible}
+.progress-ring.show{display:block}
+.progress-ring circle{fill:none;stroke-width:3.5}
+.progress-ring .ring-track{stroke:var(--ring-track)}
+.progress-ring .ring-fill{stroke:var(--accent);stroke-linecap:round;stroke-dasharray:100 100;stroke-dashoffset:100;transition:stroke-dashoffset .6s ease}
+.power .pct{display:none;font:700 15px/1 "VazirUI",sans-serif;color:inherit}
+.power.busy svg.power-icon{display:none}
+.power.busy .pct{display:block}
+.screen .provider-chip{position:absolute;top:8px;inset-inline-start:10px;z-index:3;display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:999px;background:var(--control-hi);color:var(--text);font:600 11.5px/1.2 "VazirUI",sans-serif;pointer-events:none}
+.provider-chip::before{content:"";width:6px;height:6px;border-radius:50%;background:var(--accent)}
+.provider-chip[data-provider="gemini"]::before{background:#8DB4FF}
+.provider-chip[data-provider="openrouter"]::before{background:#D4A8FF}
+.provider-chip[data-provider="openai"]::before{background:var(--mint-ink)}
+.screen-lang{position:absolute;top:8px;inset-inline-end:10px;z-index:3;display:inline-flex;align-items:center;gap:5px;padding:3px 9px 3px 8px;border-radius:999px;background:var(--control-hi);color:var(--text);font:600 11.5px/1.2 "VazirUI",sans-serif;pointer-events:none}
+.screen-lang svg{width:13px;height:13px;display:block;color:var(--accent-ink)}
+
+/* ---------- squircle icon tiles: the one memorable element, used on every row and tool ---------- */
+.mode-tile,.tool-tile,.page-translate-badge,.keys-hero-icon{
+  flex:none;width:34px;height:34px;border-radius:12px;display:grid;place-items:center;
+  background:var(--accent-soft);color:var(--accent-ink);
+}
+.mode-tile svg,.tool-tile svg,.page-translate-badge svg,.keys-hero-icon svg{width:18px;height:18px;display:block}
+.tone-cyan{background:var(--cyan-soft)!important;color:var(--cyan-ink)!important}
+.tone-mint{background:var(--mint-soft)!important;color:var(--mint-ink)!important}
+.tone-neutral{background:var(--control)!important;color:var(--muted)!important}
+.tone-violet{background:var(--accent-soft)!important;color:var(--accent-ink)!important}
+
+/* ---------- mode rows: one grouped card ---------- */
+.modes{display:flex;flex-direction:column;margin:0 0 10px;overflow:hidden}
+.mode{
+  display:flex;align-items:center;gap:10px;padding:9px 12px;cursor:pointer;color:var(--text);
+}
+.mode+.mode{border-top:1px solid var(--row-line)}
+.mode-copy{display:flex;flex-direction:column;gap:1px;min-width:0;flex:1}
+.mode-copy b{font:600 13px/1.35 "VazirUI",sans-serif;color:var(--text)}
+.mode-copy small{font-size:11.5px;line-height:1.45;color:var(--muted)}
+
+/* Uiverse switch: grey track, cyan glow when on (kept as approved) */
+input[type=checkbox].switch{
+  -webkit-appearance:none;appearance:none;position:relative;flex:none;
+  width:42px;height:22px;margin:0;padding:0;border-radius:30px;cursor:pointer;
+  border:1px solid rgb(126,126,126);background:rgb(99,99,99);box-shadow:0px 0px 3px rgb(2,2,2) inset;
+  transition:background-color .25s ease,box-shadow .25s ease,border-color .25s ease;
+}
+/* The knob is placed from the inline start, so in Persian (RTL) it sits on the right when off and on the left when on. */
+input[type=checkbox].switch::before{
+  content:"";position:absolute;top:2px;inset-inline-start:2px;width:18px;height:18px;border-radius:50%;
+  background:linear-gradient(145deg,#ffffff,#dfe4ec);box-shadow:0 1px 3px rgba(0,0,0,.35);
+  transition:inset-inline-start .25s ease;
+}
+input[type=checkbox].switch:checked{
+  background:rgb(146,180,184);border-color:rgb(255,255,255);
+  box-shadow:0px 0px 1px rgb(151,243,255) inset,0px 0px 10px rgb(151,243,255);
+}
+input[type=checkbox].switch:checked::before{inset-inline-start:calc(100% - 20px)}
+input[type=checkbox].switch:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
+
+/* quick dub controls under the dubbing row */
+.dub-quick{display:grid;gap:8px;padding:10px 12px 12px;border-top:1px solid var(--row-line)}
+.dub-quick label{display:flex;flex-direction:column;gap:4px;font-size:11.5px;color:var(--muted)}
+.dub-quick label>span{display:flex;align-items:center;justify-content:space-between;color:var(--text)}
+.dub-quick output{color:var(--accent-ink);font-variant-numeric:tabular-nums;font-weight:600}
+:root[data-theme="light"] .dub-quick output{color:var(--accent-ink)}
+
+/* dubbing audio choice */
+.segmented{display:flex;flex-direction:column;gap:6px;padding:10px 12px 12px;border-top:1px solid var(--row-line)}
+.segmented-label{font:600 11.5px/1.4 "VazirUI",sans-serif;color:var(--muted)}
+.segmented-options{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.segmented-btn{
+  min-height:40px;height:auto;padding:6px 8px;border:1px solid var(--field-line);border-radius:var(--radius-sm);
+  display:flex;align-items:center;justify-content:center;gap:6px;text-align:center;
+  background:var(--control);color:var(--muted);font:600 11.5px/1.45 "VazirUI",sans-serif;cursor:pointer;
+}
+.segmented-btn.active{background:var(--accent-soft);border-color:rgba(124,92,255,.6);color:var(--text)}
+.segmented-btn.active svg{color:var(--accent-ink)}
+.segmented-hint{font-size:11.5px;line-height:1.45;color:var(--muted-2)}
+
+/* ---------- tools: three squircle tiles ---------- */
+.tools{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin:0 0 10px}
+.tool{
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;
+  min-height:0;height:auto;padding:8px 4px 7px;color:var(--text);
+  font:600 11.5px/1.3 "VazirUI",sans-serif;white-space:nowrap;cursor:pointer;
+  transition:border-color .2s ease,transform .12s ease;
+}
+.tool:hover{background:var(--card);border-color:rgba(124,92,255,.5);color:var(--text)}
+.tool-tile{width:32px;height:32px;border-radius:11px}
+.tool-tile svg{width:17px;height:17px}
+/* Learn and Storyboard accordion (round 22): one section, two entries, one capture row. */
+.learn-acc-body{display:grid;grid-template-columns:1fr 1fr;gap:6px;padding:0 10px 10px}
+.learn-link{
+  display:flex;align-items:center;gap:9px;width:100%;min-height:44px;padding:6px 9px;
+  border:1px solid var(--card-line);border-radius:12px;background:var(--control);color:var(--text);
+  font:inherit;text-align:start;cursor:pointer;transition:border-color .2s ease,background .2s ease;
+}
+.learn-link:hover,.learn-link:focus-visible{border-color:rgba(124,92,255,.5);background:var(--card);outline:none}
+.learn-link-copy{display:grid;gap:1px;min-width:0}
+.learn-link-copy b{font:700 12.5px/1.35 "EstedadUI","VazirUI",sans-serif;color:var(--text)}
+.learn-link-copy small{font:400 11px/1.4 "VazirUI",sans-serif;color:var(--muted)}
+.shot-row{
+  display:flex;align-items:center;justify-content:center;gap:8px;width:100%;min-height:38px;margin:0 0 8px;padding:6px 10px;
+  border:1px solid var(--card-line);border-radius:12px;background:var(--control);color:var(--text);
+  font:600 12px/1.3 "VazirUI",sans-serif;cursor:pointer;transition:border-color .2s ease,background .2s ease;
+}
+.shot-row:hover,.shot-row:focus-visible{border-color:rgba(124,92,255,.5);background:var(--card);outline:none}
+.shot-row .tool-tile{width:26px;height:26px;border-radius:9px}
+.shot-row .tool-tile svg{width:15px;height:15px}
+/* A closed accordion keeps no space for its body, so the main tab fits without scrolling. */
+.disclosure:not([open])>.disclosure-body,.learn-acc:not([open])>.learn-acc-body{display:none}
+/* The learning tools open as a dropdown over the content above, so opening it never moves or scrolls the main tab and it never runs under the bottom bar. */
+details.learn-acc{position:relative;overflow:visible}
+details.learn-acc[open]>.learn-acc-body{
+  position:absolute;left:0;right:0;bottom:100%;z-index:30;margin-bottom:6px;padding:10px;max-height:min(300px,58vh);overflow-y:auto;
+  border:1px solid var(--card-line);border-radius:14px;background:var(--card);box-shadow:0 14px 34px rgba(0,0,0,.35);
+}
+
+/* ---------- notes and status ---------- */
+.note{margin:0 2px 8px;font-size:12.5px;line-height:1.5;color:var(--muted)}
+.status{
+  margin:0 0 8px;padding:8px 12px;border-radius:var(--radius-md);
+  background:var(--card);border:1px solid var(--card-line);font-size:12.5px;line-height:1.5;color:var(--muted);
+}
+.status strong{color:var(--text);font-weight:700}
+.error{color:var(--danger)!important}
+
+/* ---------- buttons and fields ---------- */
+button{
+  min-height:36px;padding:0 12px;border:1px solid var(--field-line);border-radius:var(--radius-md);
+  background:var(--control);color:var(--text);
+  font:600 12.5px/1.3 "VazirUI",sans-serif;cursor:pointer;
+  transition:background-color .2s ease,color .2s ease,transform .12s ease,border-color .2s ease;
+}
+button:hover{background:var(--control-hi)}
+button:active{transform:scale(.98)}
+button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+button:disabled{opacity:.55;cursor:default}
+button:has(> svg){display:inline-flex;align-items:center;justify-content:center;gap:7px}
+button svg{width:16px;height:16px;display:block}
+.btn-primary,.btn-primary:hover{background:var(--solid);color:var(--solid-ink);border-color:transparent}
+.btn-primary:hover{filter:brightness(1.08)}
+.wide-btn{width:100%;min-height:38px;margin:0 0 8px}
+#toggleTranscriptPanel{width:100%}
+
+select,input[type=text],input[type=password],input[type=number],input:not([type]){
+  width:100%;min-width:0;height:36px;padding:0 10px;border:1px solid var(--field-line);border-radius:var(--radius-md);
+  background:var(--field);color:var(--text);outline:none;font:500 12.5px "VazirUI",sans-serif;
+}
+input:focus,select:focus{border-color:rgba(124,92,255,.6);box-shadow:0 0 0 3px var(--accent-ring)}
+input[type=color]{width:100%;height:40px;padding:5px;border:1px solid var(--field-line);border-radius:var(--radius-md);background:var(--field);cursor:pointer}
+input[type=range]{width:100%;height:22px;margin:0;background:transparent;accent-color:var(--accent);cursor:pointer}
+label{font:500 11.5px/1.5 "VazirUI",sans-serif;color:var(--muted)}
+.hint{font-size:11.5px;line-height:1.45;color:var(--muted)}
+.section-title{font:700 13.5px/1.35 "EstedadUI","VazirUI",sans-serif;color:var(--text)}
+
+/* ---------- pickers: every dropdown uses the language-picker look (ui-language.js, select-menu.js) ---------- */
+.lang-trigger{
+  display:inline-flex!important;align-items:center;gap:8px;height:36px!important;min-height:0!important;padding:0 12px!important;
+  border:1px solid var(--field-line)!important;border-radius:var(--radius-sm)!important;background:var(--field)!important;
+  color:var(--text)!important;box-shadow:none!important;font:600 12.5px/1.3 "VazirUI",sans-serif!important;
+}
+.lang-trigger:hover,.lang-picker[data-open="true"] .lang-trigger{
+  border-color:rgba(124,92,255,.6)!important;box-shadow:0 0 0 3px var(--accent-ring)!important;background:var(--field)!important;
+}
+.lang-trigger:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.lang-trigger-globe,.lang-trigger-chev{color:var(--muted)!important}
+.lang-picker[data-open="true"] .lang-trigger-chev{color:var(--accent-ink)!important}
+.sel-picker{width:100%}
+.sel-picker .lang-trigger{width:100%!important;justify-content:space-between;text-align:start}
+.sel-picker .lang-trigger:disabled{opacity:.55;cursor:default;pointer-events:none}
+.sel-label{color:var(--text)}
+.lang-menu{
+  background:var(--menu)!important;border:1px solid var(--field-line)!important;border-radius:16px!important;padding:6px!important;
+  box-shadow:0 18px 40px rgba(0,0,0,.45)!important;color:var(--text)!important;
+}
+:root[data-theme="light"] .lang-menu{box-shadow:0 18px 40px rgba(30,40,60,.16)!important}
+.lang-opt{color:var(--text)!important;font:600 13px/1.4 "VazirUI",sans-serif!important;min-height:40px!important;border-radius:11px!important}
+.lang-opt:hover,.lang-opt:focus-visible{background:var(--accent-soft)!important;outline:none}
+.lang-opt[aria-checked="true"]{background:var(--accent-soft)!important;color:var(--text)!important}
+.lang-opt-code{color:var(--muted-2)!important}
+.lang-opt-tick{color:var(--accent-ink)!important}
+.header-controls .lang-menu{width:192px!important}
+
+/* ---------- translate tab: disclosures and the page card ---------- */
+.disclosure{display:block;margin:0 0 8px;overflow:hidden}
+.disclosure>summary,.style-accordion>summary{
+  list-style:none;cursor:pointer;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;row-gap:2px;gap:10px;
+  padding:8px 12px;font:700 13px/1.35 "EstedadUI","VazirUI",sans-serif;color:var(--text);
+}
+.disclosure>summary::-webkit-details-marker,.style-accordion>summary::-webkit-details-marker{display:none}
+.disclosure>summary::after,.style-accordion>summary::after{
+  content:"";flex:none;width:7px;height:7px;margin-inline-start:4px;
+  border-right:2px solid var(--muted);border-bottom:2px solid var(--muted);transform:rotate(45deg);transition:transform .2s ease;
+}
+.disclosure[open]>summary::after,.style-accordion[open]>summary::after{transform:rotate(-135deg)}
+.disclosure>summary>span:not(.hint){display:flex;align-items:center;gap:8px;min-width:0}
+.disclosure>summary>.hint{flex-basis:100%;order:2;font-size:11.5px;line-height:1.5;font-weight:400}
+.style-accordion>summary .hint{display:block;margin-top:2px}
+.disclosure-body,.accordion-body{padding:0 12px 12px}
+.disclosure-body>.hint{display:block;margin:4px 0 8px}
+.provider-badge{padding:4px 10px;border-radius:999px;background:var(--accent-soft);color:var(--accent-ink);font:700 11.5px/1.2 "VazirUI",sans-serif}
+.provider-select{margin-bottom:6px}
+#providerHint{margin:10px 0 0}
+.provider-model-row{display:grid;grid-template-columns:1fr;gap:6px;margin-top:8px}
+.provider-model-row>div{display:flex;gap:8px}
+.provider-model-row>div>select{flex:1}
+.provider-model-row>div>.sel-picker{flex:1 1 0;min-width:0}
+.model-fetch-btn{flex:none;height:40px;padding:0 12px;font-size:11.5px}
+.custom-provider-panel{margin-top:10px;padding:12px;border-radius:var(--radius-md);background:var(--control);display:flex;flex-direction:column;gap:8px}
+.custom-provider-title{font:700 13px "EstedadUI","VazirUI",sans-serif;color:var(--text)}
+.custom-provider-panel>button{width:100%}
+
+.page-translate-card{display:flex;flex-direction:column;gap:8px;margin:0 0 8px;padding:12px}
+.page-translate-head{display:flex;align-items:center;gap:12px}
+.page-translate-head>div:first-child{flex:1;min-width:0}
+.page-translate-head b{display:block;font:700 13.5px/1.35 "EstedadUI","VazirUI",sans-serif;color:var(--text)}
+.page-translate-head small{display:block;margin-top:1px;font-size:11.5px;line-height:1.45;color:var(--muted)}
+.page-translate-controls{display:grid;grid-template-columns:1fr;gap:8px}
+.page-translate-controls label{display:grid;grid-template-columns:84px minmax(0,1fr);align-items:center;gap:10px}
+.page-translate-actions{display:grid;grid-template-columns:1fr auto;gap:8px}
+.page-translate-auto{display:flex;flex-direction:column;gap:4px}
+.page-translate-auto-row{display:flex;align-items:center;justify-content:space-between;gap:10px;font:600 13px/1.4 "EstedadUI","VazirUI",sans-serif;color:var(--text);cursor:pointer}
+.page-translate-auto small{font-size:11.5px;line-height:1.45;color:var(--muted)}
+.page-translate-status{font-size:12.5px;line-height:1.45;color:var(--muted)}
+
+/* source, tone and target: one card, rows with hairlines */
+.source-group{margin:0 0 8px;padding:0 12px;overflow:hidden}
+.source-row{display:grid;grid-template-columns:88px minmax(0,1fr);align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid var(--row-line)}
+.source-row:last-child{border-bottom:0}
+.source-row label{color:var(--text);font:600 12.5px/1.35 "VazirUI",sans-serif;white-space:normal}
+.source-row select{width:100%}
+.adv-field{display:grid;grid-template-columns:84px minmax(0,1fr);align-items:center;gap:10px;margin:0 0 8px}
+.adv-field>label{color:var(--text);font:600 12.5px/1.4 "VazirUI",sans-serif;white-space:nowrap}
+.adv>summary{padding:8px 12px}
+.adv{margin:0 0 8px}
+
+.export-audio-row,.glossary-form{display:grid;gap:8px;margin-top:10px}
+.glossary-form{grid-template-columns:1fr 1fr}
+.glossary-form button{grid-column:1/-1}
+.glossary-form input{height:36px}
+#glossary-list{margin-top:12px;display:flex;flex-direction:column;gap:8px}
+#glossary-empty{margin-top:8px}
+.gloss-row{display:flex;align-items:center;gap:10px;padding:8px 8px 8px 12px;border:1px solid var(--field-line);border-radius:var(--radius-sm);background:var(--field)}
+.gloss-text{flex:1;min-width:0;font-size:12.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.gloss-del{min-height:32px;padding:0 10px;border-radius:999px;font-size:11.5px;background:transparent;color:var(--muted)}
+.export-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.export-grid button{height:36px;padding:0;font:700 11.5px "Inter",sans-serif;letter-spacing:.03em}
+.export-audio-row{grid-template-columns:90px 1fr 1fr}
+.export-audio-row button{height:36px;padding:0 8px;font-size:11.5px}
+
+/* ---------- style tab ---------- */
+.style-shell{display:flex;flex-direction:column;gap:0}
+.style-live-preview{
+  position:sticky;top:8px;z-index:6;isolation:isolate;overflow:hidden;margin:0 0 6px;padding:8px 12px;border-radius:var(--radius);
+  background:var(--screen);border:1px solid var(--screen-line);
+}
+.style-live-preview::before{content:"";position:absolute;inset:0;border-radius:inherit;background:var(--screen);z-index:-1;pointer-events:none}
+.style-preview-stage{min-height:48px;display:grid;place-items:center}
+.style-preview-caption{display:flex;flex-direction:column;align-items:center;gap:5px;text-align:center}
+.style-preview-caption .preview-orig{display:block;color:#fff;opacity:.7;font-family:Arial,sans-serif;font-size:11.5px;line-height:1.25;margin-bottom:2px}
+.style-preview-caption .preview-fa{display:block;color:#fff;font-size:13.5px;line-height:1.35;transition:all .12s ease}
+.style-preview-caption .preview-highlight{display:inline;color:inherit;font-weight:700}
+.style-live-hint{margin:6px 2px 4px;font-size:11.5px;line-height:1.45;color:var(--muted)}
+.style-accordion{display:block;margin:0 0 5px;overflow:hidden}
+.accordion-copy{display:flex;flex-direction:row;flex-wrap:wrap;align-items:baseline;gap:2px 8px}
+.accordion-copy small{font:400 11.5px/1.4 "VazirUI",sans-serif;color:var(--muted)}
+.preset-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.preset-grid button{height:32px;min-height:0;padding:0 8px;border-radius:var(--radius-sm);font-size:12.5px}
+.preset-grid button.active{background:var(--solid);color:var(--solid-ink);border-color:transparent}
+.style-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px 10px}
+.style-field{display:flex;flex-direction:column;gap:5px;min-width:0}
+.style-field.wide{grid-column:1/-1}
+.style-field>label{display:flex;justify-content:space-between;gap:6px}
+.style-field>label span{direction:ltr;color:var(--text)}
+.style-actions{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:6px}
+.style-actions button{width:100%;padding:0 8px;white-space:nowrap}
+.style-actions .btn-primary{grid-column:1/-1;order:-1;height:40px}
+
+/* ---------- services tab ---------- */
+.keys-hero{display:grid;grid-template-columns:34px minmax(0,1fr);column-gap:10px;row-gap:6px;align-items:start;position:relative;margin:0 0 8px;padding:10px 12px}
+.keys-hero-icon{width:34px;height:34px;border-radius:12px}
+.keys-hero-icon svg{width:18px;height:18px}
+.keys-hero>div:nth-child(2){min-width:0}
+.keys-hero h2{margin:0 0 2px;font:700 15px/1.3 "EstedadUI","VazirUI",sans-serif;color:var(--text)}
+.keys-hero p{margin:0;font-size:12.5px;line-height:1.45;color:var(--muted)}
+.secure-pill{position:absolute;inset-inline-end:12px;top:10px;padding:3px 9px;border-radius:999px;background:var(--mint-soft);color:var(--ok);font-size:11.5px;line-height:1.4}
+.svc-state{flex:none;padding:3px 8px;border-radius:999px;border:1px solid var(--field-line);background:var(--control);color:var(--muted);font-style:normal;font-size:11.5px;line-height:1.3;white-space:nowrap}
+.svc-state.is-ready{color:var(--ok);background:var(--mint-soft);border-color:rgba(37,216,160,.34)}
+.service-row{cursor:default;padding:7px 12px}
+.service-note{display:block;margin:4px 4px 6px;font-size:11.5px;line-height:1.45;color:var(--muted-2)}
+.custom-api-btn{width:100%;min-height:38px;margin-bottom:6px}
+.support-open{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;height:38px;padding:0 16px;border-radius:var(--radius-md);background:var(--card);border:1px solid var(--card-line);color:var(--text);font:700 12px/1 "VazirUI",sans-serif;text-decoration:none}
+.support-open:hover{background:var(--control-hi)}
+.site-back{display:block;padding:8px 0;margin:-2px auto 0;text-align:center;font:500 12.5px/1.3 "VazirUI",sans-serif;color:var(--muted);text-decoration:none}
+.site-back:hover,.site-back:focus-visible{color:var(--text);text-decoration:underline}
+
+/* ---------- footer ---------- */
+/* bottom space = dock offset 12px + dock height 62px + 16px gap, so at the end of the scroll the last line sits 16px above the dock */
+footer{margin-top:2px;padding:0 14px 76px;display:flex;flex-direction:column}
+.credit-line{margin:2px 0 0;text-align:center;font-size:11.5px;line-height:1.4;color:var(--muted-2)}
+.credit-line a{display:inline-block;padding:8px 3px;margin:-8px 0;color:var(--muted);text-decoration:none}
+.credit-line a:hover{color:var(--accent-ink)}
+#today{font:600 11.5px/1.4 "Inter",sans-serif;color:var(--muted-2)}
+
+/* ---------- toast: short messages above the nav (replaces the footer text) ---------- */
+.toast{
+  position:fixed;left:50%;bottom:76px;z-index:30;max-width:320px;padding:9px 16px;border-radius:999px;
+  background:var(--card);border:1px solid var(--card-line);color:var(--text);box-shadow:var(--dock-shadow);
+  font:600 12px/1.5 "VazirUI",sans-serif;text-align:center;pointer-events:none;
+  opacity:0;transform:translate(-50%,6px);transition:opacity .2s ease,transform .2s ease;
+}
+.toast.show{opacity:1;transform:translate(-50%,0)}
+
+/* ---------- onboarding overlay ---------- */
+#onboarding{
+  position:fixed;inset:0;z-index:50;display:none;flex-direction:column;padding:18px 16px 16px;background:var(--bg);
+}
+#onboarding.show{display:flex}
+#onboarding .ob-step{
+  display:none;flex-direction:column;align-items:center;justify-content:center;gap:12px;text-align:center;
+  flex:none;margin:auto 0;padding:30px 22px;border-radius:var(--radius-lg);
+}
+#onboarding .ob-step.active{display:flex}
+.ob-icon{width:70px;height:70px;border-radius:22px;display:grid;place-items:center;background:var(--accent-soft)}
+.ob-icon img{width:44px;height:44px;display:block;border-radius:12px}
+.ob-title{margin:4px 0 0;font:700 17px/1.4 "EstedadUI","VazirUI",sans-serif;color:var(--text)}
+.ob-desc{margin:0;font-size:12px;line-height:1.9;color:var(--muted)}
+.ob-nav{display:flex;align-items:center;gap:8px;margin-top:16px}
+.ob-dots{flex:1;min-width:0;display:flex;justify-content:center;gap:6px}
+.ob-dot{width:6px;height:6px;border-radius:99px;background:var(--field-line);transition:width .2s ease,background-color .2s ease}
+.ob-dot.active{width:18px;background:var(--accent)}
+.ob-skip{background:transparent;border-color:transparent;color:var(--muted);padding:8px 6px;white-space:nowrap;flex:none}
+.ob-skip:hover{background:transparent;color:var(--text)}
+.ob-next{min-width:100px;background:var(--solid);color:var(--solid-ink);border-color:transparent}
+.ob-next:hover{background:var(--solid);color:var(--solid-ink);filter:brightness(1.08)}
+.ob-lang{position:relative;flex:none}
+.ob-lang .lang-trigger{height:36px!important}
+
+/* ---------- sign-in wall (account-gate.js): same tokens ---------- */
+#subify-gate .sg-card{padding:6px 2px 0}
+#subify-gate .sg-title{font:700 18px/1.4 "EstedadUI","VazirUI",sans-serif!important;color:var(--text)!important}
+#subify-gate .sg-btn{background:var(--card)!important;border:1px solid var(--card-line)!important;box-shadow:none!important;border-radius:var(--radius)!important;color:var(--text)!important;min-height:60px!important}
+#subify-gate .sg-btn:hover{background:var(--control-hi)!important;color:var(--text)!important}
+#subify-gate .sg-btn.is-primary{background:var(--solid)!important;border-color:transparent!important;color:var(--solid-ink)!important}
+#subify-gate .sg-btn.sg-ghost:not(.is-primary){border-style:dashed!important;background:transparent!important}
+#subify-gate .sg-ico{border:0!important;box-shadow:0 2px 6px rgba(0,0,0,.18)!important;border-radius:10px!important}

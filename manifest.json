@@ -1,13 +1,11 @@
 {
   "manifest_version": 3,
-  "name": "subify | ترجمه هوشمند زیرنویس یوتیوب",
-  "short_name": "subify",
-  "version": "2.4.16",
-  "description": "ترجمه مستقیم زیرنویس زمان‌بندی‌شده YouTube با ترجمه پیش‌دستانه، همگام‌سازی دقیق و خروجی SRT، VTT و TXT.",
-  "minimum_chrome_version": "116",
+  "name": "Subify | ترجمه، دوبله و زیرنویس هوشمند ویدیو",
+  "short_name": "Subify",
+  "version": "2.9.30",
+  "description": "ترجمه مستقیم زیرنویس زمان‌بندی‌شده YouTube با Cache ابری پایدار، ترجمه پیش‌دستانه و خروجی SRT، VTT و TXT.",
   "action": {
     "default_popup": "popup.html",
-    "default_title": "subify | ترجمه هوشمند زیرنویس یوتیوب",
     "default_icon": {
       "16": "icons/icon16.png",
       "48": "icons/icon48.png",
@@ -20,24 +18,32 @@
   },
   "permissions": [
     "storage",
-    "tabCapture",
-    "offscreen",
     "activeTab",
     "downloads",
-    "tabs"
+    "tabs",
+    "offscreen",
+    "tabCapture",
+    "scripting"
   ],
   "host_permissions": [
     "https://www.youtube.com/*",
     "https://www.youtube-nocookie.com/*",
     "https://generativelanguage.googleapis.com/*",
-    "wss://generativelanguage.googleapis.com/*",
     "https://openrouter.ai/*",
-    "https://api.openai.com/*"
+    "https://api.openai.com/*",
+    "https://sub-ify.site/*",
+    "https://api.dictionaryapi.dev/*"
+  ],
+  "optional_host_permissions": [
+    "https://*/*",
+    "http://*/*"
   ],
   "content_scripts": [
     {
       "matches": [
-        "https://www.youtube.com/*"
+        "https://www.youtube.com/*",
+        "https://www.youtube-nocookie.com/*",
+        "https://www.udemy.com/*"
       ],
       "js": [
         "page-bridge.js"
@@ -46,9 +52,37 @@
     },
     {
       "matches": [
-        "https://www.youtube.com/*"
+        "https://www.youtube.com/*",
+        "https://www.youtube-nocookie.com/*",
+        "https://vimeo.com/*",
+        "https://*.vimeo.com/*",
+        "https://player.vimeo.com/*",
+        "https://www.aparat.com/*",
+        "https://aparat.com/*",
+        "https://www.coursera.org/*",
+        "https://twitter.com/*",
+        "https://x.com/*",
+        "https://www.instagram.com/*",
+        "https://www.facebook.com/*",
+        "https://www.tiktok.com/*",
+        "https://www.threads.com/*",
+        "https://www.threads.net/*",
+        "https://www.udemy.com/*",
+        "https://www.linkedin.com/*",
+        "https://courses.edx.org/*",
+        "https://learning.edx.org/*",
+        "https://*.h5p.com/*",
+        "https://www.ted.com/*",
+        "https://www.khanacademy.org/*",
+        "https://meet.google.com/*",
+        "https://*.zoom.us/*",
+        "https://teams.microsoft.com/*",
+        "https://teams.live.com/*",
+        "https://*.webex.com/*"
       ],
+      "all_frames": true,
       "js": [
+        "learning-core.js",
         "subtitle-overlay.js"
       ],
       "css": [
@@ -60,13 +94,62 @@
   "web_accessible_resources": [
     {
       "resources": [
-        "page-hook.js",
-        "fonts/Lalezar-Regular.ttf",
-        "fonts/OFL.txt",
-        "icons/*.png"
+        "page-hook.js"
       ],
       "matches": [
-        "https://www.youtube.com/*"
+        "https://www.youtube.com/*",
+        "https://www.youtube-nocookie.com/*",
+        "https://www.udemy.com/*"
+      ]
+    },
+    {
+      "resources": [
+        "icons/*.png",
+        "fonts/*"
+      ],
+      "matches": [
+        "https://www.youtube.com/*",
+        "https://www.youtube-nocookie.com/*",
+        "https://vimeo.com/*",
+        "https://*.vimeo.com/*",
+        "https://player.vimeo.com/*",
+        "https://www.aparat.com/*",
+        "https://aparat.com/*",
+        "https://www.coursera.org/*",
+        "https://twitter.com/*",
+        "https://x.com/*",
+        "https://www.instagram.com/*",
+        "https://www.facebook.com/*",
+        "https://www.tiktok.com/*",
+        "https://www.threads.com/*",
+        "https://www.threads.net/*",
+        "https://www.udemy.com/*",
+        "https://www.linkedin.com/*",
+        "https://courses.edx.org/*",
+        "https://learning.edx.org/*",
+        "https://*.h5p.com/*",
+        "https://www.ted.com/*",
+        "https://www.khanacademy.org/*",
+        "https://meet.google.com/*",
+        "https://*.zoom.us/*",
+        "https://teams.microsoft.com/*",
+        "https://teams.live.com/*",
+        "https://*.webex.com/*"
+      ]
+    },
+    {
+      "resources": [
+        "fonts/Vazirmatn-Regular.ttf",
+        "fonts/Estedad-Medium.ttf",
+        "fonts/Lalezar-Regular.ttf",
+        "fonts/Sahel-Bold.ttf",
+        "fonts/AradFD-Regular.woff2",
+        "fonts/Inter-400.woff2",
+        "fonts/Poppins-500.woff2",
+        "fonts/Montserrat-500.woff2"
+      ],
+      "matches": [
+        "<all_urls>"
       ]
     }
   ],
@@ -74,5 +157,8 @@
     "16": "icons/icon16.png",
     "48": "icons/icon48.png",
     "128": "icons/icon128.png"
+  },
+  "content_security_policy": {
+    "extension_pages": "script-src 'self'; object-src 'self'"
   }
 }

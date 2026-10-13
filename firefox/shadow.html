@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Subify • تمرین تلفظ</title>
+<link rel="stylesheet" href="ai-pages.css">
+<link rel="stylesheet" href="starfield.css">
+<style id="sfy-sky">html:not([data-theme="light"]){background:radial-gradient(ellipse at 50% -10%,#1B2735,#090A0F) fixed!important}html[data-theme="light"]{background:#fafafa!important}body{background:transparent!important;isolation:isolate}body>.sfy-stars{z-index:-1}</style>
+</head>
+<body>
+<div class="sfy-stars" aria-hidden="true"><i class="l1"></i><i class="l2"></i><i class="l3"></i><i class="l4"></i></div>
+<a class="skip" href="#main">رفتن به محتوا</a>
+<header class="ai-head">
+  <div>
+    <h1>تمرین تلفظ</h1>
+    <p class="ai-sub">یک جملهٔ ویدیو را گوش بده، با صدای خودت تکرار کن و بازخورد بگیر.</p>
+  </div>
+  <div class="header-actions"></div>
+</header>
+<nav class="ai-nav" aria-label="بخش‌های هوش مصنوعی">
+  <a href="chat.html">گفت‌وگو</a>
+  <a href="summary.html">خلاصه</a>
+  <a href="roleplay.html">نقش‌آفرینی</a>
+  <a href="writer.html">نوشتن</a>
+  <a href="shadow.html" aria-current="page">تلفظ</a>
+</nav>
+<main id="main" class="ai-main">
+  <section id="ctx" class="ai-ctx" aria-live="polite"></section>
+
+  <section class="ai-card ai-stack" aria-labelledby="pick-title">
+    <h2 id="pick-title">جمله‌ها</h2>
+    <div id="sentences" class="ai-sentences" role="group" aria-labelledby="pick-title"></div>
+  </section>
+
+  <section class="ai-card ai-stack" aria-labelledby="step-title">
+    <h2 id="step-title">جمله‌ای که تمرین می‌کنی</h2>
+    <p id="target" class="ai-target ai-ltr" lang="en"></p>
+    <p id="voice-note" class="ai-muted ai-small"></p>
+
+    <div class="ai-btnrow">
+      <button id="listen" class="ai-btn" type="button">پخش جمله</button>
+      <button id="rec" class="ai-btn ai-btn--primary" type="button">شروع ضبط</button>
+      <span id="timer" class="ai-muted ai-timer" aria-live="off">۰:۰۰</span>
+    </div>
+    <p class="ai-muted ai-small">برای ضبط، مرورگر اجازهٔ میکروفون می‌خواهد. صدا فقط برای تحلیل همین جمله فرستاده می‌شود.</p>
+    <p id="status" class="ai-status" role="status"></p>
+  </section>
+
+  <section id="result" class="ai-card ai-stack" aria-labelledby="result-title" hidden>
+    <div class="ai-card-head">
+      <h2 id="result-title">بازخورد</h2>
+      <div class="ai-btnrow">
+        <button id="retry" class="ai-btn" type="button">دوباره ضبط کن</button>
+        <button id="next" class="ai-btn ai-btn--ghost" type="button">جملهٔ بعدی</button>
+      </div>
+    </div>
+    <div class="ai-kv">
+      <b id="score-label">امتیاز شباهت</b>
+      <div class="ai-row">
+        <div class="ai-meter ai-grow" role="progressbar" aria-labelledby="score-label" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><i id="meter" style="width:0%"></i></div>
+        <strong id="score" class="ai-score">0</strong>
+      </div>
+      <p class="ai-muted ai-small">این امتیاز از روی شباهت متن شنیده‌شده با جمله حساب می‌شود. تلفظ دقیق و لهجه را نمی‌سنجد.</p>
+    </div>
+    <div class="ai-kv">
+      <b>آنچه شنیده شد</b>
+      <p id="heard" class="ai-ltr"></p>
+    </div>
+    <div class="ai-kv">
+      <b>کلمه‌های جا افتاده</b>
+      <div id="missing" class="ai-chips"></div>
+    </div>
+    <div class="ai-kv">
+      <b>کلمه‌های اشتباه</b>
+      <div id="wrong" class="ai-list"></div>
+    </div>
+    <div class="ai-kv">
+      <b>کلمه‌های اضافه</b>
+      <div id="extra" class="ai-chips"></div>
+    </div>
+    <div class="ai-kv">
+      <b>ریتم و مکث</b>
+      <p id="timing"></p>
+    </div>
+    <div class="ai-kv">
+      <b>نکته‌های مربی</b>
+      <p id="coach"></p>
+    </div>
+  </section>
+</main>
+<script src="learning-core.js"></script>
+<script src="ui-language.js"></script>
+<script src="ai-core.js"></script>
+<script src="shadow.js"></script>
+</body>
+</html>

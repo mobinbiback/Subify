@@ -1,0 +1,147 @@
+<!doctype html><html lang="fa" dir="rtl"><head>
+  <meta name="sby-build" content="4d6f62696e626962616b">
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Subify lite • یادگیری لغت</title><style>
+@font-face{font-family:"Lalezar";src:url("fonts/Lalezar-Regular.ttf") format("truetype");font-weight:100 900;font-style:normal;font-display:swap}
+@font-face{font-family:"VazirUI";src:url("fonts/Vazirmatn-Regular.ttf") format("truetype");font-weight:400;font-style:normal;font-display:swap}
+@font-face{font-family:"VazirUI";src:url("fonts/Vazirmatn-Medium.ttf") format("truetype");font-weight:500 700;font-style:normal;font-display:swap}
+@font-face{font-family:"VazirUI";src:url("fonts/Vazirmatn-Light.ttf") format("truetype");font-weight:100 300;font-style:normal;font-display:swap}
+@font-face{font-family:"EstedadUI";src:url("fonts/Estedad-Regular.ttf") format("truetype");font-weight:400;font-style:normal;font-display:swap}
+@font-face{font-family:"EstedadUI";src:url("fonts/Estedad-Medium.ttf") format("truetype");font-weight:500 900;font-style:normal;font-display:swap}
+:root{color-scheme:dark;--bg:#080b10;--surface:#10151d;--surface2:#151c26;--border:#222b38;--ink:#f5f7fa;--muted:#8993a3;--coral:#7c5cff;--teal:#32d6a0;--amber:#d6b46a;--accent:#7c5cff;--line:#222b38;--panel:#10151d}
+:root[data-theme="light"]{color-scheme:light;--bg:#f5f6fa;--surface:#fff;--surface2:#f4f5f9;--border:#e2e5ed;--ink:#161a24;--muted:#697285;--coral:#7057f5;--teal:#149a72;--amber:#8b6326;--accent:#7057f5;--line:#e2e5ed;--panel:#fff}*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.6 "Lalezar",sans-serif}.wrap{max-width:920px;margin:auto;padding:28px 20px 60px}header{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px}h1{margin:0;color:var(--coral);font-size:22px}.sub{color:var(--muted);font-size:12px}.toolbar{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px}button{border:1px solid var(--border);background:var(--surface);border-radius:9px;padding:8px 13px;cursor:pointer;font:600 13px inherit}button:hover{background:var(--surface2)}.primary{background:var(--coral);border-color:var(--coral);color:#fff}.grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}.card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:16px;box-shadow:0 2px 8px #5d40230f}.word{font-size:25px;font-weight:800}.meaning{font-size:18px;color:var(--teal);margin-top:5px}.meta{color:var(--muted);font-size:12px;margin-top:8px}.example{margin-top:10px;padding:9px 11px;background:var(--surface2);border-radius:9px}.grades{display:flex;gap:8px;margin-top:14px}.grades button{flex:1}.again{color:#b42318}.good{color:var(--teal)}.easy{color:var(--amber)}.empty{text-align:center;color:var(--muted);padding:50px 10px}.list{margin-top:18px}.row{display:grid;grid-template-columns:1fr 1fr 90px 100px;gap:10px;align-items:center;padding:10px 12px;border-bottom:1px solid var(--border)}.row:first-child{font-weight:700;background:var(--surface2)}@media(max-width:700px){.grid{grid-template-columns:1fr}.row{grid-template-columns:1fr 1fr}}
+
+/* SUBIFY UI/UX REFRESH */
+:root{}
+body{background:radial-gradient(circle at 50% -10%,rgba(124,92,255,.08),transparent 35%),var(--bg);color:var(--ink);font-family:"VazirUI",sans-serif;transition:background .2s ease,color .2s ease}
+:root[data-theme="light"] body{background:linear-gradient(180deg,#f7f9fc,#edf2f8 72%,#eaf0f7);}
+.theme-btn{width:38px;height:38px;padding:0;border:1px solid var(--border);border-radius:12px;background:var(--surface);color:var(--ink);font:inherit;font-size:16px;cursor:pointer;transition:.15s;box-shadow:0 5px 18px rgba(0,0,0,.08)}
+.theme-btn:hover{border-color:var(--accent);transform:translateY(-1px)}
+:root[data-theme="light"] .theme-btn{background:rgba(255,255,255,.78);box-shadow:0 8px 22px rgba(50,65,95,.13)}
+.wrap{max-width:960px;padding:32px 22px 64px}h1{font-family:"EstedadUI",sans-serif;color:var(--ink);font-size:25px}.sub{font-size:10px}.toolbar{gap:7px}button{border-radius:11px;background:var(--surface);border-color:var(--border);color:var(--ink);font-family:"VazirUI",sans-serif;font-size:11px}.primary{background:var(--accent);border-color:var(--accent)}.grid{gap:12px}.card{background:var(--surface);border-color:var(--border);border-radius:16px;box-shadow:0 14px 38px rgba(0,0,0,.18)}.meaning{color:#a999ff}.example{background:var(--surface2);border-radius:10px}.row{border-color:var(--border)}.row:first-child{background:var(--surface2)}
+
+
+/* ---- full dictionary entries ---- */
+.wcard{border:1px solid var(--line);border-radius:14px;background:var(--panel);margin:8px 0;overflow:hidden}
+.wcard>summary{display:grid;grid-template-columns:minmax(80px,140px) 1fr auto auto;gap:12px;align-items:center;padding:12px 14px;cursor:pointer;list-style:none}
+.wcard>summary::-webkit-details-marker{display:none}
+.wcard .w{font-weight:800}.wcard .m{opacity:.85}.wcard .l,.wcard .b{font-size:12px;opacity:.65}
+.wbody{padding:6px 16px 16px;border-top:1px dashed var(--line)}
+.entry-head{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin:10px 0 8px}
+.entry-word{font-size:22px;font-weight:800}.entry-ipa{opacity:.6;font-size:14px}
+.chip{font-size:11px;padding:2px 9px;border-radius:999px;background:rgba(124,92,255,.12);color:#5b3fd6}
+.chip-pos{background:rgba(255,140,0,.14);color:#b05a00}
+.entry-meaning{font-size:18px;font-weight:700;margin:6px 0;line-height:1.8}
+.entry-def{opacity:.75;margin:4px 0;line-height:1.7;text-align:left}
+.entry-line{margin:5px 0;font-size:14px}
+.entry-example{margin:10px 0;padding:10px 12px;border-radius:10px;background:var(--surface2);line-height:1.8;text-align:left}
+.entry-example-fa{opacity:.75;direction:rtl;text-align:right;margin-top:3px}
+.entry-note{margin:8px 0;padding:8px 12px;border-radius:10px;background:rgba(255,200,0,.14);font-size:13.5px;line-height:1.8}
+.entry-src{margin-top:10px;font-size:12.5px;opacity:.7;line-height:1.7}.entry-src-fa{margin-top:2px}
+.entry-empty{opacity:.65;margin:6px 0 10px}
+.btn-enrich{padding:8px 14px;border-radius:10px;border:1px solid #7c5cff;background:#7c5cff;color:#fff;cursor:pointer;font:inherit}
+.btn-enrich:disabled{opacity:.6;cursor:progress}
+.gr-block{margin-top:12px}
+.btn-grammar{display:inline-flex;align-items:center;gap:8px;height:34px;padding:0 14px 0 6px;border-radius:999px;border:1px solid rgba(124,92,255,.42);background:linear-gradient(135deg,rgba(124,92,255,.16),rgba(79,193,215,.10));color:var(--ink);font:inherit;font-size:12.5px;font-weight:700;cursor:pointer;transition:transform .15s,box-shadow .2s,border-color .2s}
+.btn-grammar:hover{transform:translateY(-1px);border-color:rgba(124,92,255,.7);box-shadow:0 10px 22px rgba(124,92,255,.20)}
+.btn-grammar:disabled{opacity:.6;cursor:progress}
+.btn-grammar .gr-ico{width:24px;height:24px;border-radius:50%;display:grid;place-items:center;background:linear-gradient(135deg,#7c5cff,#4fc1d7);color:#fff;box-shadow:0 4px 10px rgba(124,92,255,.35)}
+.btn-grammar .gr-chev{font-size:13px;opacity:.6;transition:transform .2s}
+.btn-grammar[aria-expanded="true"] .gr-chev{transform:rotate(180deg)}
+.gr-panel{margin-top:10px;padding:4px 14px;border-radius:14px;border:1px solid var(--border);background:rgba(124,92,255,.05)}
+.gr-panel[hidden]{display:none}
+.gr-row{padding:9px 0;border-top:1px solid var(--border)}
+.gr-row:first-child{border-top:0}
+.gr-row b{display:block;font-size:11px;color:var(--muted);font-weight:700;margin-bottom:2px}
+.gr-row div{font-size:13.5px;line-height:1.75;color:var(--ink)}
+.gr-fail{padding:10px 0;font-size:12.5px;color:var(--muted)}
+.gr-retry{margin:0 0 10px;height:30px;padding:0 12px;border-radius:999px;border:1px solid var(--border);background:var(--surface);color:var(--ink);font:inherit;font-size:12px;cursor:pointer}
+.gr-loading{display:flex;align-items:center;gap:6px;padding:12px 0;color:var(--muted);font-size:12.5px}
+.gr-loading i{width:6px;height:6px;border-radius:50%;background:#7c5cff;animation:grDot 1s infinite ease-in-out}
+.gr-loading i:nth-child(2){animation-delay:.15s}
+.gr-loading i:nth-child(3){animation-delay:.3s}
+@keyframes grDot{0%,80%,100%{opacity:.25;transform:translateY(0)}40%{opacity:1;transform:translateY(-3px)}}
+</style><link rel="stylesheet" href="starfield.css"/><style id="sfy-sky">html:not([data-theme="light"]){background:radial-gradient(ellipse at 50% -10%,#1B2735,#090A0F) fixed!important}html[data-theme="light"]{background:#fafafa!important}body{background:transparent!important;isolation:isolate}body>.sfy-stars{z-index:-1}</style><style id="sfy-responsive">/* Phone width: the header stacks, the static column bar is hidden (each card already shows its columns),
+   and every card keeps the word and level on one line with the meaning under it, so nothing is squeezed. */
+@media (max-width:560px){
+  .wrap{padding:22px 14px 48px}
+  header{flex-direction:column;align-items:flex-start;gap:12px}
+  h1{font-size:21px}
+  .list>.row{display:none}
+  .wcard>summary{grid-template-columns:minmax(0,1fr) auto auto;gap:6px 10px;padding:10px 12px}
+  .wcard .w{font-size:15px;overflow-wrap:anywhere}
+  .wcard .m{grid-column:1/-1;grid-row:2;white-space:normal;overflow-wrap:anywhere;font-size:13px}
+  .wcard .l,.wcard .b{font-size:11px}
+  .toolbar button{flex:1 1 auto}
+}
+</style>
+<style id="r18-learn">
+[hidden]{display:none!important}
+:root{--again:#ff8f85;--hard:#f2c46d;--good:#3fdcaa;--easy:#d6b46a;--primary-bg:#6a4fe6;--link:#b3a4ff}
+:root[data-theme="light"]{--again:#a3261b;--hard:#7a5200;--good:#0f7a5a;--easy:#7a5418;--primary-bg:#5446d8;--link:#5446d8}
+.primary,.tabs button[aria-pressed="true"],.btn-enrich{background:var(--primary-bg)!important;border-color:var(--primary-bg)!important;color:#fff!important}
+.chip{color:#c9bfff}
+:root[data-theme="light"] .chip{color:#5b3fd6}
+.chip-pos{color:#ffb86b}
+:root[data-theme="light"] .chip-pos{color:#8a4a00}
+.src-link,.note-time{color:var(--link)}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.status{min-height:1.6em;margin:0 0 10px;color:var(--muted);font-size:12px}
+.tabs{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 14px}
+.tabs button{min-height:38px;padding:0 15px}
+.tabs button[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:#fff}
+.review-card{grid-column:1/-1;display:grid;gap:12px}
+.review-meta{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;font-size:12px;color:var(--muted)}
+.src-line{display:flex;align-items:center;gap:6px;flex-wrap:wrap;font-size:12.5px;color:var(--muted);margin-top:6px}
+.src-link{color:var(--link);text-decoration:underline;text-underline-offset:3px;overflow-wrap:anywhere}
+.src-time{font-variant-numeric:tabular-nums;padding:1px 8px;border-radius:999px;background:var(--surface2);color:var(--ink)}
+.reveal{min-height:42px;padding:0 20px;font-size:13px}
+.review-back{display:grid;gap:4px;border-radius:10px}
+.review-back:focus-visible{outline:2px solid var(--accent);outline-offset:4px}
+.grades{margin-top:6px}
+.grades button{min-height:42px;font-weight:700}
+.grades .again{color:var(--again)}
+.grades .hard{color:var(--hard)}
+.grades .good{color:var(--good)}
+.grades .easy{color:var(--easy)}
+.note-group{grid-column:auto;margin:0 0 12px;padding:14px 16px}
+.note-title{margin:0 0 8px;font-size:15px;color:var(--ink)}
+.note-list{list-style:none;margin:0;padding:0;display:grid;gap:8px}
+.note-item{display:grid;grid-template-columns:76px minmax(0,1fr);gap:10px;align-items:start;padding:9px 11px;border-radius:10px;background:var(--surface2)}
+.note-time{font-variant-numeric:tabular-nums;font-weight:700;color:var(--link);text-decoration:underline;text-underline-offset:3px;padding:2px 0}
+span.note-time{color:var(--muted);text-decoration:none}
+.note-text{margin:0;white-space:pre-wrap;overflow-wrap:anywhere;line-height:1.7}
+.note-text:empty{display:none}
+#panelNotes .empty{grid-column:auto}
+.note-actions{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 12px}
+.note-actions button{min-height:36px;padding:0 13px;font-size:12.5px}
+button.note-time{border:0;background:none;padding:2px 0;font:inherit;font-weight:700;text-align:start;cursor:pointer;border-radius:6px}
+button.note-time:hover,button.note-time:focus-visible{text-decoration:underline}
+</style>
+<style id="r21-vocab">
+/* r21: word-list paste box and the extra card fields (Adapted from Vocabulary-Learner by MohammadReza Qaderi (MR-Qaderi), used with the author's written permission (2026-10-11).) */
+.list-box{margin:0 0 14px;border:1px solid var(--border);border-radius:14px;background:var(--surface);padding:0 16px}
+.list-box>summary{cursor:pointer;min-height:44px;display:flex;align-items:center;font-weight:700;color:var(--ink);list-style:none}
+.list-box>summary::-webkit-details-marker{display:none}
+.list-box[open]>summary{border-bottom:1px dashed var(--border);margin-bottom:12px}
+.list-hint{margin:0 0 10px;font-size:12.5px;line-height:1.7;color:var(--muted)}
+#listInput{display:block;width:100%;box-sizing:border-box;min-height:120px;padding:10px 12px;border-radius:12px;border:1px solid var(--border);background:var(--surface2);color:var(--ink);font:inherit;font-size:14px;line-height:1.7;resize:vertical}
+.list-actions{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:10px 0 14px}
+.list-actions button{min-height:40px;padding:0 16px}
+#listProgress{min-height:1.4em;margin:0 0 12px;font-size:12.5px;color:var(--muted);line-height:1.7;overflow-wrap:anywhere}
+.entry-sub{font-size:11.5px;color:var(--muted);font-weight:700;margin-bottom:3px}
+.chips{display:inline-flex;flex-wrap:wrap;gap:6px;vertical-align:middle}
+.chip-tag{background:var(--surface2);color:var(--ink)}
+.mistakes{margin:6px 0 0;padding:0;list-style:none;display:grid;gap:6px}
+.mistakes li{font-size:13.5px;line-height:1.7;overflow-wrap:anywhere}
+.mistakes .m-note{color:var(--muted)}
+@media (max-width:360px){.list-actions button{flex:1 1 auto}}
+</style>
+</head><body><div class="sfy-stars" aria-hidden="true"><i class="l1"></i><i class="l2"></i><i class="l3"></i><i class="l4"></i></div><main class="wrap"><header><div><h1>📚 یادگیری لغت</h1><div class="sub">لغت‌هایی را که ذخیره کرده‌ای مرور کن. هر کارت را بر اساس یادآوری‌ات جواب بده تا مرور بعدی به‌موقع بیاید. کارت‌ها روی همین مرورگر ذخیره می‌شوند.</div></div><div style="display:flex;align-items:center;gap:8px"><button id="themeToggle" class="theme-btn" type="button" title="تغییر پوسته" aria-label="تغییر پوسته">🌙</button><div id="count"></div></div></header><div class="toolbar" role="toolbar" aria-label="عملیات"><button id="refresh" class="primary" type="button">به‌روزرسانی</button><button id="review" type="button">شروع مرور</button><button id="exportAnki" type="button">خروجی Anki</button></div><p id="status" class="status" role="status" aria-live="polite"></p><div class="tabs" role="group" aria-label="بخش‌ها"><button id="tabWords" type="button" aria-pressed="true" aria-controls="panelWords">لغت‌ها</button><button id="tabNotes" type="button" aria-pressed="false" aria-controls="panelNotes">یادداشت‌های زمان‌دار<span id="notesCount"></span></button></div><div id="panelWords">
+<details id="listBox" class="list-box">
+<summary>افزودن فهرست لغت</summary>
+<p class="list-hint">هر لغت را در یک خط بنویس، یا با خط تیره (–) از هم جدا کن. حداکثر ۳۰ مورد؛ هر ۱۰ تا یک درخواست AI می‌شود.</p>
+<textarea id="listInput" dir="auto" rows="6" aria-label="فهرست لغت" placeholder="apple&#10;run – ran – run&#10;a piece of cake"></textarea>
+<div class="list-actions"><button id="listRun" class="primary" type="button">ساخت کارت‌ها</button></div>
+<div id="listProgress" role="status" aria-live="polite"></div>
+</details>
+<section id="reviewBox" class="grid" aria-label="مرور"></section><section class="list" aria-label="فهرست لغت‌ها"><div class="row" aria-hidden="true"><span>لغت</span><span>معنی</span><span>سطح</span><span>مرحله</span></div><div id="rows"></div></section></div><section id="panelNotes" aria-label="یادداشت‌های زمان‌دار" hidden><div id="notesBox"></div></section></main><script src="ui-language.js"></script><script src="learning-core.js"></script><script src="learn.js"></script></body></html>

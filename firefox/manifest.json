@@ -1,0 +1,130 @@
+{
+  "manifest_version": 2,
+  "name": "Subify lite",
+  "short_name": "Subify lite",
+  "version": "2.9.30",
+  "description": "ترجمه مستقیم زیرنویس زمان‌بندی‌شده YouTube با Cache ابری پایدار، ترجمه پیش‌دستانه و خروجی SRT، VTT و TXT.",
+  "options_page": "options.html",
+  "background": {
+    "scripts": [
+      "learning-core.js",
+      "page-translate-core.js",
+      "trial-core.js",
+      "ai-route-core.js",
+      "background.js"
+    ],
+    "persistent": false
+  },
+  "permissions": [
+    "storage",
+    "activeTab",
+    "downloads",
+    "tabs",
+    "scripting",
+    "https://www.youtube.com/*",
+    "https://m.youtube.com/*",
+    "https://www.youtube-nocookie.com/*",
+    "https://generativelanguage.googleapis.com/*",
+    "https://openrouter.ai/*",
+    "https://api.openai.com/*",
+    "https://sub-ify.site/*",
+    "https://api.dictionaryapi.dev/*",
+    "<all_urls>"
+  ],
+  "content_scripts": [
+    {
+      "matches": [
+        "https://www.youtube.com/*",
+        "https://m.youtube.com/*",
+        "https://www.youtube-nocookie.com/*",
+        "https://www.udemy.com/*"
+      ],
+      "js": [
+        "page-bridge.js"
+      ],
+      "run_at": "document_start"
+    },
+    {
+      "matches": [
+        "https://www.youtube.com/*",
+        "https://m.youtube.com/*",
+        "https://www.youtube-nocookie.com/*",
+        "https://vimeo.com/*",
+        "https://*.vimeo.com/*",
+        "https://player.vimeo.com/*",
+        "https://www.aparat.com/*",
+        "https://aparat.com/*",
+        "https://www.coursera.org/*",
+        "https://twitter.com/*",
+        "https://x.com/*",
+        "https://www.instagram.com/*",
+        "https://www.facebook.com/*",
+        "https://www.tiktok.com/*",
+        "https://www.threads.com/*",
+        "https://www.threads.net/*",
+        "https://www.udemy.com/*",
+        "https://www.linkedin.com/*",
+        "https://courses.edx.org/*",
+        "https://learning.edx.org/*",
+        "https://*.h5p.com/*",
+        "https://www.ted.com/*",
+        "https://www.khanacademy.org/*",
+        "https://meet.google.com/*",
+        "https://*.zoom.us/*",
+        "https://teams.microsoft.com/*",
+        "https://teams.live.com/*",
+        "https://*.webex.com/*"
+      ],
+      "all_frames": true,
+      "js": [
+        "learning-core.js",
+        "subtitle-overlay.js"
+      ],
+      "css": [
+        "content.css"
+      ],
+      "run_at": "document_idle"
+    }
+  ],
+  "web_accessible_resources": [
+    "page-hook.js",
+    "icons/*.png",
+    "fonts/*",
+    "fonts/Vazirmatn-Regular.ttf",
+    "fonts/Estedad-Medium.ttf",
+    "fonts/Lalezar-Regular.ttf",
+    "fonts/Sahel-Bold.ttf",
+    "fonts/AradFD-Regular.woff2",
+    "fonts/Inter-400.woff2",
+    "fonts/Poppins-500.woff2",
+    "fonts/Montserrat-500.woff2"
+  ],
+  "icons": {
+    "16": "icons/icon16.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  },
+  "content_security_policy": "script-src 'self'; object-src 'self'",
+  "browser_action": {
+    "default_popup": "popup.html",
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "48": "icons/icon48.png",
+      "128": "icons/icon128.png"
+    }
+  },
+  "browser_specific_settings": {
+    "gecko": {
+      "id": "subify-lite@mobinbibak.dev",
+      "strict_min_version": "140.0",
+      "data_collection_permissions": {
+        "required": [
+          "none"
+        ]
+      }
+    },
+    "gecko_android": {
+      "strict_min_version": "142.0"
+    }
+  }
+}
