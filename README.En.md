@@ -122,6 +122,7 @@ Current providers include:
 
 - Google Gemini
 - OpenRouter
+- Gisoo ([gisoo.pro](https://gisoo.pro/?utm_source=github&utm_medium=referral&utm_campaign=subify)): added under Custom API; the "Fill with Gisoo" button prefills the form
 - OpenAI
 
 ### 🌍 Multilingual content
