@@ -179,6 +179,11 @@
 
 [![Visit Subify Website](https://img.shields.io/badge/Visit-Subify%20Website-8b7cff?style=for-the-badge)](https://sub-ify.site/)
 
+
+### 📥 دانلود نسخهٔ ۲.۹.۴۱
+
+فایل‌های نصب دستی برای Chrome و Firefox در [صفحهٔ ریلیز](https://github.com/mobinbiback/Subify/releases#release-v2.9.41) هستند.
+
 ---
 
 ## 🚀 شروع سریع

@@ -179,6 +179,11 @@ Subify is available for Chromium-based browsers and Firefox.
 
 [![Visit Subify Website](https://img.shields.io/badge/Visit-Subify%20Website-8b7cff?style=for-the-badge)](https://sub-ify.site/)
 
+
+### 📥 Download version 2.9.41
+
+Manual install files for Chrome and Firefox are on the [release page](https://github.com/mobinbiback/Subify/releases#release-v2.9.41).
+
 ---
 
 ## 🚀 Quick Start
