@@ -61,6 +61,7 @@ var browser = globalThis.browser || globalThis.chrome; // Chrome has no browser 
     turns: [],              // { role: "user" | "model", text, tip }
     memo: { memo: "", folded: 0 }, // older turns folded into a memo for long chats (roleplay-core.js foldMemo)
     busy: false,
+    langChosen: false,      // the learning language is picked (the AI calls need it)
     lastReport: null,
     saved: new Set(),       // wordKey of every saved word in the practice language (see savedWordKeys)
     speakOn: false,         // read the partner's lines aloud
@@ -194,7 +195,7 @@ var browser = globalThis.browser || globalThis.chrome; // Chrome has no browser 
   }
   // Long chats (round 21): the older turns are folded into a memo by one request (only when a fold is due). The newest
   // turns go word for word. The turn just typed is the prompt, so the history is every turn before it.
-  const memoAsk = (opts) => A.ask({ ...opts, type: "subify-roleplay-memo", json: false });
+  const memoAsk = (opts) => A.ask({ ...opts, type: "subify-roleplay-memo", json: false, feature: "roleplay" });
   async function modelTurn(learnerLine) {
     const s = state.session;
     const prior = learnerLine ? state.turns.slice(0, -1) : state.turns.slice();
@@ -204,7 +205,7 @@ var browser = globalThis.browser || globalThis.chrome; // Chrome has no browser 
     const prompt = (recent.length ? "Conversation so far:\n" + historyText(recent) + "\n\n" : "") +
       (learnerLine ? "The learner's latest message: " + learnerLine : "Start the conversation with your first line.");
     const res = await A.askJson({
-      system: systemFor(s) + (memo ? "\n" + memo : ""), prompt, temperature: 0.7, maxTokens: 800, videoId: s.videoId
+      system: systemFor(s) + (memo ? "\n" + memo : ""), prompt, temperature: 0.7, maxTokens: 800, feature: "roleplay", videoId: s.videoId
     });
     if (!res.ok) return res;
     const reply = String(res.data.reply || "").trim();
@@ -234,10 +235,11 @@ var browser = globalThis.browser || globalThis.chrome; // Chrome has no browser 
 
   function setBusy(on) {
     state.busy = on;
-    $("send").disabled = on;
-    $("message").disabled = on;
-    $("end").disabled = on;
-    $("mic").disabled = on;
+    const off = on || !state.langChosen;
+    $("send").disabled = off;
+    $("message").disabled = off;
+    $("end").disabled = off;
+    $("mic").disabled = off;
   }
 
   async function playPartner(learnerLine) {
@@ -272,7 +274,7 @@ var browser = globalThis.browser || globalThis.chrome; // Chrome has no browser 
 
   let starting = false;
   async function start() {
-    if (state.busy || starting) return;
+    if (state.busy || starting || !state.langChosen) return;
     stopListening();
     stopSpeaking();
     starting = true;
@@ -556,7 +558,7 @@ var browser = globalThis.browser || globalThis.chrome; // Chrome has no browser 
     // One request for a short chat; a long chat is read in parts and merged (roleplay-core.js buildLesson).
     // The quotes are checked against the learner's own lines (ai-core.js groundLesson) at every step.
     const built = await R.buildLesson({
-      ask: (opts) => A.askJson(opts),
+      ask: (opts) => A.askJson({ ...opts, feature: "roleplay" }),
       turns: state.turns,
       learn: state.langs.targetName,
       native: state.langs.nativeName,
@@ -654,6 +656,7 @@ var browser = globalThis.browser || globalThis.chrome; // Chrome has no browser 
 
   async function init() {
     state.langs = await A.languages();
+    A.watchLearning((chosen) => { state.langChosen = chosen; $("start").disabled = !chosen; setBusy(state.busy); });
     state.snap = await A.snapshot();
     state.seed = await A.seed();
     choosePreset(state.seed ? VIDEO_PRESET : PRESETS[0]);

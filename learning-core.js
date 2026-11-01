@@ -8,7 +8,7 @@
   "use strict";
 
   const HIGHLIGHT_MODES = ["off", "saved", "new", "learning", "mastered", "spotlight"];
-  const SMART_MODES = ["relaxed", "learning", "active"];
+  const SMART_MODES = ["relaxed", "learning", "active", "study"];
   const REPLAY_SPEEDS = [0.75, 0.85, 1];
   const CEFR_LEVELS = ["A1", "A2", "B1", "B2", "C1", "C2"];
   // One list for the learning language and the grammar-explanation language.
@@ -21,12 +21,13 @@
   const EXPLAIN_LANGS = LANG_CODES; // the language grammar explanations are written in
   const DEFAULT_LEARNING = {
     highlightMode: "off",      // which saved words to highlight in subtitles
-    smartMode: "relaxed",      // relaxed = normal viewing; learning = highlight + replay; active = learning + pause after each sentence
+    smartMode: "relaxed",      // relaxed = normal viewing; learning = highlight + replay; active = learning + pause after each sentence; study = learning + pause at a line with a word due for review
     replaySpeed: 0.85,         // speed used by the per-sentence replay button
     replayEnabled: true,       // show the replay button on the original-language line
     pauseAfterSentence: false, // only used in "active" mode; opt-in
     targetLang: "en",          // the language of the video being learned: highlights and grammar apply only to it
-    cefr: "B1",                // CEFR level used to pitch grammar explanations
+    targetLangSet: false,      // true once the learner picked targetLang (English alone may be the default, see sanitizeLearning)
+    cefr: "B1",              // CEFR level used to pitch grammar explanations
     explainLang: "fa",         // language grammar explanations are written in
     nativeLang: "fa"           // the user's own language: subtitles and dubbing are translated into it
   };
@@ -219,6 +220,9 @@
     if (typeof r.replayEnabled === "boolean") out.replayEnabled = r.replayEnabled;
     if (typeof r.pauseAfterSentence === "boolean") out.pauseAfterSentence = r.pauseAfterSentence;
     if (TARGET_LANGS.includes(r.targetLang)) out.targetLang = r.targetLang;
+    // Chosen = the learner picked it. Saves from before the flag count as chosen only for a non-English language:
+    // English alone may just be the default, so the AI pages ask for a choice.
+    out.targetLangSet = r.targetLangSet === true || (TARGET_LANGS.includes(r.targetLang) && r.targetLang !== "en");
     if (CEFR_LEVELS.includes(r.cefr)) out.cefr = r.cefr;
     if (EXPLAIN_LANGS.includes(r.explainLang)) out.explainLang = r.explainLang;
     if (LANG_CODES.includes(r.nativeLang)) out.nativeLang = r.nativeLang;

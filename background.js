@@ -64,10 +64,12 @@ const DEFAULT_SETTINGS = {
   recordMaxSeconds: 5400,
   exportDuck: 0.18,
   exportDubGain: 1.0,
-  duckLevel: 0.30,
+  duckLevel: 0.20,
   dubGain: 1.6,
   playbackRate: 1.0,
   skipPersian: true,
+  skipLangs: "",
+  subtitleDomain: "general",
   minRms: 0.0015
 };
 
@@ -112,7 +114,7 @@ async function vocabList(){const d=await subifyDb();return new Promise(res=>{con
 // origin (content scripts see the page's storage, not the extension's), so
 // it can't be reached from here directly. A pending-clear flag covers tabs
 // that aren't open right now; subtitle-overlay.js checks it on load.
-const LOCAL_KEYS_TO_CLEAR = ["pd_models","pd_settings","pd_stats","subify_dubbing_enabled","subify_last_shot","subify_settings","subify_subtitle_enabled","subifyPageCache"];
+const LOCAL_KEYS_TO_CLEAR = ["pd_models","pd_settings","pd_stats","subify_dubbing_enabled","subify_last_shot","subify_settings","subify_subtitle_enabled","subifyPageCache","subify_install_id","subify_telemetry_last"];
 async function clearAllLocalData(){
   // Server copy: when signed in, the account's vocabulary and tickets are deleted on the server too.
   // Vocabulary is cleared with tombstones, so other devices remove their copies on their next sync.
@@ -146,6 +148,17 @@ async function clearAllLocalData(){
 // In "auto" every configured provider is tried in turn.
 async function callTextLLM(settings,prompt,opts={}){
   const want=settings.subtitleProvider||"auto";
+  // No key of the learner's own at all (word cards, grammar, explanations): the owner's key on the server, within the free allowance.
+  const hasOwnKey=!!(settings.apiKey||settings.openRouterKey||settings.openaiKey||(getCustomProvider(settings)||{}).apiKey);
+  if(!hasOwnKey){
+    const free=await subifyPracticeFree({feature:"",messages:[{role:"user",content:prompt}],temperature:opts.fast?0.1:0.15,maxTokens:Number(opts.maxTokens)||2048});
+    if(free.ok){
+      // A reply cut at the token limit is not valid JSON for the callers: say so instead of a parse error.
+      if(free.cut) throw new Error("پاسخ هوش مصنوعی کامل نشد؛ دوباره امتحان کن");
+      return free.text;
+    }
+    throw new Error(free.error||"AI is not available");
+  }
   const runners={
     gemini:async()=>{
       if(!settings.apiKey) throw new Error("No Gemini key");
@@ -483,6 +496,22 @@ async function withModelFallback(settings, field, fallbacks, fn) {
 
 const dayKey = (d = new Date()) => d.toISOString().slice(0, 10);
 
+// Activity for the daily report: seconds of work per UTC hour of the day, and the longest sitting of the day.
+// A sitting is work with no gap longer than ACTIVITY_GAP_MS between its parts. Only the number of seconds is kept.
+const ACTIVITY_GAP_MS = 10 * 60 * 1000;
+function touchActivity(s, day, secs) {
+  const now = Date.now();
+  const hours = Array.isArray(day.hours) && day.hours.length === 24 ? day.hours : new Array(24).fill(0);
+  hours[new Date(now).getUTCHours()] += Math.round(secs);
+  day.hours = hours;
+  const run = s.run && typeof s.run === "object" ? s.run : { last: 0, secs: 0 };
+  const continuing = now - (run.last || 0) <= ACTIVITY_GAP_MS;
+  run.secs = (continuing ? (run.secs || 0) : 0) + secs;
+  run.last = now;
+  s.run = run;
+  day.maxRun = Math.max(day.maxRun || 0, Math.round(run.secs));
+}
+
 async function recordStats(patch) {
   const { pd_stats } = await browser.storage.local.get("pd_stats");
   const s = pd_stats || { totals: {}, days: {}, domains: {}, langs: {}, genders: {}, providers: {} };
@@ -513,9 +542,163 @@ async function recordStats(patch) {
     if (patch.chunks) add(dom, "chunks", patch.chunks);
   }
   if (patch.lang) add(s.langs, patch.lang, 1);
+  // Seconds of speech per source language (sent to the server as "langs"). Subtitle batches pass langCode;
+  // the live speech path passes lang. Kept apart from s.langs so that counter keeps its old meaning.
+  const langCode = patch.langCode || patch.lang;
+  if (langCode && typeof patch.langSeconds === "number" && /^[a-z]{2,3}$/.test(langCode)) add(day.langSec = day.langSec || {}, langCode, patch.langSeconds);
   if (patch.gender) add(s.genders, patch.gender, 1);
+  // Hour of the day and the longest sitting (see touchActivity). Only work seconds count here.
+  const workSecs = (Number(patch.subtitleSeconds) || 0) + (Number(patch.dubSeconds) || 0) + (Number(patch.liveCaptionSeconds) || 0);
+  if (workSecs > 0) touchActivity(s, day, workSecs);
   await browser.storage.local.set({ pd_stats: s });
+  scheduleSoonReport();
 }
+
+// ---------- anonymous daily report ----------
+// Sends the day's counters (the same numbers as above, never the log or any text) to sub-ify.site.
+// The server keeps one row per install and day; a new report for the same day replaces the old one.
+// Always on: the daily report is not optional (see PRIVACY.md).
+const TELEMETRY_URL = "https://sub-ify.site/subify-api/usage";
+const TELEMETRY_TOTAL_KEYS = ["sessions", "subtitleCues", "subtitleFiles", "subtitleSeconds", "dubSeconds", "liveCaptionSeconds", "cacheCuesAsked", "cacheCuesHit", "ttsCalls", "exports"];
+
+async function telemetryInstallId() {
+  const { subify_install_id } = await browser.storage.local.get("subify_install_id");
+  if (/^[a-f0-9]{32}$/.test(subify_install_id || "")) return subify_install_id;
+  const bytes = new Uint8Array(16);
+  crypto.getRandomValues(bytes);
+  const id = Array.from(bytes, (b) => b.toString(16).padStart(2, "0")).join("");
+  await browser.storage.local.set({ subify_install_id: id });
+  return id;
+}
+
+// When the browser is signed in to sub-ify.site, this install is linked to the account once per account,
+// so the account panel can show its usage. Failures are silent: the next report tries again.
+async function linkInstallToAccount(install) {
+  try {
+    const me = await subifyAuthState(false);
+    if (!me || !me.ok) return;
+    // Signed out: forget the link, so the next sign-in links this install again.
+    if (!me.user) {
+      await browser.storage.local.remove("subify_linked_user");
+      return;
+    }
+    const { subify_linked_user } = await browser.storage.local.get("subify_linked_user");
+    if (subify_linked_user === me.user.id) return;
+    const res = await fetch(SUBIFY_SITE + "/subify-api/account/link-install", {
+      method: "POST",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ install })
+    });
+    if (res.ok) await browser.storage.local.set({ subify_linked_user: me.user.id });
+  } catch (e) {
+    // offline or blocked: try again with the next report
+  }
+}
+
+async function sendDailyReport() {
+  const { subify_telemetry_last, pd_stats } = await browser.storage.local.get(["subify_telemetry_last", "pd_stats"]);
+  const days = (pd_stats && pd_stats.days) || {};
+  const install = await telemetryInstallId();
+  await linkInstallToAccount(install);
+  const today = dayKey();
+  const weekAgo = dayKey(new Date(Date.now() - 6 * 86400000));
+  // From the last day that went through, or a week back. Today is always sent again, because it keeps growing.
+  const start = subify_telemetry_last && subify_telemetry_last >= weekAgo ? subify_telemetry_last : weekAgo;
+  let allSent = true;
+  for (let t = Date.parse(start + "T00:00:00Z"); t <= Date.parse(today + "T00:00:00Z"); t += 86400000) {
+    const day = new Date(t).toISOString().slice(0, 10);
+    const d = days[day];
+    if (!d) continue;
+    const totals = {};
+    for (const k of TELEMETRY_TOTAL_KEYS) totals[k] = Math.round(Number(d[k]) || 0);
+    const langs = {};
+    for (const [code, secs] of Object.entries(d.langSec || {})) langs[code] = Math.round(Number(secs) || 0);
+    const hours = [];
+    for (let h = 0; h < 24; h++) hours.push(Math.round(Number(Array.isArray(d.hours) ? d.hours[h] : 0) || 0));
+    const maxRunSeconds = Math.round(Number(d.maxRun) || 0);
+    try {
+      const res = await fetch(TELEMETRY_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ install, day, totals, langs, hours, maxRunSeconds })
+      });
+      if (!res.ok) allSent = false;
+    } catch (e) {
+      allSent = false;
+    }
+  }
+  if (allSent) await browser.storage.local.set({ subify_telemetry_last: today });
+}
+
+// ---------- history sync: the video list (YouTube, with the stopping point) ----------
+// The overlay keeps subify_video_history (newest first, up to 50 videos). Each video goes to the account as
+// "yt:<id>", with its title and where the viewer stopped. A video removed from the list is removed from the
+// account too, and a video deleted in the account panel is removed from this list.
+const SUBIFY_VIDEO_HISTORY_KEY = "subify_video_history";
+async function syncVideoHistory() {
+  const store = await browser.storage.local.get([SUBIFY_VIDEO_HISTORY_KEY, "subify_history_sent_video", "subify_history_cursor_video"]);
+  const install = await telemetryInstallId();
+  await linkInstallToAccount(install);
+  const raw = Array.isArray(store[SUBIFY_VIDEO_HISTORY_KEY]) ? store[SUBIFY_VIDEO_HISTORY_KEY] : [];
+  const list = raw.filter((v) => v && /^[A-Za-z0-9_-]{6,20}$/.test(String(v.videoId || "")));
+  const ids = new Set(list.map((v) => v.videoId));
+  const sent = store.subify_history_sent_video || {};
+  const cursor = Number(store.subify_history_cursor_video) || 0;
+  const now = Date.now();
+  const items = list.map((v) => ({
+    key: "yt:" + v.videoId,
+    updatedAt: Number(v.at) || now,
+    data: {
+      type: "video",
+      videoId: v.videoId,
+      title: String(v.title || "").slice(0, 200),
+      position: Math.max(0, Math.floor(Number(v.position) || 0)),
+      duration: Math.max(0, Math.floor(Number(v.duration) || 0))
+    }
+  }));
+  const deleted = Object.keys(sent).filter((id) => !ids.has(id)).map((id) => ({ key: "yt:" + id, at: now }));
+  let res;
+  try {
+    res = await fetch(SUBIFY_SITE + "/subify-api/history/sync", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ install, cursor, items, deleted })
+    });
+  } catch (e) {
+    return;
+  }
+  const body = await res.json().catch(() => null);
+  if (!res.ok || !body || !body.ok) return;
+
+  const gone = new Set((body.deleted || []).map((d) => String(d.key || "").replace(/^yt:/, "")).filter(Boolean));
+  const current = await browser.storage.local.get(SUBIFY_VIDEO_HISTORY_KEY);
+  const latest = Array.isArray(current[SUBIFY_VIDEO_HISTORY_KEY]) ? current[SUBIFY_VIDEO_HISTORY_KEY] : [];
+  const kept = gone.size ? latest.filter((v) => v && !gone.has(v.videoId)) : null;
+  const nextSent = {};
+  for (const v of kept || latest) if (v && v.videoId) nextSent[v.videoId] = true;
+  const write = { subify_history_sent_video: nextSent, subify_history_cursor_video: Number(body.cursor) || now };
+  if (kept) write[SUBIFY_VIDEO_HISTORY_KEY] = kept;
+  await browser.storage.local.set(write);
+}
+
+// After counting changes, one report goes out a few minutes later, so a finished translation shows up soon.
+// Only one such report is pending at a time; the regular report every six hours stays as the fallback.
+async function scheduleSoonReport() {
+  try {
+    if (await browser.alarms.get("subify-telemetry-soon")) return;
+    browser.alarms.create("subify-telemetry-soon", { delayInMinutes: 3 });
+  } catch (e) {
+    // alarms unavailable: the six-hour report still runs
+  }
+}
+
+browser.alarms.onAlarm.addListener((alarm) => {
+  if (alarm.name === "subify-telemetry" || alarm.name === "subify-telemetry-soon") sendDailyReport().catch(() => {});
+  if (alarm.name === "subify-history") syncVideoHistory().catch(() => {});
+});
+browser.alarms.create("subify-telemetry", { delayInMinutes: 5, periodInMinutes: 360 });
+browser.alarms.create("subify-history", { delayInMinutes: 2, periodInMinutes: 15 });
 
 // ---------- offscreen document (with readiness handshake) ----------
 
@@ -697,6 +880,14 @@ function applyPersianPunctuation(text) {
   return String(text || "").trim().replace(/[.\u06D4]+$/u, "").trim();
 }
 
+// Subject hint for the translator: the viewer picks the field of the video, and the translation keeps its terms exact.
+const SUBTITLE_DOMAIN_HINTS = {
+  software: "The video is about software engineering. Translate technical terms precisely and keep the common English term in parentheses on first use.\n",
+  medicine: "The video is about medicine. Translate medical terms precisely and keep the English term in parentheses on first use.\n",
+  law: "The video is about law. Translate legal terms precisely and keep the English term in parentheses on first use.\n",
+  slang: "The speech is informal slang. Use a natural colloquial equivalent in the target language, not a literal one.\n"
+};
+
 function subtitleItemsAndPrompt(cues, settings) {
   const items = cues.map(c => ({ id: String(c.id), text: cleanSubtitleText(c.text) })).filter(x => x.text);
   const lang = targetLangCode(settings);
@@ -875,7 +1066,8 @@ function subtitleItemsAndPrompt(cues, settings) {
       "a literal one — appropriate for spoken dialogue and educational/technical content alike.\n" +
       sharedTail +
       JSON.stringify(items);
-  return { items, prompt, lang };
+  const domainNote = SUBTITLE_DOMAIN_HINTS[settings && settings.subtitleDomain] || "";
+  return { items, prompt: domainNote + prompt, lang };
 }
 
 function parseSubtitleResults(text, provider, lang = "fa") {
@@ -1277,7 +1469,7 @@ async function handleChunk(msg) {
     await log(`Sending ${msg.seconds.toFixed(1)}s to ${settings.sttModel}…`);
     const { lang, gender, source, translation } = await withModelFallback(settings, "sttModel", STT_FALLBACKS,
       (m) => transcribeAndTranslate(msg.wavB64, settings, m));
-    await recordStats({ sttCalls: 1, chunks: 1, seconds: msg.seconds, lang, gender });
+    await recordStats({ sttCalls: 1, chunks: 1, seconds: msg.seconds, lang, gender, langSeconds: msg.seconds });
 
     // Publish the source transcript immediately on the VIDEO timeline.
     // This intentionally happens before TTS so the subtitle is never delayed
@@ -1295,10 +1487,11 @@ async function handleChunk(msg) {
     await setState({ lastLang: lang, lastGender: gender });
 
     if (!translation) return;
-    if (settings.skipPersian && lang === "fa") {
+    const knownLangs = String(settings.skipLangs || "").toLowerCase().split(/[\s,،]+/).filter(Boolean);
+    if ((settings.skipPersian && lang === "fa") || knownLangs.includes(String(lang).toLowerCase())) {
       await recordStats({ skipped: 1 });
-      await setState({ lastText: "(منبع فارسی است: رد شد)" });
-      await log("Source is already Persian: skipped");
+      await setState({ lastText: "(زبان منبع را بلدی: رد شد)" });
+      await log("Source language is one the viewer knows: skipped");
       return;
     }
 
@@ -1317,7 +1510,7 @@ async function handleChunk(msg) {
     const runOnce = async (m) => { emit(await synthesizePersian(fa, settings, m, voice, gender)); return 1; };
 
     await synthesizeWithFullFallback(settings, runStream, runOnce);
-    await recordStats({ ttsCalls: 1, chars: fa.length });
+    await recordStats({ ttsCalls: 1, chars: fa.length, dubSeconds: msg.seconds });
     await setState({ lastText: fa, lastVoice: voice });
     await addCue(msg.startSec, msg.startSec + msg.seconds, fa);
   } catch (e) {
@@ -1680,6 +1873,114 @@ async function subifyAuthBlock(type, msg, sender) {
   return SUBIFY_AUTH_ERROR;
 }
 
+// ---------- free Subify AI for subtitles (owner's key on the server, monthly allowance) ----------
+// Used only when the user has no usable text-AI key for the chosen provider. sub-ify.site/auth/ai.php identifies the
+// signed-in member by the session cookie and counts each video (source yt:<id>) once per month. No key is in the extension.
+const SUBIFY_FREE_AI_TEXT = {
+  auth: "برای ترجمه‌ی رایگان Subify وارد حساب شو، یا کلید AI خودت را ذخیره کن",
+  disabled: "ترجمه‌ی رایگان Subify فعلاً خاموش است؛ کلید AI خودت را ذخیره کن",
+  quota: "سهمیه‌ی رایگان ماهانه‌ات تمام شده؛ کلید AI خودت را ذخیره کن، دوستانت را دعوت کن یا اشتراک بگیر",
+  capacity: "ظرفیت ترجمه‌ی رایگان الان پر است؛ کمی بعد دوباره امتحان کن",
+  network: "اتصال به سرور Subify برقرار نشد؛ اینترنت را بررسی کن و دوباره امتحان کن",
+  upstream: "سرویس هوش مصنوعی Subify پاسخ نداد؛ چند دقیقه دیگر دوباره امتحان کن",
+  empty: "هوش مصنوعی جواب خالی داد؛ در پنل مدیریت «تست اتصال» را بزن و مدل دیگری انتخاب کن",
+  failed: "ترجمه‌ی رایگان انجام نشد؛ دوباره امتحان کن"
+};
+const SUBIFY_FREE_AI_STATUS_CODES = { 401: "auth", 402: "quota", 403: "disabled", 429: "capacity", 502: "upstream", 503: "capacity", 504: "upstream" };
+const SUBIFY_FREE_AI_HOLD_MS = 60000;
+let subifyFreeAiHold = { until: 0, code: "" };
+const subifyFreeAiFinishSeen = new Set();
+
+function subifyFreeAiCode(code) {
+  return Object.prototype.hasOwnProperty.call(SUBIFY_FREE_AI_TEXT, code) ? code : "failed";
+}
+function subifyFreeAiError(code) {
+  const e = new Error(code);
+  e.code = code;
+  return e;
+}
+
+// True when the chosen provider has a saved key this translation can use (the same rules as the branches in subify-translate).
+function subifyHasTextKey(settings, provider) {
+  if (provider === "openrouter") return !!settings.openRouterKey;
+  if (provider === "openai") return !!settings.openaiKey;
+  if (provider === "custom") return !!(getCustomProvider(settings) || {}).apiKey;
+  if (provider === "gemini") return !!settings.apiKey;
+  return !!(settings.openRouterKey || settings.openaiKey || settings.apiKey);
+}
+
+// One subtitle batch through the owner's key on the server. Throws an Error whose .code is a key of SUBIFY_FREE_AI_TEXT.
+async function subifyFreeAiTranslate(cues, settings, videoId) {
+  if (!videoId) throw subifyFreeAiError("failed");
+  if (Date.now() < subifyFreeAiHold.until) throw subifyFreeAiError(subifyFreeAiHold.code);
+  // A refusal or a lost connection pauses this fallback for a minute, so the overlay's one-second pump does not call the server every time.
+  const refuse = (code) => {
+    const c = subifyFreeAiCode(code);
+    // A slow or failed server call pauses only briefly; a refusal (quota, capacity, sign-in) pauses for a minute.
+    const ms = c === "upstream" || c === "network" || c === "empty" ? 6000 : SUBIFY_FREE_AI_HOLD_MS;
+    subifyFreeAiHold = { until: Date.now() + ms, code: c };
+    return subifyFreeAiError(c);
+  };
+  const { prompt, lang } = subtitleItemsAndPrompt(cues, settings);
+  let res;
+  try {
+    res = await fetch(SUBIFY_SITE + "/auth/ai.php?action=chat", {
+      method: "POST",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        install: await telemetryInstallId(),
+        source: "yt:" + videoId,
+        kind: "translate",
+        messages: [{ role: "user", content: prompt }],
+        temperature: 0.2,
+        max_tokens: 4096
+      })
+    });
+  } catch (e) {
+    throw refuse("network");
+  }
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    // The server's reason goes to the extension log, so a failure can be traced without the server logs.
+    await log(`Free Subify AI: HTTP ${res.status} ${data.error || ""}`.trim(), "warn");
+    throw refuse(data.error || SUBIFY_FREE_AI_STATUS_CODES[res.status] || "failed");
+  }
+  let results = [];
+  try { results = parseSubtitleResults(String(data.choices?.[0]?.message?.content || ""), "Subify", lang); } catch (e) { results = []; }
+  // An empty or unreadable answer is said on the page, not left as a line stuck on "در حال ترجمه".
+  if (!Array.isArray(results) || !results.length) { await log("Free Subify AI: reply had no subtitle lines", "warn"); throw refuse("empty"); }
+  return results;
+}
+
+// Per browser session (storage.session): the videos the owner's key translated part of ("served"), and the ones reported finished ("done").
+async function subifyFreeAiVideos() {
+  try {
+    const { subify_free_ai_videos } = await browser.storage.session.get("subify_free_ai_videos");
+    return subify_free_ai_videos || { served: [], done: [] };
+  } catch (e) { return { served: [], done: [] }; }
+}
+async function subifyFreeAiMark(kind, videoId) {
+  const s = await subifyFreeAiVideos();
+  if (!s[kind].includes(videoId)) s[kind].push(videoId);
+  try { await browser.storage.session.set({ subify_free_ai_videos: s }); } catch (e) { /* no session storage: the in-memory guard still holds */ }
+}
+// The overlay reports that every cue of a video is translated. action=done goes out once per video per browser session,
+// and only when the owner's key translated part of that video. Partial or failed runs never send it.
+async function subifyFreeAiFinish(videoId) {
+  if (!videoId || subifyFreeAiFinishSeen.has(videoId)) return;
+  subifyFreeAiFinishSeen.add(videoId);
+  const s = await subifyFreeAiVideos();
+  if (!s.served.includes(videoId) || s.done.includes(videoId)) return;
+  await subifyFreeAiMark("done", videoId);
+  fetch(SUBIFY_SITE + "/auth/ai.php?action=done", {
+    method: "POST",
+    credentials: "include",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ source: "yt:" + videoId })
+  }).catch(() => {});
+}
+
 let subifyVocabTimer = null;
 function scheduleVocabSync() {
   clearTimeout(subifyVocabTimer);
@@ -1801,18 +2102,23 @@ function subifyAiFriendlyError(status, raw) {
   return { code: "unknown", error: "پاسخی از هوش مصنوعی گرفته نشد. دوباره امتحان کن.", detail: String(raw || "").slice(0, 160) };
 }
 async function subifyAiGenerate(settings, req) {
-  const parts = [{ text: String(req.prompt || "").slice(0, 60000) }];
+  // req comes from SubifyAiRoute.prepare: req.messages is the whole conversation, in order (or the one prompt).
+  const contents = (Array.isArray(req.messages) ? req.messages : []).map((m) => ({
+    role: m.role === "assistant" ? "model" : "user",
+    parts: [{ text: String(m.content) }]
+  }));
+  if (!contents.length) contents.push({ role: "user", parts: [{ text: String(req.prompt || "") }] });
   if (req.audio && req.audio.base64) {
     const mime = String(req.audio.mime || "audio/wav").split(";")[0].trim() || "audio/wav";
-    parts.unshift({ inlineData: { mimeType: mime, data: String(req.audio.base64) } });
+    contents[contents.length - 1].parts.unshift({ inlineData: { mimeType: mime, data: String(req.audio.base64) } });
   }
   const generationConfig = {
     temperature: Math.min(Math.max(Number(req.temperature) || 0.4, 0), 1),
     maxOutputTokens: Math.min(Math.max(Number(req.maxTokens) || 2048, 256), 8192)
   };
   if (req.json) generationConfig.responseMimeType = "application/json";
-  const body = { contents: [{ role: "user", parts }], generationConfig };
-  if (req.system) body.systemInstruction = { parts: [{ text: String(req.system).slice(0, 8000) }] };
+  const body = { contents, generationConfig };
+  if (req.system) body.systemInstruction = { parts: [{ text: String(req.system) }] };
   // Same model order as the subtitle engine. Only a "model not found" reply moves on to the next model.
   const models = [settings.sttModel || STT_FALLBACKS[0], ...STT_FALLBACKS].filter((m, i, a) => a.indexOf(m) === i);
   let lastStatus = 0, lastRaw = "";
@@ -1833,9 +2139,11 @@ async function subifyAiGenerate(settings, req) {
     }
     let data = {};
     try { data = JSON.parse(raw); } catch (_) { data = {}; }
-    const text = (data.candidates?.[0]?.content?.parts || []).map((p) => p.text || "").join("").trim();
-    if (!text) return { ok: false, code: "empty", error: "هوش مصنوعی جواب خالی داد. دوباره امتحان کن یا متن را کمی تغییر بده." };
-    return { ok: true, text, model };
+    const candidate = data.candidates?.[0] || {};
+    // The text is not trimmed here: a continuation is joined to it (ai-route-core.js).
+    const text = (candidate.content?.parts || []).map((p) => p.text || "").join("");
+    if (!text.trim()) return { ok: false, code: "empty", error: "هوش مصنوعی جواب خالی داد. دوباره امتحان کن یا متن را کمی تغییر بده." };
+    return { ok: true, text, model, cut: candidate.finishReason === "MAX_TOKENS" };
   }
   return { ok: false, ...subifyAiFriendlyError(lastStatus, lastRaw) };
 }
@@ -1845,32 +2153,40 @@ async function subifyAiGenerate(settings, req) {
 // The provider the user chose (subtitleProvider) goes first, then the others with a saved key (ai-route-core.js).
 // Gemini uses subifyAiGenerate above. OpenRouter, OpenAI and Custom API take one chat call each, with the same key settings.
 async function subifyProviderText(name, settings, req) {
-  const system = String(req.system || "").slice(0, 8000);
-  const prompt = String(req.prompt || "").slice(0, 60000);
+  // req comes from SubifyAiRoute.prepare: req.messages is the whole conversation, in order (or the one prompt).
+  const system = String(req.system || "");
+  const turns = Array.isArray(req.messages) && req.messages.length ? req.messages : [{ role: "user", content: String(req.prompt || "") }];
   const maxTokens = Math.min(Math.max(Number(req.maxTokens) || 2048, 256), 8192);
   const temperature = Math.min(Math.max(Number(req.temperature) || 0.4, 0), 1);
-  const chat = system
-    ? [{ role: "system", content: system }, { role: "user", content: prompt }]
-    : [{ role: "user", content: prompt }];
-  let url, headers, body, model, read;
+  const chat = (system ? [{ role: "system", content: system }] : [])
+    .concat(turns.map((m) => ({ role: m.role, content: String(m.content) })));
+  const chatCut = (d) => d.choices?.[0]?.finish_reason === "length";
+  let url, headers, body, model, read, cut;
   if (name === "openrouter") {
     model = settings.openRouterModel || "openrouter/free";
     url = `${OPENROUTER_BASE}/chat/completions`;
     headers = { Authorization: `Bearer ${settings.openRouterKey}`, "Content-Type": "application/json", "X-Title": "subify chat" };
     body = { model, messages: chat, temperature, max_tokens: maxTokens };
     read = (d) => String(d.choices?.[0]?.message?.content || "");
+    cut = chatCut;
   } else if (name === "openai") {
     // Same call as the subtitle and vocabulary calls above (Responses API).
     model = settings.openaiModel || "gpt-5.6-luna";
     url = "https://api.openai.com/v1/responses";
     headers = { Authorization: `Bearer ${settings.openaiKey}`, "Content-Type": "application/json" };
-    body = { model, input: [{ role: "user", content: [{ type: "input_text", text: prompt }] }], temperature, max_output_tokens: maxTokens };
+    body = {
+      model,
+      input: turns.map((m) => ({ role: m.role, content: m.role === "user" ? [{ type: "input_text", text: String(m.content) }] : String(m.content) })),
+      temperature,
+      max_output_tokens: maxTokens
+    };
     if (system) body.instructions = system;
     read = (d) => {
-      let t = String(d.output_text || "").trim();
-      if (!t && Array.isArray(d.output)) t = d.output.flatMap((i) => (Array.isArray(i.content) ? i.content : [])).map((x) => x?.text || "").join("\n");
+      let t = String(d.output_text || "");
+      if (!t.trim() && Array.isArray(d.output)) t = d.output.flatMap((i) => (Array.isArray(i.content) ? i.content : [])).map((x) => x?.text || "").join("\n");
       return t;
     };
+    cut = (d) => d.status === "incomplete" && d.incomplete_details?.reason === "max_output_tokens";
   } else {
     const p = getCustomProvider(settings);
     if (!p) return { ok: false, code: "no-key", error: SubifyAiRoute.TEXT.NO_KEY };
@@ -1880,24 +2196,54 @@ async function subifyProviderText(name, settings, req) {
     headers = { Authorization: `Bearer ${p.apiKey}`, "Content-Type": "application/json" };
     body = { model, messages: chat, temperature, max_tokens: maxTokens };
     read = (d) => String(d.choices?.[0]?.message?.content || d.output_text || "");
+    cut = chatCut;
   }
   const res = await fetch(url, { method: "POST", headers, body: JSON.stringify(body) });
   const raw = await res.text();
   if (!res.ok) return { ok: false, ...SubifyAiRoute.failureFor(res.status) };
   let data = {};
   try { data = JSON.parse(raw); } catch (_) { data = {}; }
-  const text = String(read(data) || "").trim();
-  if (!text) return { ok: false, code: "empty", error: SubifyAiRoute.TEXT.FAILED };
-  return { ok: true, text, model };
+  // Not trimmed: a continuation is joined to it (ai-route-core.js).
+  const text = String(read(data) || "");
+  if (!text.trim()) return { ok: false, code: "empty", error: SubifyAiRoute.TEXT.FAILED };
+  return { ok: true, text, model, cut: !!cut(data) };
+}
+// Practice calls with no own key (chat, writer, roleplay, shadow): the owner's key on the server, one daily cap per feature.
+// Text only, so audio never comes here. The server's error codes become Persian messages in ai-route-core.js (freeFailure).
+async function subifyPracticeFree(req) {
+  const feature = SubifyAiRoute.FREE_FEATURES.includes(req.feature) ? req.feature : "";
+  const turns = (Array.isArray(req.messages) ? req.messages : []).map((m) => ({ role: m.role, content: String(m.content) }));
+  const messages = (req.system ? [{ role: "system", content: String(req.system) }] : []).concat(turns);
+  const temperature = Math.min(Math.max(Number(req.temperature) || 0.4, 0), 1);
+  const maxTokens = Math.min(Math.max(Number(req.maxTokens) || 2048, 256), 8192);
+  let res;
+  try {
+    res = await fetch(SUBIFY_SITE + "/auth/ai.php?action=chat", {
+      method: "POST",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ install: await telemetryInstallId(), feature, source: "", kind: String(req.kind || ""), messages, temperature, max_tokens: maxTokens })
+    });
+  } catch (e) {
+    return { ok: false, code: "network", error: SubifyAiRoute.FREE_TEXT.network };
+  }
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) return SubifyAiRoute.freeFailure(res.status, data, feature);
+  const choice = data.choices?.[0] || {};
+  const text = String(choice.message?.content ?? "");
+  if (!text.trim()) return { ok: false, code: "empty", error: SubifyAiRoute.FREE_TEXT.failed };
+  return { ok: true, text, model: "subify", cut: choice.finish_reason === "length" };
 }
 // Runs one AI page request (chat, summary, roleplay, writer, shadowing, roleplay memo) through the chosen provider.
+// With no own key at all, a practice call (req.feature) goes to the free allowance.
 async function subifyAiRoute(req) {
   const settings = await getSettings();
   return SubifyAiRoute.route(req, settings, {
     gemini: (r) => subifyAiGenerate(settings, r),
     openrouter: (r) => subifyProviderText("openrouter", settings, r),
     openai: (r) => subifyProviderText("openai", settings, r),
-    custom: (r) => subifyProviderText("custom", settings, r)
+    custom: (r) => subifyProviderText("custom", settings, r),
+    free: (r) => subifyPracticeFree(r)
   });
 }
 
@@ -1937,6 +2283,16 @@ browser.runtime.onMessage.addListener((msg, sender, sendResponse) => {
         }
         break;
       }
+      case "subify-stat": {
+        // Counters from the popup and the subtitle overlay for the anonymous daily report. Only these keys count.
+        if (msg.key === "subtitleFiles") await recordStats({ subtitleFiles: 1 });
+        if (msg.key === "cacheCues") {
+          const n = (v) => Math.max(0, Math.min(200000, Math.round(Number(v) || 0)));
+          await recordStats({ cacheCuesAsked: n(msg.asked), cacheCuesHit: n(msg.hit) });
+        }
+        sendResponse({ ok: true });
+        break;
+      }
       case "subify-cache-status": {
         try {
           const res = await fetch(`${SUBIFY_CLOUD_CACHE_URL}/status`, {
@@ -1969,6 +2325,11 @@ browser.runtime.onMessage.addListener((msg, sender, sendResponse) => {
         }
         break;
       }
+      case "subify-free-video-done": {
+        try { await subifyFreeAiFinish(String(msg.videoId || "")); } catch (e) { /* ignore: done is best effort */ }
+        sendResponse({ ok: true });
+        break;
+      }
       case "subify-translate": {
         try {
           const settings = await getSettings();
@@ -1980,8 +2341,26 @@ browser.runtime.onMessage.addListener((msg, sender, sendResponse) => {
             const charsIn = cues.reduce((n, c) => n + String(c?.text || "").length, 0);
             const charsOut = (results || []).reduce((n, r) => n + String(r?.text || r?.translation || r?.fa || "").length, 0);
             noteSubtitleProvider(usedProvider, fallbackFrom);
-            return recordStats({ subtitleCues: cues.length, subtitleCharsIn: charsIn, subtitleCharsOut: charsOut, provider: usedProvider }).catch(() => {});
+            const subtitleSeconds = cues.reduce((n, c) => n + Math.max(0, (Number(c?.end) || 0) - (Number(c?.start) || 0)), 0);
+            const srcLang = String(msg.sourceLanguage || "").toLowerCase();
+            return recordStats({ subtitleCues: cues.length, subtitleSeconds: Math.round(subtitleSeconds), subtitleCharsIn: charsIn, subtitleCharsOut: charsOut, provider: usedProvider, ...(srcLang ? { langCode: srcLang, langSeconds: Math.round(subtitleSeconds) } : {}) }).catch(() => {});
           };
+          // No usable key for the chosen provider: the batch goes to the owner's key on the server (monthly free allowance).
+          if (!subifyHasTextKey(settings, provider)) {
+            const freeVideoId = String(msg.videoId || (await subifyTrialVideoId(msg, sender)) || "");
+            try {
+              const results = await subifyFreeAiTranslate(cues, settings, freeVideoId);
+              await subifyFreeAiMark("served", freeVideoId);
+              await recordUsage("subify", results);
+              try { await syncSubtitleBatchToCloud({ videoId: msg.videoId, trackKey: msg.trackKey, targetLanguage: msg.targetLanguage, cues, results }); } catch (e) { await log("Cloud cache sync failed: " + (e.message || e), "warn"); }
+              sendResponse({ ok: true, provider: "subify", results });
+            } catch (e) {
+              const code = subifyFreeAiCode(e.code);
+              await log("Free Subify AI batch not translated: " + code, "warn");
+              sendResponse({ ok: false, freeAi: true, code, error: SUBIFY_FREE_AI_TEXT[code] });
+            }
+            break;
+          }
           if (provider === "openrouter") {
             if (!settings.openRouterKey) throw new Error("OpenRouter is selected, but no OpenRouter API key is saved");
             const results = await translateSubtitleCuesOpenRouter(cues, settings);
@@ -2244,6 +2623,19 @@ browser.runtime.onMessage.addListener((msg, sender, sendResponse) => {
         } catch(e){ sendResponse({ok:false,error:String(e.message||e)}); }
         break;
       }
+      case "subify-account-videos": {
+        try {
+          const res = await fetch(SUBIFY_SITE + "/subify-api/account/history?limit=20", { credentials: "include", cache: "no-store" });
+          if (res.status === 401 || res.status === 403) { sendResponse({ ok: true, signedIn: false, items: [] }); break; }
+          const j = await res.json();
+          if (!j || !j.ok) throw new Error("bad response");
+          const items = (j.items || [])
+            .filter((i) => i && i.data && i.data.type === "video" && /^[A-Za-z0-9_-]{6,20}$/.test(String(i.data.videoId || "")))
+            .map((i) => ({ videoId: String(i.data.videoId), title: String(i.data.title || i.data.videoId).slice(0, 140), position: Number(i.data.position) || 0 }));
+          sendResponse({ ok: true, signedIn: true, items });
+        } catch (e) { sendResponse({ ok: false, error: String((e && e.message) || e) }); }
+        break;
+      }
       case "subify-vocab-list": { try { const rows=await vocabList(); sendResponse({ok:true,rows:rows.map(x=>x.value)}); } catch(e){sendResponse({ok:false,error:String(e.message||e)});} break; }
       case "subify-roleplay-save": {
         // Words from a roleplay lesson: new cards in the practice language, with the practice as their source. No AI call,
@@ -2452,7 +2844,7 @@ browser.runtime.onMessage.addListener((msg, sender, sendResponse) => {
       case "live-cue": {
         await addCue(msg.start, msg.end, msg.text);
         await setState({ lastText: msg.text });
-        await recordStats({ chunks: 1, seconds: Math.max(0, msg.end - msg.start) });
+        await recordStats({ chunks: 1, seconds: Math.max(0, msg.end - msg.start), liveCaptionSeconds: Math.max(0, msg.end - msg.start) });
         // Show it as an on-screen caption too — this is what makes "captions
         // only" (dubbingAudioEnabled:false) actually useful for videos with no
         // native captions (e.g. a live stream): the Live engine is already
@@ -2507,13 +2899,13 @@ browser.runtime.onMessage.addListener((msg, sender, sendResponse) => {
   })();
   // Keep the channel open for request/response messages only.
   const requestTypes = new Set(["subify-tickets-reply", "subify-tickets-create", "subify-tickets-get", "subify-tickets-list", "subify-capture-shot", "subify-auth-status", "subify-auth-logout", "subify-auth-open", "subify-vocab-sync", 
-    "subify-cloud-cache-get", "subify-cloud-cache-put", "subify-cloud-cache-correct",
-    "subify-translate", "subify-clear-all-data", "subify-discover-models",
+    "subify-stat", "subify-cloud-cache-get", "subify-cloud-cache-put", "subify-cloud-cache-correct",
+    "subify-translate", "subify-free-video-done", "subify-clear-all-data", "subify-discover-models",
     "subify-test-key", "subify-test-openai", "subify-test-openrouter",
     "subify-test-custom", "subify-list-custom-models",
     "popup-get-status", "subify-open-options", "popup-test-live", "popup-self-test",
     "subify-set-dubbing", "subify-set-dubbing-audio",
-    "subify-vocab-enrich", "subify-vocab-batch", "subify-grammar", "subify-vocab-grammar", "subify-vocab-list", "subify-vocab-grade", "subify-roleplay-save", "subify-page-translate", "subify-ai-generate", "subify-roleplay-memo"
+    "subify-vocab-enrich", "subify-vocab-batch", "subify-grammar", "subify-vocab-grammar", "subify-vocab-list", "subify-account-videos", "subify-vocab-grade", "subify-roleplay-save", "subify-page-translate", "subify-ai-generate", "subify-roleplay-memo"
   ]);
   return requestTypes.has(msg?.type);
 });

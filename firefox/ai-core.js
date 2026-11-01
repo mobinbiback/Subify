@@ -134,6 +134,8 @@ var browser = globalThis.browser || globalThis.chrome; // Chrome has no browser 
         type: opts.type || "subify-ai-generate",
         system: opts.system || "",
         prompt: opts.prompt || "",
+        messages: Array.isArray(opts.messages) ? opts.messages : undefined,
+        feature: opts.feature || "",
         json: !!opts.json,
         audio: opts.audio || undefined,
         temperature: opts.temperature,
@@ -417,9 +419,45 @@ var browser = globalThis.browser || globalThis.chrome; // Chrome has no browser 
     try { await navigator.clipboard.writeText(String(text || "")); return true; } catch (_) { return false; }
   }
 
+  // ---------- learning-language gate (practice pages) ----------
+  // The practice calls need the learning language. Until the learner picks it, the page shows #lang-gate with a button to
+  // the picker (options.html#learning), and #lang-chip shows the language once it is chosen. The page's controls follow
+  // onChange(chosen, cfg), which runs at once and after every change to the learning settings.
+  const LANG_NAMES_FA = {
+    fa: "فارسی", en: "انگلیسی", ar: "عربی", tr: "ترکی", es: "اسپانیایی", fr: "فرانسوی", de: "آلمانی",
+    it: "ایتالیایی", pt: "پرتغالی", ru: "روسی", ja: "ژاپنی", ko: "کره‌ای", zh: "چینی", hi: "هندی"
+  };
+  function openLearningPicker() {
+    try {
+      const opened = browser.tabs.create({ url: browser.runtime.getURL("options.html#learning") });
+      if (opened && typeof opened.catch === "function") opened.catch(() => {});
+    } catch (_) { /* no tabs API: the notice still says what to do */ }
+  }
+  function watchLearning(onChange) {
+    const show = (cfg) => {
+      const chosen = !!cfg.targetLangSet;
+      const gate = document.getElementById("lang-gate");
+      const chip = document.getElementById("lang-chip");
+      if (gate) gate.hidden = chosen;
+      if (chip) {
+        chip.hidden = !chosen;
+        chip.textContent = chosen ? tt("زبان یادگیری") + ": " + tt(LANG_NAMES_FA[cfg.targetLang] || cfg.targetLang) : "";
+      }
+      if (typeof onChange === "function") onChange(chosen, cfg);
+    };
+    const pick = document.getElementById("lang-pick");
+    if (pick) pick.addEventListener("click", openLearningPicker);
+    learning().then(show);
+    try {
+      browser.storage.onChanged.addListener((changes, area) => {
+        if (area === "local" && changes.subify_learning) show(LRN.sanitizeLearning(changes.subify_learning.newValue));
+      });
+    } catch (_) { /* no storage events: the state is read once */ }
+  }
+
   root.SubifyAI = {
-    LANG_NAMES, BCP47, CEFR, tt,
-    learning, languages, snapshot, ask, askJson, parseJson, errorText,
+    LANG_NAMES, LANG_NAMES_FA, BCP47, CEFR, tt,
+    learning, languages, snapshot, ask, askJson, parseJson, errorText, watchLearning,
     mmss, transcript, topWords, words, includesQuote, normalizeForMatch,
     normalizeQuote, quoteInLines, groundLesson, keepUpgrades, UPGRADE_MAX, diffWords,
     h, richText, renderContext, copyText,

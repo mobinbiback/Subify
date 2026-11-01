@@ -11,7 +11,7 @@ var browser = globalThis.browser || globalThis.chrome; // Chrome has no browser 
   const state = {
     snap: null, langs: null, items: [], index: -1,
     recorder: null, stream: null, chunks: [], startedAt: 0, timer: null,
-    recording: false, busy: false, lastDuration: 0
+    recording: false, busy: false, lastDuration: 0, langChosen: false
   };
 
   function setStatus(text, kind) {
@@ -96,6 +96,7 @@ var browser = globalThis.browser || globalThis.chrome; // Chrome has no browser 
   }
   async function startRecording() {
     if (state.recording || state.busy) return;
+    if (!state.langChosen) { setStatus(A.tt("زبان یادگیری را اول انتخاب کن."), "warn"); return; }
     if (!target()) { setStatus(A.tt("اول یک جمله انتخاب کن."), "warn"); return; }
     if (!navigator.mediaDevices || !window.MediaRecorder) {
       setStatus(A.tt("ضبط صدا در این مرورگر در دسترس نیست."), "error");
@@ -248,6 +249,7 @@ var browser = globalThis.browser || globalThis.chrome; // Chrome has no browser 
       audio: { mime: "audio/wav", base64: b64 },
       temperature: 0.2,
       maxTokens: 900,
+      feature: "shadow",
       videoId: state.snap ? state.snap.videoId : ""
     });
     if (!res.ok) {
@@ -311,12 +313,18 @@ var browser = globalThis.browser || globalThis.chrome; // Chrome has no browser 
     paintSentences();
     if (state.index >= 0) $("target").textContent = state.items[state.index].text;
     else $("target").textContent = A.tt("یک جمله از لیست بالا انتخاب کن.");
-    $("rec").disabled = state.index < 0;
-    $("listen").disabled = state.index < 0;
+    paintControls();
+  }
+  // Listening and recording need a sentence to practise and a chosen learning language.
+  function paintControls() {
+    const off = state.index < 0 || !state.langChosen;
+    $("rec").disabled = off;
+    $("listen").disabled = off;
   }
 
   async function init() {
     state.langs = await A.languages();
+    A.watchLearning((chosen) => { state.langChosen = chosen; paintControls(); });
     await loadSnapshot();
     voiceNote();
     if (window.speechSynthesis) speechSynthesis.addEventListener?.("voiceschanged", voiceNote);

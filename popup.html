@@ -7,6 +7,12 @@
 <title>Subify</title>
 <link rel="stylesheet" href="popup.css"/>
 <link rel="stylesheet" href="starfield.css"/><style id="sfy-sky">body{background:transparent!important;isolation:isolate}body>.sfy-stars{z-index:-1}</style>
+<style id="i18n-dir">
+@font-face{font-family:"InterUI";src:url("fonts/Inter-400.woff2") format("woff2");font-weight:400;font-display:swap}
+@font-face{font-family:"InterUI";src:url("fonts/Inter-700.woff2") format("woff2");font-weight:700 900;font-display:swap}
+html[dir="ltr"] body{direction:ltr;text-align:left}
+html:not([lang="fa"]):not([lang="ar"]) body,html:not([lang="fa"]):not([lang="ar"]) body *{font-family:"InterUI","VazirUI",Tahoma,sans-serif!important}
+</style>
 </head>
 <body><div class="sfy-stars" aria-hidden="true"><i class="l1"></i><i class="l2"></i><i class="l3"></i><i class="l4"></i></div>
 <div id="onboarding" role="dialog" aria-modal="true">
@@ -51,11 +57,11 @@
 <header>
   <div class="brand">
     <div class="brand-mark"><img src="icons/icon48.png" alt="Subify"></div>
-    <div class="brand-copy"><h1>Subify</h1></div>
+    <div class="brand-copy"><h1>Subify</h1><p class="brand-sub"><span id="today">v2.9.41</span></p></div>
   </div>
   <div class="header-actions">
-    <button id="themeToggle" class="icon-btn" title="تغییر پوسته"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg></button>
-    <a id="whatsNewLink" class="icon-btn" href="whatsnew.html" target="_blank" rel="noopener" title="تازه‌های این نسخه" aria-label="تازه‌های این نسخه"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M12 3l1.8 4.7L18.5 9.5l-4.7 1.8L12 16l-1.8-4.7L5.5 9.5l4.7-1.8z"/><path d="M19 15l.8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8z"/></svg></a>
+    <button id="themeToggle" class="icon-btn" title="روشن یا تیره کردن ظاهر" aria-label="روشن یا تیره کردن ظاهر"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg></button>
+    <a id="whatsNewLink" class="icon-btn" href="whatsnew.html" target="_blank" rel="noopener" title="ببین در این نسخه چه چیزی تازه شده" aria-label="تازه‌های این نسخه"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M12 3l1.8 4.7L18.5 9.5l-4.7 1.8L12 16l-1.8-4.7L5.5 9.5l4.7-1.8z"/><path d="M19 15l.8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8z"/></svg></a>
   </div>
 </header>
 <nav class="tabs" role="tablist">
@@ -80,31 +86,19 @@
     <section class="modes" aria-label="زیرنویس و دوبله">
       <label class="mode">
         <span class="mode-tile" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" focusable="false"><rect x="3" y="5" width="18" height="14" rx="3"/><path d="M7 11h4M13 11h4M7 15h10"/></svg></span>
-        <span class="mode-copy"><b>زیرنویس</b><small>استخراج مستقیم از Caption خود YouTube با تایم‌استامپ واقعی</small></span>
+        <span class="mode-copy"><b>زیرنویس</b><small>زیرنویس‌های خود ویدیو را پیدا می‌کند و زمان‌بندی‌شان را نگه می‌دارد</small></span>
         <input id="subify-popup-subtitle" class="switch" type="checkbox" checked>
       </label>
       <label class="mode">
         <span class="mode-tile tone-mint" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" focusable="false"><path d="M11 5 6 9H2v6h4l5 4z"/><path d="M15.5 8.5a5 5 0 0 1 0 7M19 5a10 10 0 0 1 0 14"/></svg></span>
-        <span class="mode-copy"><b>دوبلهٔ</b><small>صدای مقصد با حفظ زمان‌بندی و صدای اصلی در پس‌زمینه</small></span>
+        <span class="mode-copy"><b>دوبلهٔ</b><small>صدای ترجمه را روی ویدیو می‌گذارد و صدای اصلی را کم می‌کند</small></span>
         <input id="subify-popup-dubbing" class="switch" type="checkbox">
       </label>
     </section>
 
-    <details class="disclosure learn-acc" id="learnAcc">
-      <summary><span>یادگیری و ابزارها</span><span class="hint">این ابزارها را از همین‌جا باز کن.</span></summary>
-      <div class="disclosure-body learn-acc-body">
-        <button id="openLearn" class="learn-link" type="button" data-tool-page="learn.html" title="لغت‌های ذخیره‌شده را با مرور هوشمند یاد بگیر و خروجی Anki بگیر."><span class="tool-tile tone-violet" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" focusable="false"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg></span><span class="learn-link-copy"><b>یادگیری و مرور لغت</b></span></button>
-        <button id="openStoryboard" class="learn-link" type="button" data-tool-page="storyboard.html" title="صحنه‌های ترجمه‌شدهٔ ویدیو را کنار هم نگه دار."><span class="tool-tile tone-cyan" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" focusable="false"><rect x="2" y="3" width="20" height="18" rx="2"/><path d="M7 3v18M17 3v18M2 9h5M2 15h5M17 9h5M17 15h5"/></svg></span><span class="learn-link-copy"><b>Storyboard</b></span></button>
-        <button class="learn-link" type="button" data-tool-page="roleplay.html" title="با یک نقش، گفت‌وگوی واقعی تمرین کن."><span class="tool-tile tone-mint" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" focusable="false"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.8-3.2 3.2-5 6.5-5s5.7 1.8 6.5 5"/><path d="M16 4.5a3.5 3.5 0 0 1 0 7M18.5 14.5c1.6.6 2.6 2.2 3 4.5"/></svg></span><span class="learn-link-copy"><b>نقش‌آفرینی</b></span></button>
-        <button class="learn-link" type="button" data-tool-page="writer.html" title="از روی ویدیو بنویس و نوشته‌ات را اصلاح بگیر."><span class="tool-tile tone-violet" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" focusable="false"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg></span><span class="learn-link-copy"><b>نوشتن از ویدیو</b></span></button>
-        <button class="learn-link" type="button" data-tool-page="shadow.html" title="جمله را بشنو و همان‌طور تکرار کن."><span class="tool-tile tone-cyan" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" focusable="false"><path d="M2 12h2M6 8v8M10 4v16M14 7v10M18 9v6M22 12h0"/></svg></span><span class="learn-link-copy"><b>تمرین تلفظ</b></span></button>
-        <button class="learn-link" type="button" data-tool-page="chat.html" title="دربارهٔ ویدیو سؤال بپرس و جواب بگیر."><span class="tool-tile tone-mint" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" focusable="false"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></span><span class="learn-link-copy"><b>گفت‌وگو با ویدیو</b></span></button>
-        <button class="learn-link" type="button" data-tool-page="summary.html" title="خلاصه و لغت‌های مهم ویدیو را بگیر."><span class="tool-tile tone-neutral" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" focusable="false"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M8 13h8M8 17h8M8 9h2"/></svg></span><span class="learn-link-copy"><b>خلاصهٔ ویدیو</b></span></button>
-      </div>
-    </details>
-    <button id="captureShot" class="shot-row" type="button"><span class="tool-tile" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" focusable="false"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg></span><span>گرفتن اسکرین‌شات از این تب</span></button>
 
-    <p id="idleHint" class="note">آماده؛ زبان و لحن ترجمه رو از تب «ترجمه» تنظیم کن. وضعیت سرویس‌های ترجمه را از تب «سرویس‌ها» ببین.</p>
+    <button id="allAutoOff" class="shot-row" type="button" title="زیرنویس، دوبله و ترجمه‌ی خودکار صفحه را با هم خاموش می‌کند."><span>خاموش کردن همه‌ی خودکارها</span></button>
+    <div id="streakLine" class="note streak-line" hidden><span id="streakText"></span><button id="streakGoal" class="streak-goal" type="button"></button></div>
     <details class="disclosure adv"><summary>تنظیمات پیشرفته</summary><div class="disclosure-body">
       <label class="mode">
         <span class="mode-tile tone-cyan" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" focusable="false"><path d="M4 6h16M4 12h10M4 18h7"/></svg></span>
@@ -113,7 +107,7 @@
       </label>
       <label class="mode">
         <span class="mode-tile" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" focusable="false"><path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z"/><path d="M19 17l.7 2 2 .7-2 .7-.7 2-.7-2-2-.7 2-.7z"/></svg></span>
-        <span class="mode-copy"><b>هایلایت کلمه‌به‌کلمه</b><small>نمایش حالت کارائوکه هنگام پخش زیرنویس</small></span>
+        <span class="mode-copy"><b>هایلایت کلمه‌به‌کلمه</b><small>کلمه‌ها هنگام پخش یکی‌یکی روشن می‌شوند</small></span>
         <input id="subify-tab-karaoke" class="switch" type="checkbox" checked>
       </label>
       <div id="dub-quick" class="dub-quick" style="display:none">
@@ -127,7 +121,7 @@
           <button type="button" id="dubbing-mode-full" class="segmented-btn" data-mode="full"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M11 5 6 9H2v6h4l5 4z"/><path d="M15.5 8.5a5 5 0 0 1 0 7M19 5a10 10 0 0 1 0 14"/></svg>صدای دوبله رو هم پخش کن</button>
           <button type="button" id="dubbing-mode-captions" class="segmented-btn" data-mode="captions"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M7 11h4M13 11h4M7 15h10"/></svg>فقط زیرنویس زنده، بدون صدا</button>
         </div>
-        <small class="segmented-hint">حالت دوم برای استریم‌های زنده‌ای که اصلاً Caption ندارن مفیده، همون تشخیص Gemini رو می‌بینی، ولی صدای اصلی ویدیو دست‌نخورده می‌مونه.</small>
+        <small class="segmented-hint">اگر ویدیو زیرنویس ندارد، این حالت را انتخاب کن: فقط متن ترجمه را می‌بینی و صدای اصلی دست‌نخورده می‌ماند.</small>
       </div>
     </div></details>
   </section>
@@ -220,6 +214,23 @@
       </div>
     </details>
     </div></details>
+    <details class="disclosure learn-acc recent-acc" id="recentAcc">
+      <summary><span>ویدیوهای اخیر حساب</span><span class="hint">از همان جایی ادامه بده که ماندی.</span></summary>
+      <div class="disclosure-body learn-acc-body recent-acc-body" id="recentVideos"><p class="note" style="grid-column:1/-1;margin:0">در حال بارگذاری…</p></div>
+    </details>
+    <details class="disclosure learn-acc" id="learnAcc">
+      <summary><span>یادگیری و ابزارها</span><span class="hint">این ابزارها را از همین‌جا باز کن.</span></summary>
+      <div class="disclosure-body learn-acc-body">
+        <button id="openLearn" class="learn-link" type="button" data-tool-page="learn.html" title="لغت‌های ذخیره‌شده را با مرور هوشمند یاد بگیر و خروجی Anki بگیر."><span class="tool-tile tone-violet" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" focusable="false"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg></span><span class="learn-link-copy"><b>یادگیری و مرور لغت</b></span></button>
+        <button id="openStoryboard" class="learn-link" type="button" data-tool-page="storyboard.html" title="صحنه‌های ترجمه‌شدهٔ ویدیو را کنار هم نگه دار."><span class="tool-tile tone-cyan" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" focusable="false"><rect x="2" y="3" width="20" height="18" rx="2"/><path d="M7 3v18M17 3v18M2 9h5M2 15h5M17 9h5M17 15h5"/></svg></span><span class="learn-link-copy"><b>Storyboard</b></span></button>
+        <button class="learn-link" type="button" data-tool-page="roleplay.html" title="با یک نقش، گفت‌وگوی واقعی تمرین کن."><span class="tool-tile tone-mint" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" focusable="false"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.8-3.2 3.2-5 6.5-5s5.7 1.8 6.5 5"/><path d="M16 4.5a3.5 3.5 0 0 1 0 7M18.5 14.5c1.6.6 2.6 2.2 3 4.5"/></svg></span><span class="learn-link-copy"><b>نقش‌آفرینی</b></span></button>
+        <button class="learn-link" type="button" data-tool-page="writer.html" title="از روی ویدیو بنویس و نوشته‌ات را اصلاح بگیر."><span class="tool-tile tone-violet" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" focusable="false"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg></span><span class="learn-link-copy"><b>نوشتن از ویدیو</b></span></button>
+        <button class="learn-link" type="button" data-tool-page="shadow.html" title="جمله را بشنو و همان‌طور تکرار کن."><span class="tool-tile tone-cyan" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" focusable="false"><path d="M2 12h2M6 8v8M10 4v16M14 7v10M18 9v6M22 12h0"/></svg></span><span class="learn-link-copy"><b>تمرین تلفظ</b></span></button>
+        <button class="learn-link" type="button" data-tool-page="chat.html" title="دربارهٔ ویدیو سؤال بپرس و جواب بگیر."><span class="tool-tile tone-mint" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" focusable="false"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></span><span class="learn-link-copy"><b>گفت‌وگو با ویدیو</b></span></button>
+        <button class="learn-link" type="button" data-tool-page="summary.html" title="خلاصه و لغت‌های مهم ویدیو را بگیر."><span class="tool-tile tone-neutral" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" focusable="false"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M8 13h8M8 17h8M8 9h2"/></svg></span><span class="learn-link-copy"><b>خلاصهٔ ویدیو</b></span></button>
+      </div>
+    </details>
+    <button id="captureShot" class="shot-row" type="button"><span class="tool-tile" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" focusable="false"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg></span><span>گرفتن اسکرین‌شات از این تب</span></button>
   </section>
 
   <section class="tab-panel" data-panel="style">
@@ -340,9 +351,7 @@
     <a class="site-back" href="https://sub-ify.site" target="_blank" rel="noopener">بازگشت به سایت · Back to website</a>
   </section>
 </main>
-<footer>
-  <p class="credit-line"><span id="today">v2.9.30</span> · <a href="whatsnew.html" target="_blank" rel="noopener">تازه‌های این نسخه</a> · <a href="https://github.com/mobinbiback" target="_blank" rel="noopener">ساخته‌شده توسط Mobin Bibak ↗</a></p>
-</footer>
+
 <div id="toast" class="toast" role="status" aria-live="polite"></div>
 <script src="ui-language.js"></script><script src="select-menu.js"></script><script src="account-gate.js"></script><script src="popup.js"></script>
 </body>

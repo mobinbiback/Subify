@@ -20,7 +20,7 @@ var browser = globalThis.browser || globalThis.chrome; // Chrome has no browser 
       return new Intl.DateTimeFormat(DATE_LOCALES[uiLang()] || "en-GB", { dateStyle: "medium", timeStyle: "short" }).format(new Date(at));
     } catch (_) { return ""; }
   }
-  const state = { snap: null, seed: null, langs: null, picked: new Set(), task: null, busy: false, lastText: "", last: null };
+  const state = { snap: null, seed: null, langs: null, picked: new Set(), task: null, busy: false, lastText: "", last: null, langChosen: false };
   const LEVELS = ["A1", "A2", "B1", "B2", "C1", "C2"];
   // Writing goals (round 20): the value is what the select holds, the text is what the coach receives.
   const GOALS = {
@@ -102,7 +102,7 @@ var browser = globalThis.browser || globalThis.chrome; // Chrome has no browser 
   function renderState() {
     if (state.seed) A.renderSeed($("ctx"), state.seed, leaveVideo);
     else A.renderContext($("ctx"), state.snap);
-    $("check").disabled = state.busy;
+    $("check").disabled = state.busy || !state.langChosen;
     renderTasks();
     renderPicks();
   }
@@ -328,7 +328,7 @@ var browser = globalThis.browser || globalThis.chrome; // Chrome has no browser 
   async function onSubmit(e) {
     e.preventDefault();
     const text = $("text").value.trim();
-    if (state.busy) return;
+    if (state.busy || !state.langChosen) return;
     if (A.words(text).length < 5) {
       setStatus(A.tt("متن کوتاه است. حداقل پنج کلمه بنویس."), "error");
       return;
@@ -345,6 +345,7 @@ var browser = globalThis.browser || globalThis.chrome; // Chrome has no browser 
       prompt: buildPrompt(text, words, ctx),
       temperature: 0.3,
       maxTokens: 2500,
+      feature: "writer",
       videoId: src ? String(src.videoId || "") : ""
     });
     state.busy = false;
@@ -371,6 +372,7 @@ var browser = globalThis.browser || globalThis.chrome; // Chrome has no browser 
 
   async function init() {
     state.langs = await A.languages();
+    A.watchLearning((chosen) => { state.langChosen = chosen; renderState(); });
     try {
       // The target level starts at the learner's own level (Settings); it can be changed on the page.
       const prefs = await A.learning();

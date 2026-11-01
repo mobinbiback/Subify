@@ -16,7 +16,7 @@
     <h1>تمرین تلفظ</h1>
     <p class="ai-sub">یک جملهٔ ویدیو را گوش بده، با صدای خودت تکرار کن و بازخورد بگیر.</p>
   </div>
-  <div class="header-actions"></div>
+  <div class="header-actions"><span id="lang-chip" class="ai-lang-chip" hidden></span></div>
 </header>
 <nav class="ai-nav" aria-label="بخش‌های هوش مصنوعی">
   <a href="chat.html">گفت‌وگو</a>
@@ -26,6 +26,13 @@
   <a href="shadow.html" aria-current="page">تلفظ</a>
 </nav>
 <main id="main" class="ai-main">
+  <section id="lang-gate" class="ai-notice" aria-labelledby="lang-gate-title" hidden>
+    <div class="ai-stack">
+      <strong id="lang-gate-title">زبان یادگیری هنوز انتخاب نشده</strong>
+      <p class="ai-small">زبان یادگیری، زبانی است که هوش مصنوعی با آن گفت‌وگو می‌کند و تمرین می‌دهد؛ همان زبانی که تو یاد می‌گیری. تا انتخابش نکنی، ارسال غیرفعال است.</p>
+    </div>
+    <button id="lang-pick" class="ai-btn ai-btn--primary" type="button">انتخاب زبان یادگیری</button>
+  </section>
   <section id="ctx" class="ai-ctx" aria-live="polite"></section>
 
   <section class="ai-card ai-stack" aria-labelledby="pick-title">

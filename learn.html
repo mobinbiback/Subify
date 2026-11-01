@@ -60,7 +60,7 @@ body{background:radial-gradient(circle at 50% -10%,rgba(124,92,255,.08),transpar
 .gr-loading i:nth-child(2){animation-delay:.15s}
 .gr-loading i:nth-child(3){animation-delay:.3s}
 @keyframes grDot{0%,80%,100%{opacity:.25;transform:translateY(0)}40%{opacity:1;transform:translateY(-3px)}}
-</style><link rel="stylesheet" href="starfield.css"/><style id="sfy-sky">html:not([data-theme="light"]){background:radial-gradient(ellipse at 50% -10%,#1B2735,#090A0F) fixed!important}html[data-theme="light"]{background:#fafafa!important}body{background:transparent!important;isolation:isolate}body>.sfy-stars{z-index:-1}</style><style id="sfy-responsive">/* Phone width: the header stacks, the static column bar is hidden (each card already shows its columns),
+header{flex-wrap:wrap}header>div:first-child{flex:1 1 320px;min-width:0}header>div:last-child{flex:none;margin-inline-start:auto}</style><link rel="stylesheet" href="starfield.css"/><style id="sfy-sky">html:not([data-theme="light"]){background:radial-gradient(ellipse at 50% -10%,#1B2735,#090A0F) fixed!important}html[data-theme="light"]{background:#fafafa!important}body{background:transparent!important;isolation:isolate}body>.sfy-stars{z-index:-1}</style><style id="sfy-responsive">/* Phone width: the header stacks, the static column bar is hidden (each card already shows its columns),
    and every card keeps the word and level on one line with the meaning under it, so nothing is squeezed. */
 @media (max-width:560px){
   .wrap{padding:22px 14px 48px}
@@ -144,4 +144,4 @@ button.note-time:hover,button.note-time:focus-visible{text-decoration:underline}
 <div class="list-actions"><button id="listRun" class="primary" type="button">ساخت کارت‌ها</button></div>
 <div id="listProgress" role="status" aria-live="polite"></div>
 </details>
-<section id="reviewBox" class="grid" aria-label="مرور"></section><section class="list" aria-label="فهرست لغت‌ها"><div class="row" aria-hidden="true"><span>لغت</span><span>معنی</span><span>سطح</span><span>مرحله</span></div><div id="rows"></div></section></div><section id="panelNotes" aria-label="یادداشت‌های زمان‌دار" hidden><div id="notesBox"></div></section></main><script src="ui-language.js"></script><script src="learning-core.js"></script><script src="learn.js"></script></body></html>
+<section id="reviewBox" class="grid" aria-label="مرور"></section><section class="list" aria-label="فهرست لغت‌ها"><div class="row" aria-hidden="true"><span>لغت</span><span>معنی</span><span>سطح</span><span>مرحله</span></div><div id="rows"></div></section></div><section id="panelNotes" aria-label="یادداشت‌های زمان‌دار" hidden><div id="notesBox"></div></section></main><script src="ui-language.js"></script><script src="learning-core.js"></script><script src="sentence-export.js"></script><script src="quote-card.js"></script><script src="learn.js"></script></body></html>

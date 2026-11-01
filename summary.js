@@ -107,6 +107,7 @@ var browser = globalThis.browser || globalThis.chrome; // Chrome has no browser 
         A.transcript(state.snap.cues, 24000),
       temperature: 0.3,
       maxTokens: 3000,
+      feature: "other",
       videoId: state.snap.videoId
     });
     state.busy = false;

@@ -1407,6 +1407,8 @@ function setSafeHTML(el, html) {
           const tr = cloudByCue.get(ck);
           if (tr && !state.fixedCueKeys.has(ck)) state.translations.set(cue.id, tr);
         }
+        // Counts for the anonymous daily report: lines on this video, and how many came from the shared cache.
+        browser.runtime.sendMessage({ type: "subify-stat", key: "cacheCues", asked: state.cues.length, hit: state.cues.filter((c) => cloudByCue.has(cloudCueKey(c))).length }).catch(() => {});
         if (cloudRows.length) log(`loaded ${cloudRows.length} cloud-cached translations`);
       } catch (e) {
         log("cloud translation cache unavailable; continuing with local cache", e);
@@ -1531,7 +1533,9 @@ function setSafeHTML(el, html) {
   function installDrag(el){if(el.dataset.dragReady)return;el.dataset.dragReady="1";
     el.addEventListener("pointerdown",e=>{if(!e.target.closest(".subify-subtitle-line"))return;const r=state.player?.getBoundingClientRect();if(!r)return;state.drag={id:e.pointerId,r};el.setPointerCapture?.(e.pointerId);el.classList.add("subify-dragging");e.preventDefault();});
     el.addEventListener("pointermove",e=>{if(!state.drag||state.drag.id!==e.pointerId)return;const d=state.drag,x=Math.max(3,Math.min(97,(e.clientX-d.r.left)/d.r.width*100)),y=Math.max(3,Math.min(92,(e.clientY-d.r.top)/d.r.height*100));state.settings.positionX=Math.round(x*10)/10;state.settings.positionY=Math.round(y*10)/10;state.settings.positionMode="custom";el.style.left="0";el.style.right="0";el.style.top="0";el.style.bottom="0";el.style.transform="none";el.style.justifyContent="flex-start";el.style.alignItems="stretch";el.style.paddingTop=`${y}%`;el.style.paddingBottom="0";el.style.setProperty("--subify-drag-x",`${e.clientX-(d.r.left+d.r.width/2)}px`);});
-    el.addEventListener("click",e=>{const w=e.target.closest(".subify-subtitle-line--orig .subify-word");if(!w||!state.activeCue)return;const word=clean(w.textContent).replace(/^[^\p{L}\p{N}]+|[^\p{L}\p{N}]+$/gu,"");if(!word)return;void lookUpWord(w,word,state.activeCue.text,state.activeFa);});
+    el.addEventListener("click",e=>{const w=e.target.closest(".subify-subtitle-line--orig .subify-word");if(!w||!state.activeCue)return;const word=clean(w.textContent).replace(/^[^\p{L}\p{N}]+|[^\p{L}\p{N}]+$/gu,"");if(!word)return;void lookUpWord(w,word,state.activeCue.text,state.activeFa);
+      // Learning modes: a word lookup pauses the video so the learner can read it; closing the popup resumes.
+      const v=state.video;if(v&&!v.paused&&state.learnCfg&&state.learnCfg.smartMode&&state.learnCfg.smartMode!=="relaxed"){v.pause();state.lookupPaused=true;}});
     const done=()=>{if(!state.drag)return;state.drag=null;el.classList.remove("subify-dragging");const id=state.videoId||getVideoIdFromUrl();if(id)browser.storage.local.set({[`subify_video_${id}`]:{positionX:state.settings.positionX,positionY:state.settings.positionY,positionMode:"custom"}}).catch(()=>{});};el.addEventListener("pointerup",done);el.addEventListener("pointercancel",done);
   }
   function cueWords(cue,text){const parts=clean(text).match(/\S+\s*/g)||[clean(text)];const dur=Math.max(.1,cue.end-cue.start);const src=Array.isArray(cue.words)&&cue.words.length?cue.words:null;return parts.map((w,i)=>{const t=src?.[i];return{text:w,start:Number(t?.start??cue.start+dur*i/parts.length),end:Number(t?.end??cue.start+dur*(i+1)/parts.length)};});}
@@ -1643,6 +1647,19 @@ function setSafeHTML(el, html) {
     subifyAuthShow();
     subifyAuthSchedule();
   }
+  // The free Subify AI (owner's key on the server) refused a batch: say why, once per reason per page load.
+  const subifyFreeNoticeSeen = new Set();
+  function subifyFreeAiNotice(text, code) {
+    if (!text || subifyFreeNoticeSeen.has(code)) return;
+    subifyFreeNoticeSeen.add(code);
+    const box = document.createElement("div");
+    box.className = "subify-free-notice";
+    box.setAttribute("role", "status");
+    box.style.cssText = "position:absolute;left:50%;bottom:16%;transform:translateX(-50%);z-index:2147483000;width:min(380px,86%);padding:9px 14px;border-radius:12px;background:rgba(10,14,22,.94);color:#eef1f8;border:1px solid rgba(124,92,255,.5);box-shadow:0 12px 40px rgba(0,0,0,.5);text-align:center;font:600 13px/1.8 Vazirmatn,system-ui,sans-serif;direction:rtl;pointer-events:none";
+    box.textContent = text;
+    (state.player || document.body).appendChild(box);
+    setTimeout(() => box.remove(), 9000);
+  }
   // ---------- end Subify account gate ----------
 
   // ---------- learning: saved-word highlighting, sentence replay, Smart Watching ----------
@@ -1679,14 +1696,26 @@ function setSafeHTML(el, html) {
     const now = Date.now();
     // Highlights only apply when the subtitles are in the learning language (see isLearningSource).
     const learning = LRN.isLearningSource(cfg, state.trackLanguage || state.capturedCaptionLang || "");
+    let dueHit = false;
     for (const w of root.querySelectorAll(".subify-subtitle-line--orig .subify-word")) {
       w.classList.remove("subify-vw", "subify-vw-new", "subify-vw-learning", "subify-vw-mastered", "subify-vw-due");
       if (mode === "off" || !state.vocabIndex || !learning) continue;
       const card = LRN.lookupCard(state.vocabIndex, cfg, w.textContent);
       if (!card || !LRN.matchesMode(mode, card, now)) continue;
       w.classList.add("subify-vw", `subify-vw-${LRN.statusOf(card)}`);
-      if (LRN.isDue(card, now)) w.classList.add("subify-vw-due");
+      if (LRN.isDue(card, now)) { w.classList.add("subify-vw-due"); dueHit = true; }
     }
+    if (dueHit && cfg.smartMode === "study") stopForDueWord();
+  }
+  // Study mode: pause once when a line with a word due for review appears, so the learner sees it.
+  // Each line stops at most once; resuming plays on, and the next due line stops again.
+  function stopForDueWord() {
+    const cue = state.activeCue, v = state.video;
+    if (!cue || !v || v.paused || state.replay || !state.settings?.subtitleEnabled) return;
+    const key = cueKey(cue);
+    if (state.dueStopKey === key) return;
+    state.dueStopKey = key;
+    v.pause();
   }
   function reapplyHighlight() {
     const el = document.getElementById(OVERLAY_ID);
@@ -1706,7 +1735,7 @@ function setSafeHTML(el, html) {
   }
   // Written when the video or its title changes, not on every cue, so it stays small.
   const VIDEO_HISTORY_KEY = "subify_video_history";
-  const VIDEO_HISTORY_MAX = 8;
+  const VIDEO_HISTORY_MAX = 50;
   let historyMark = "";
   function rememberVideo(videoId, title) {
     const mark = videoId + "|" + title;
@@ -1719,6 +1748,35 @@ function setSafeHTML(el, html) {
       }).catch(() => {});
     } catch (_) { /* storage unavailable: the AI pages just have no video list */ }
   }
+  // Where the viewer stopped, for the account panel's "open on YouTube at this time" link. It is kept on the same
+  // list entry as the video. Saved every five seconds while the video plays, and once when it pauses. In the first
+  // five seconds, or in the last fifteen, the position is 0 (start from the beginning).
+  const POSITION_SAVE_MS = 5000;
+  let positionSaved = { videoId: "", position: -1 };
+  let positionAt = 0;
+  function rememberPosition() {
+    const video = state.video;
+    const videoId = state.videoId || getVideoIdFromUrl();
+    const title = pageVideoTitle();
+    if (!video || !videoId || !title || !Number.isFinite(video.currentTime)) return;
+    const now = Date.now();
+    if (now - positionAt < POSITION_SAVE_MS) return;
+    const duration = Number.isFinite(video.duration) ? Math.floor(video.duration) : 0;
+    let position = Math.floor(video.currentTime);
+    if (position < 5 || (duration && position > duration - 15)) position = 0;
+    if (video.paused && positionSaved.videoId === videoId && positionSaved.position === position) return;
+    positionAt = now;
+    positionSaved = { videoId, position };
+    try {
+      browser.storage.local.get(VIDEO_HISTORY_KEY).then((r) => {
+        const list = Array.isArray(r[VIDEO_HISTORY_KEY]) ? r[VIDEO_HISTORY_KEY] : [];
+        const rest = list.filter((h) => h && h.videoId !== videoId);
+        return browser.storage.local.set({ [VIDEO_HISTORY_KEY]: [{ videoId, title, at: now, position, duration }, ...rest].slice(0, VIDEO_HISTORY_MAX) });
+      }).catch(() => {});
+    } catch (_) { /* storage unavailable: no position is saved */ }
+  }
+  setInterval(rememberPosition, 1000);
+
   function saveCueSnapshot() {
     const cues = state.cues;
     if (!Array.isArray(cues) || !cues.length || cues === snapshotSource) return;
@@ -2710,11 +2768,13 @@ function setSafeHTML(el, html) {
         cues: fresh,
         videoId: state.videoId,
         trackKey: state.trackKey || state.persistentCacheKey,
-        targetLanguage: String(state.settings?.targetLanguage || "fa").toLowerCase()
+        targetLanguage: String(state.settings?.targetLanguage || "fa").toLowerCase(),
+        sourceLanguage: String(state.trackLanguage || state.capturedCaptionLang || "").split(/[-_]/)[0].toLowerCase()
       });
       if (response?.authRequired) subifyAuthBlockNow();
+      if (response?.freeAi && session === state.session) subifyFreeAiNotice(response.error, response.code);
       if (session !== state.session || epoch !== state.translationEpoch || !response?.ok) {
-        log("subtitle translation batch failed");
+        log("subtitle translation batch failed: " + (response?.code || "no-answer") + (response?.error ? " - " + response.error : ""));
         return false;
       }
       let added = 0;
@@ -2735,9 +2795,16 @@ function setSafeHTML(el, html) {
       // The missing cues remain eligible for the next queued window pass.
       const missing = fresh.filter(c => !returned.has(String(c.id)));
       if (missing.length) log(`translation batch returned ${returned.size}/${fresh.length}; ${missing.length} cue(s) will be retried on the next queue pass`, "warn");
+      // Every cue of this video is translated: the background reports the video as finished. It sends action=done once per
+      // video, and only when the owner's key translated part of it. A partial run never reaches this check.
+      if (added > 0 && session === state.session && state.cues.every(c => !c?.text || state.translations.has(c.id))) {
+        browser.runtime.sendMessage({ type: "subify-free-video-done", videoId: state.videoId }).catch(() => {});
+      }
       return added > 0;
     } catch (e) {
       log("subtitle translation failed", e);
+      // After the extension is reloaded, this page still runs the old overlay, which can no longer reach the extension.
+      if (!browser.runtime?.id || /Extension context invalidated/i.test(String(e?.message || e))) subifyFreeAiNotice("Subify به‌روز شد. این صفحه را یک بار رفرش کن تا ترجمه ادامه پیدا کند.", "stale");
       return false;
     } finally {
       fresh.forEach(c => state.translating.delete(c.id));
@@ -2766,23 +2833,25 @@ function setSafeHTML(el, html) {
     // Subtitle translation follows the subtitles switch (extraction does not translate on its own).
     if (!Array.isArray(cues) || !cues.length || session !== state.session || state.aheadBusy || state.settings.subtitleEnabled === false) return;
     const end = now + aheadSeconds;
-    const targets = cues
-      .filter(c => c?.text && c.end >= now - 1000 && c.start <= end && !state.translations.has(c.id) && !state.translating.has(c.id))
-      .slice(0, maxCues);
+    const pending = (c) => c?.text && !state.translations.has(c.id) && !state.translating.has(c.id);
+    // Nearest the playhead first. When that stretch is done (or the video resumed far in), the earliest untranslated
+    // lines are translated, so the start of the video is never left untranslated.
+    let targets = cues.filter(c => pending(c) && c.end >= now - 1000 && c.start <= end).slice(0, maxCues);
+    if (!targets.length) targets = cues.filter(pending).slice(0, maxCues);
     if (!targets.length) return;
     state.aheadBusy = true;
     try {
       // Keep a small amount of parallelism so the runway fills noticeably faster
       // without turning subtitle translation into an uncontrolled request burst.
-      // Two batches of up to 24 cues match the background worker's batch ceiling.
-      for (let i = 0; i < targets.length && session === state.session; i += 48) {
-        const batchA = targets.slice(i, i + 24);
-        const batchB = targets.slice(i + 24, i + 48);
+      // Small batches, three at a time, nearest cues first. A short request comes back in seconds, so the
+      // runway fills before the playhead reaches it, and one slow reply does not hold up the whole window.
+      // The first batch is small (4 lines) so the first subtitles appear at once.
+      const PARALLEL = 3;
+      const batches = [];
+      for (let at = 0, size = 4; at < targets.length; at += size, size = 8) batches.push(targets.slice(at, at + size));
+      for (let g = 0; g < batches.length && session === state.session; g += PARALLEL) {
         const epoch = state.translationEpoch;
-        const results = await Promise.all([
-          _translateBatchNow(batchA, session, epoch),
-          batchB.length ? _translateBatchNow(batchB, session, epoch) : Promise.resolve(true)
-        ]);
+        const results = await Promise.all(batches.slice(g, g + PARALLEL).map(b => _translateBatchNow(b, session, epoch)));
         if (results.some(ok => !ok) && session === state.session) {
           await new Promise(r => setTimeout(r, 450));
         }
@@ -3695,6 +3764,11 @@ function setSafeHTML(el, html) {
   function closeWordPopup() {
     state.wordPopupEl?.remove();
     state.wordPopupEl = null;
+    if (state.lookupPaused) {
+      state.lookupPaused = false;
+      const v = state.video;
+      if (v && v.paused) void v.play().catch(() => {});
+    }
   }
 
   // ---------- grammar panel labels: helpers (table of labels is declared at the top of this script) ----------

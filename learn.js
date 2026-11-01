@@ -303,10 +303,10 @@ function noteItemHtml(n){
   const timeEl=url||YT_WATCH_ID.test(videoId)
     ? `<button type="button" class="note-time" dir="ltr" data-seek-v="${esc(videoId)}" data-seek-t="${esc(String(n.t))}" data-seek-url="${esc(url)}" aria-label="${esc(tUI("برو به این لحظه"))} ${time}">${time}</button>`
     : `<span class="note-time" dir="ltr" title="${esc(tUI("این یادداشت لینک ندارد"))}">${time}</span>`;
-  return `<li class="note-item">${timeEl}<p class="note-text">${esc(n.text)}</p></li>`;
+  return `<li class="note-item">${timeEl}<p class="note-text">${esc(n.text)}</p>${n.id?`<button type="button" class="note-card-btn" data-quote-id="${esc(n.id)}">${esc(tUI("کارت نقل‌قول"))}</button>`:""}</li>`;
 }
 function groupActionsHtml(i){
-  return `<div class="note-actions"><button type="button" data-seed-page="roleplay.html" data-group="${i}">${esc(tUI("تمرین این ویدیو"))}</button><button type="button" data-seed-page="writer.html" data-group="${i}">${esc(tUI("نوشتن از این ویدیو"))}</button></div>`;
+  return `<div class="note-actions"><button type="button" data-seed-page="roleplay.html" data-group="${i}">${esc(tUI("تمرین این ویدیو"))}</button><button type="button" data-seed-page="writer.html" data-group="${i}">${esc(tUI("نوشتن از این ویدیو"))}</button><button type="button" data-sentences="md" data-group="${i}">Markdown</button><button type="button" data-sentences="anki" data-group="${i}">Anki</button></div>`;
 }
 function renderNotes(){
   noteGroups=L.groupNotes(notes);
@@ -357,7 +357,46 @@ async function practiceGroup(i,page){
   catch(_){ setStatus(tUI("ساخت تمرین ناموفق بود")); return; }
   try{ await browser.runtime.sendMessage({type:"subify-open-page",page}); }catch(_){ setStatus(tUI("باز کردن صفحه ناموفق بود")); }
 }
+// A text file download from the learn page (Markdown or Anki), named after the video.
+function downloadText(name,text,mime){
+  const url=URL.createObjectURL(new Blob([text],{type:mime+";charset=utf-8"}));
+  const a=document.createElement("a");
+  a.href=url; a.download=name;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(()=>URL.revokeObjectURL(url),1000);
+}
+function fileSlug(text){
+  return String(text||"").normalize("NFC").toLowerCase().replace(/[^\p{L}\p{N}]+/gu,"-").replace(/^-+|-+$/g,"").slice(0,60)||"subify";
+}
+// Markdown or Anki for every note of one video. Markdown links each time to the video at that moment.
+function exportGroupSentences(i,kind){
+  const g=noteGroups[i];
+  if(!g||!g.notes.length){ setStatus(tUI("یادداشتی برای خروجی نیست.")); return; }
+  const title=g.title||tUI("ویدیو بدون عنوان");
+  const slug=fileSlug(g.title);
+  if(kind==="md") downloadText(`subify-${slug}.md`,SubifySentences.sentencesMarkdown(g.notes,{title,linkFor:L.sourceOpenUrl}),"text/markdown");
+  else downloadText(`subify-${slug}-anki.txt`,SubifySentences.sentencesAnki(g.notes,{title}),"text/plain");
+}
+// One note as a quote card (PNG).
+async function shareNoteQuote(id){
+  const n=notes.find(x=>x&&x.id===id);
+  const data=n&&SubifySentences.quoteCardData(n,{fromLabel:tUI("از این ویدیو"),linkFor:L.sourceOpenUrl});
+  if(!data){ setStatus(tUI("این یادداشت متنی ندارد.")); return; }
+  if(data.text&&navigator.clipboard) navigator.clipboard.writeText(data.text).catch(()=>{});
+  try{
+    const blob=await SubifyCard.makeCardPng(data.card,{labels:data.labels});
+    const url=URL.createObjectURL(blob);
+    const a=document.createElement("a");
+    a.href=url; a.download=`subify-card-${fileSlug(data.card.word)}.png`;
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(()=>URL.revokeObjectURL(url),1000);
+  }catch(_){ setStatus(tUI("کارت ساخته نشد. دوباره امتحان کن.")); }
+}
 document.addEventListener("click",e=>{
+  const sent=e.target.closest?.("[data-sentences]");
+  if(sent){ exportGroupSentences(Number(sent.dataset.group),sent.dataset.sentences); return; }
+  const quote=e.target.closest?.("[data-quote-id]");
+  if(quote){ void shareNoteQuote(quote.dataset.quoteId); return; }
   const seek=e.target.closest?.("[data-seek-t]");
   if(seek){ e.preventDefault(); void seekNote(seek.dataset.seekV||"",Number(seek.dataset.seekT),seek.dataset.seekUrl||""); return; }
   const seed=e.target.closest?.("[data-seed-page]");

@@ -64,9 +64,9 @@
   --scene-a:rgba(124,92,255,.16);
   --scene-b:rgba(76,194,255,.12);
   --ring-track:#2a3447;
-  --radius-lg:22px;
-  --radius:20px;
-  --radius-md:14px;
+  --radius-lg:18px;
+  --radius:16px;
+  --radius-md:12px;
   --radius-sm:12px;
   color-scheme:dark;
 }
@@ -204,7 +204,7 @@ main{padding:0 14px}
 @media (prefers-reduced-motion:reduce){.tab-panel.active{animation:none}}
 /* starfield: static stars on the popup; the light theme uses the plain page surface */
 .sfy-stars i,.sfy-stars i::after{animation:none!important}
-:root[data-theme="light"] .sfy-stars{display:none}
+.sfy-stars{display:none!important}
 
 /* ---------- surfaces: one card style, one radius ---------- */
 .modes,.disclosure,.style-accordion,.page-translate-card,.source-group,.keys-hero,.tool,.ob-step{
@@ -217,7 +217,7 @@ main{padding:0 14px}
 /* ---------- hero: the video frame with the power switch ---------- */
 .hero{display:flex;flex-direction:column;align-items:center;gap:8px;margin:2px 0 10px}
 .screen{
-  position:relative;width:100%;height:98px;border-radius:var(--radius-lg);overflow:hidden;isolation:isolate;
+  position:relative;width:100%;height:84px;border-radius:var(--radius-lg);overflow:hidden;isolation:isolate;
   background:var(--screen);border:1px solid var(--screen-line);
 }
 .screen::before{
@@ -286,7 +286,7 @@ main{padding:0 14px}
 /* ---------- mode rows: one grouped card ---------- */
 .modes{display:flex;flex-direction:column;margin:0 0 10px;overflow:hidden}
 .mode{
-  display:flex;align-items:center;gap:10px;padding:9px 12px;cursor:pointer;color:var(--text);
+  display:flex;align-items:center;gap:10px;padding:8px 12px;cursor:pointer;color:var(--text);
 }
 .mode+.mode{border-top:1px solid var(--row-line)}
 .mode-copy{display:flex;flex-direction:column;gap:1px;min-width:0;flex:1}
@@ -553,7 +553,7 @@ label{font:500 11.5px/1.5 "VazirUI",sans-serif;color:var(--muted)}
 
 /* ---------- footer ---------- */
 /* bottom space = dock offset 12px + dock height 62px + 16px gap, so at the end of the scroll the last line sits 16px above the dock */
-footer{margin-top:2px;padding:0 14px 76px;display:flex;flex-direction:column}
+footer{margin-top:0;padding:0 14px 66px;display:flex;flex-direction:column}
 .credit-line{margin:2px 0 0;text-align:center;font-size:11.5px;line-height:1.4;color:var(--muted-2)}
 .credit-line a{display:inline-block;padding:8px 3px;margin:-8px 0;color:var(--muted);text-decoration:none}
 .credit-line a:hover{color:var(--accent-ink)}
@@ -592,6 +592,9 @@ footer{margin-top:2px;padding:0 14px 76px;display:flex;flex-direction:column}
 .ob-next:hover{background:var(--solid);color:var(--solid-ink);filter:brightness(1.08)}
 .ob-lang{position:relative;flex:none}
 .ob-lang .lang-trigger{height:36px!important}
+/* the onboarding menu opens upward: the card sits at the bottom of the popup */
+.ob-lang .lang-menu{position:absolute;top:auto;bottom:calc(100% + 8px);inset-inline-start:0;z-index:60;width:192px;max-width:calc(100vw - 24px);visibility:hidden;opacity:0;transform:translateY(6px);transition:opacity .16s,transform .16s,visibility 0s linear .16s}
+.ob-lang[data-open="true"] .lang-menu{visibility:visible;opacity:1;transform:none;transition:opacity .16s,transform .16s,visibility 0s}
 
 /* ---------- sign-in wall (account-gate.js): same tokens ---------- */
 #subify-gate .sg-card{padding:6px 2px 0}
@@ -601,3 +604,110 @@ footer{margin-top:2px;padding:0 14px 76px;display:flex;flex-direction:column}
 #subify-gate .sg-btn.is-primary{background:var(--solid)!important;border-color:transparent!important;color:var(--solid-ink)!important}
 #subify-gate .sg-btn.sg-ghost:not(.is-primary){border-style:dashed!important;background:transparent!important}
 #subify-gate .sg-ico{border:0!important;box-shadow:0 2px 6px rgba(0,0,0,.18)!important;border-radius:10px!important}
+
+/* Keyboard focus is always visible (brand purple). */
+:focus-visible { outline: 2px solid #8167fb; outline-offset: 2px; }
+
+.streak-line{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:6px 0 0}
+.streak-line .streak-goal{flex:0 0 auto;border:1px solid currentColor;border-radius:999px;background:transparent;color:inherit;font:inherit;font-size:11px;padding:2px 9px;cursor:pointer;opacity:.85}
+.streak-line[hidden]{display:none}
+.warn-hint{display:block;text-align:start}
+
+/* ---------- v4: liquid-glass pass (owner-approved suggestions 1-7) ---------- */
+:root{
+  --glass-fill:linear-gradient(160deg,rgba(255,255,255,.12),rgba(255,255,255,.04));
+  --glass-line:rgba(255,255,255,.14);
+  --glass-hi:inset 0 1px 0 rgba(255,255,255,.22);
+  --glass-shadow:0 12px 30px rgba(0,0,0,.30);
+  --glass-blur:blur(24px) saturate(170%);
+}
+:root[data-theme="light"]{
+  --glass-fill:linear-gradient(160deg,rgba(255,255,255,.86),rgba(255,255,255,.58));
+  --glass-line:rgba(255,255,255,.95);
+  --glass-hi:inset 0 1px 0 rgba(255,255,255,1);
+  --glass-shadow:0 10px 26px rgba(40,50,90,.12);
+}
+/* a soft colour field behind the glass, so the blur has something to refract */
+body{
+  font-size:13px;
+  background:
+    radial-gradient(120% 55% at 0% 0%,rgba(124,92,255,.26),transparent 62%),
+    radial-gradient(90% 50% at 100% 100%,rgba(76,194,255,.18),transparent 60%),
+    var(--bg)!important;
+}
+:root[data-theme="light"] body{
+  background:
+    radial-gradient(120% 55% at 0% 0%,rgba(124,92,255,.16),transparent 62%),
+    radial-gradient(90% 50% at 100% 100%,rgba(76,194,255,.14),transparent 60%),
+    #eceef6!important;
+}
+/* 2. the power button sits on the open field, no dark box around it */
+.screen{height:76px;background:transparent!important;border:0!important;overflow:visible!important}
+.screen::before,.screen::after{display:none!important}
+.hero{margin:0 0 4px}
+.state{font-size:13.5px}
+/* 3. theme, language and what's-new share one glass capsule */
+.header-actions{
+  padding:3px;gap:2px;border-radius:999px;background:var(--glass-fill);border:1px solid var(--glass-line);
+  box-shadow:var(--glass-hi),var(--glass-shadow);-webkit-backdrop-filter:var(--glass-blur);backdrop-filter:var(--glass-blur);
+}
+.header-actions .icon-btn,.header-controls .lang-trigger{border-color:transparent!important;background:transparent!important}
+/* 4. the bottom dock: taller targets, bigger labels */
+.tabs{
+  left:12px;right:12px;bottom:12px;padding:5px;background:var(--glass-fill);border:1px solid var(--glass-line);
+  box-shadow:var(--glass-hi),var(--glass-shadow);-webkit-backdrop-filter:blur(28px) saturate(180%);backdrop-filter:blur(28px) saturate(180%);
+}
+.tab{height:52px;font-size:12px}
+.tab-ico{height:22px}
+.tab-ico svg{width:20px;height:20px}
+/* 5. readable copy */
+.mode-copy b{font-size:14px}
+.mode-copy small{font-size:12.5px;line-height:1.5}
+.mode{padding:6px 12px!important}
+.hint{font-size:12px}
+.note{font-size:13px}
+/* the glass surfaces */
+.modes,.disclosure,.style-accordion,.page-translate-card,.source-group,.keys-hero,.tool,.ob-step,.status,.shot-row{
+  background:var(--glass-fill)!important;border:1px solid var(--glass-line)!important;
+  box-shadow:var(--glass-hi),var(--glass-shadow)!important;
+  -webkit-backdrop-filter:var(--glass-blur);backdrop-filter:var(--glass-blur);
+}
+/* 6. fits 560px: the footer and its version line leave the main tab, the dock gets its own room */
+body{max-height:600px}
+main{padding:0 14px 72px}
+body:has(.tab-panel[data-panel="main"].active) footer{display:none}
+/* 7. 'turn everything off' is a quiet secondary button; the streak is one line */
+.shot-row{min-height:34px;padding:5px 12px;font-size:12.5px;justify-content:center}
+.streak-line{justify-content:center;text-align:center;flex-wrap:wrap;margin:2px 0 6px;font-size:11.5px;line-height:1.45}
+.streak-line .streak-goal{flex:none}
+
+/* v5: no empty band at the bottom; the header carries version and credit; the header sits above the glass cards so menus are clickable */
+footer{display:none!important}
+main{padding:0 14px 72px!important}
+header{position:relative;z-index:40;padding-top:6px!important}
+.brand-sub{margin:1px 0 0;font-size:11px;line-height:1.3;color:var(--muted-2)}
+.brand-sub a{color:var(--muted);text-decoration:none}
+.brand-sub a:hover{color:var(--accent-ink)}
+body::after{content:"";position:fixed;left:0;right:0;bottom:0;height:90px;pointer-events:none;z-index:19;background:linear-gradient(to bottom,transparent,var(--bg) 72%)}
+.screen{height:70px!important}
+.adv>summary{padding:6px 12px}
+.streak-line{margin:2px 0 4px!important}
+.mode{padding:5px 12px!important}
+header .header-actions{flex:none}
+.brand{flex:1;min-width:0}
+
+/* v6: calmer type scale, thin scrollbar, version-only header line */
+body{font-size:12px}
+.mode-copy b{font-size:13px}
+.mode-copy small{font-size:11.5px;line-height:1.5}
+.hint{font-size:11px}
+.note{font-size:12px}
+.state{font-size:12.5px}
+.tab{font-size:11px}
+.shot-row{font-size:12px}
+.streak-line{font-size:11px}
+.brand-sub{font-size:10.5px;letter-spacing:.02em}
+body{scrollbar-width:thin;scrollbar-color:rgba(127,127,140,.35) transparent}
+body::-webkit-scrollbar{width:4px}
+body::-webkit-scrollbar-track{background:transparent}
+body::-webkit-scrollbar-thumb{background:rgba(127,127,140,.35);border-radius:4px}

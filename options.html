@@ -260,6 +260,46 @@ header p{opacity:1}
 .custom-intro-icon{background:linear-gradient(145deg,#6a4fe6,#4a6fd8)!important}
 .custom-flow b{background:linear-gradient(135deg,#6a4fe6,#4a6fd8)!important}
 button:focus-visible,a:focus-visible,summary:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible,[role="switch"]:focus-visible,[tabindex]:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+/* Keyboard focus: one ring for every control on this page, in both themes (this page has its own styles, not popup.css). */
+:root{--focus-ring:#8167fb}
+:root[data-theme="light"]{--focus-ring:#5446d8}
+html body :is(a,button,summary,input,select,textarea,[role="switch"],[role="button"],[tabindex]):focus-visible{outline:2px solid var(--focus-ring)!important;outline-offset:2px!important;box-shadow:0 0 0 4px rgba(129,103,251,.28)!important}
+</style>
+<style id="mobin-card-style">.mobin-card{padding:16px}.mobin-card-head{display:flex;align-items:center;justify-content:space-between;gap:14px}.mobin-card-text{display:flex;flex-direction:column;gap:3px;min-width:0}.mobin-card-label{font-size:12px;opacity:.7}.mobin-card-name{font-size:18px}.mobin-card-role{font-size:13px;opacity:.75}.mobin-card-photo{width:72px;height:72px;border-radius:50%;object-fit:cover;border:2px solid rgba(128,140,170,.6);flex:0 0 auto}.mobin-card-links{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:14px}.mobin-card-links a{text-align:center;padding:10px 6px;border-radius:12px;border:1px solid rgba(128,140,170,.35);color:inherit;text-decoration:none;font-size:14px}.about-open{display:block;text-align:center;padding:12px;border-radius:14px;border:1px solid rgba(128,140,170,.35);color:inherit;text-decoration:none}</style>
+<style>
+.adv-box{margin-top:4px}
+.adv-box>summary{cursor:pointer;font-size:12.5px;padding:8px 2px;color:var(--ink,inherit);list-style:none}
+.adv-box>summary::-webkit-details-marker{display:none}
+.adv-box>summary::before{content:"▸ ";display:inline-block;transition:transform .15s}
+.adv-box[open]>summary::before{transform:rotate(90deg)}
+.custom-presets{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:10px}
+.custom-presets .hint{margin-inline-end:4px;font-size:11.5px;font-weight:600;color:var(--muted)}
+.custom-presets button.ghost{height:34px;min-height:0;padding:0 14px;border-radius:999px;border:1px solid var(--border);background:var(--accent-soft);color:var(--ink);font:600 12px/1 "VazirUI",sans-serif;cursor:pointer;transition:.15s}
+.custom-presets button.ghost:hover{border-color:var(--accent);color:var(--accent-ink,var(--ink))}
+</style>
+<style id="i18n-dir">
+@font-face{font-family:"InterUI";src:url("fonts/Inter-400.woff2") format("woff2");font-weight:400;font-display:swap}
+@font-face{font-family:"InterUI";src:url("fonts/Inter-700.woff2") format("woff2");font-weight:700 900;font-display:swap}
+html[dir="ltr"] body{direction:ltr;text-align:left}
+html:not([lang="fa"]):not([lang="ar"]) body,html:not([lang="fa"]):not([lang="ar"]) body *{font-family:"InterUI","VazirUI",Tahoma,sans-serif!important}
+</style>
+<style id="wn-style">
+.wn-backdrop{position:fixed;inset:0;background:rgba(5,8,15,.62);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);display:grid;place-items:center;z-index:100;padding:16px}
+.wn-backdrop[hidden]{display:none}
+.wn-dialog{width:min(460px,100%);max-height:calc(100vh - 32px);overflow:auto;border-radius:22px;padding:20px;background:rgba(20,26,40,.96);border:1px solid rgba(124,92,255,.35);color:#eef1f8;box-shadow:0 30px 80px rgba(0,0,0,.5)}
+.wn-head{display:flex;align-items:center;justify-content:space-between;font-size:12px;opacity:.75;margin-bottom:8px}
+.wn-dialog h2{margin:0 0 6px;font-size:18px;line-height:1.5}
+.wn-dialog h3{margin:16px 0 8px;font-size:13px;opacity:.8;font-weight:600}
+.wn-list{list-style:none;margin:0;padding:0}
+.wn-list li{padding:10px 12px;border-radius:14px;background:rgba(255,255,255,.05);margin-bottom:8px}
+.wn-list b{display:block;font-size:13.5px;margin-bottom:3px}
+.wn-list span{font-size:12.5px;line-height:1.7;opacity:.85}
+.wn-sites{display:flex;flex-wrap:wrap;gap:6px}
+.wn-sites span{padding:5px 10px;border-radius:999px;background:rgba(124,92,255,.18);font-size:12px}
+.wn-actions{display:flex;gap:8px;margin-top:18px}
+.wn-actions button,.wn-support{flex:1;min-height:44px;border-radius:14px;display:flex;align-items:center;justify-content:center;font:inherit;font-weight:700;font-size:14px;cursor:pointer;text-decoration:none;color:#fff}
+.wn-actions button{background:#7c5cff;border:0}
+.wn-support{background:transparent;border:1px solid rgba(255,255,255,.22)}
 </style>
 </head>
 <body><div class="sfy-stars" aria-hidden="true"><i class="l1"></i><i class="l2"></i><i class="l3"></i><i class="l4"></i></div>
@@ -271,19 +311,17 @@ button:focus-visible,a:focus-visible,summary:focus-visible,input:focus-visible,s
 
 <div class="dash-layout">
   <nav class="dash-nav" aria-label="بخش‌های پنل">
-    <a href="#dashboard" data-nav="dashboard"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="2"/><rect x="14" y="3" width="7" height="7" rx="2"/><rect x="3" y="14" width="7" height="7" rx="2"/><rect x="14" y="14" width="7" height="7" rx="2"/></svg><span>داشبورد</span></a>
-    <a href="#account" data-nav="account"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6"/></svg><span>حساب من</span></a>
-    <a href="#extension" data-nav="extension"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="4"/><path d="M9 12h6M12 9v6"/></svg><span>افزونه</span></a>
-    <a href="#statistics" data-nav="statistics"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 20V12M12 20V5M19 20v-9"/></svg><span>آمار</span></a>
+    <a href="#dashboard" data-nav="dashboard"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="2"/><rect x="14" y="3" width="7" height="7" rx="2"/><rect x="3" y="14" width="7" height="7" rx="2"/><rect x="14" y="14" width="7" height="7" rx="2"/></svg><span>خانه</span></a>
+    <a href="#translate" data-nav="translate"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h10M18 7h2M4 17h2M10 17h10"/><circle cx="16" cy="7" r="2"/><circle cx="8" cy="17" r="2"/></svg><span>ترجمه و دوبله</span></a>
     <a href="#learning" data-nav="learning"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3"/></svg><span>یادگیری</span></a>
-    <a href="#settings" data-nav="settings"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h10M18 7h2M4 17h2M10 17h10"/><circle cx="16" cy="7" r="2"/><circle cx="8" cy="17" r="2"/></svg><span>تنظیمات</span></a>
-    <a href="#help" data-nav="help"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M9.5 9.5a2.5 2.5 0 1 1 3.5 2.3c-.6.3-1 .9-1 1.6v.6M12 17h.01"/></svg><span>راهنما</span></a>
+    <a href="#keys" data-nav="keys"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="8" cy="15" r="4"/><path d="M11 12l9-9M17 6l3 3M14 9l3 3"/></svg><span>کلیدها و سرویس‌ها</span></a>
+    <a href="#account" data-nav="account"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6"/></svg><span>حساب و پشتیبانی</span></a>
   </nav>
 
   <div class="dash-main">
 
     <section class="dash-panel" data-panel="dashboard" id="dashboard">
-      <div class="panel-title"><h2>داشبورد</h2><p>خلاصهٔ حساب، وضعیت افزونه و مصرف تو در یک نگاه. همهٔ اعداد از داده‌های ذخیره‌شدهٔ همین دستگاه خوانده می‌شن.</p></div>
+      <div class="panel-title"><h2>خانه</h2><p>خلاصهٔ حساب، وضعیت افزونه و مصرف تو در یک نگاه. همهٔ اعداد از داده‌های ذخیره‌شدهٔ همین دستگاه خوانده می‌شن.</p></div>
       <div class="kpi-grid">
         <div class="card kpi"><span class="kpi-label">حساب</span><b id="dbAccount">…</b><small id="dbAccountSub"></small></div>
         <div class="card kpi"><span class="kpi-label">موتور دوبله</span><b id="dbEngine">…</b><small id="dbEngineSub"></small></div>
@@ -292,32 +330,6 @@ button:focus-visible,a:focus-visible,summary:focus-visible,input:focus-visible,s
       </div>
       <div class="section"><h2>امروز</h2><div class="card"><div id="dbToday" class="kv-grid"><span class="hint">در حال خواندن…</span></div></div></div>
       <div class="section"><div class="quick-links"><a href="whatsnew.html" target="_blank" rel="noopener"><span>تازه‌های این نسخه</span><small>What's new · تغییرات این نسخه</small></a></div></div>
-    </section>
-
-    <section class="dash-panel" data-panel="account" id="account">
-      <div class="panel-title"><h2>حساب من</h2><p>وضعیت ورودت و پشتیبانی اینجاست. بدون ورود هم افزونه کار می‌کنه.</p></div>
-      <div class="section">
-        <div id="sfy-account-host"><div class="card"><span class="hint">در حال بررسی حساب…</span></div></div>
-        <div class="card" style="margin-top:12px"><div id="sfy-ext-status" class="sfy-status-list"><span class="hint">در حال بررسی…</span></div></div>
-      </div>
-    </section>
-
-    <section class="dash-panel" data-panel="extension" id="extension">
-      <div class="panel-title"><h2>افزونه</h2><p>نسخه، مسیرهای فعال و تغییرات همین نسخه.</p></div>
-      <div class="section"><h2>این نسخه</h2><div class="card">
-        <div class="notice">این نسخه مخصوص Google Chrome است و مسیر دوبلهٔ صوتی با tabCapture و offscreen فعال است.</div>
-        <div class="kv-grid" style="margin-top:14px">
-          <div class="kv"><label>نسخه</label><div id="extVersion">…</div></div>
-          <div class="kv"><label>ترجمهٔ زیرنویس</label><div id="extSubProvider">…</div></div>
-        </div>
-        <div class="quick-links" style="margin-top:14px">
-          <a href="storyboard.html" target="_blank" rel="noopener"><span>Storyboard</span><small>صفحهٔ Storyboard افزونه</small></a>
-        </div>
-      </div></div>
-    </section>
-
-    <section class="dash-panel" data-panel="statistics" id="statistics">
-      <div class="panel-title"><h2>آمار</h2><p>فقط اعدادی نشان داده می‌شن که این افزونه واقعاً اندازه گرفته. هیچ عددی حدس زده یا ساخته نمی‌شه.</p></div>
 
       <div class="section"><h2>استفاده و برآورد هزینه</h2><div class="card">
         <div class="notice">اعداد زیر مصرف واقعیِ همین افزونه‌ست.</div>
@@ -336,7 +348,25 @@ button:focus-visible,a:focus-visible,summary:focus-visible,input:focus-visible,s
         <div class="field wide"><label>پلتفرم‌های پرکاربرد (ثانیه‌های پردازش‌شدهٔ صدا)</label><div id="lrnPlatforms">…</div></div>
       </div></div>
     </section>
-
+    <section class="dash-panel" data-panel="translate" id="translate">
+      <div class="panel-title"><h2>ترجمه و دوبله</h2><p>موتور ترجمه، زبان‌ها و صدای دوبله. تنظیمات پیشرفته را فقط وقتی لازم است باز کن.</p></div>
+      <div class="section"><h2>دوبله</h2><div class="card grid">
+        <div class="field"><label for="engine">موتور دوبله</label><select id="engine"><option value="live">Live Translate</option><option value="chunked">Chunked fallback</option></select></div>
+        <details class="field wide adv-box"><summary>تنظیمات پیشرفته: مدل‌ها و زمان ضبط</summary><div class="grid">
+        <div class="field"><label for="liveModel">مدل Live</label><select id="liveModel"><option value="gemini-3.5-live-translate-preview">gemini-3.5-live-translate-preview</option></select></div>
+        <div class="field"><label for="liveVoice">صدای Live</label><select id="liveVoice"><option value="auto">Auto، هماهنگ با گوینده</option><option value="Charon">Charon</option><option value="Puck">Puck</option><option value="Fenrir">Fenrir</option><option value="Orus">Orus</option><option value="Leda">Leda</option><option value="Kore">Kore</option><option value="Aoede">Aoede</option><option value="Zephyr">Zephyr</option></select></div>
+        <div class="field"><label for="sttModel">مدل تشخیص (STT)</label><select id="sttModel"><option value="gemini-3.5-flash">gemini-3.5-flash (پیش‌فرض)</option><option value="gemini-3-flash">gemini-3-flash</option><option value="gemini-3.1-flash-lite">gemini-3.1-flash-lite</option></select><div class="hint">پیش‌فرض روی gemini-3.5-flash قرار دارد.</div></div>
+        <div class="field"><label for="ttsModel">مدل صدا (TTS)</label><select id="ttsModel"><option value="gemini-3.1-flash-tts-preview">gemini-3.1-flash-tts-preview (پیش‌فرض)</option><option value="gemini-2.5-flash-preview-tts">gemini-2.5-flash-preview-tts</option></select><div class="hint">پیش‌فرض روی gemini-3.1-flash-tts-preview قرار دارد.</div></div>
+        <div class="field"><label for="recordMaxSeconds">حداکثر ضبط، دقیقه</label><input id="recordMaxSeconds" type="number" min="5" max="240" step="5"></div>
+        </div></details>
+        <div class="field check"><input id="autoFallback" type="checkbox"><label for="autoFallback">اگر Live در دسترس نبود، خودکار به Chunked برود</label></div>
+        <div class="field check"><input id="recordSession" type="checkbox"><label for="recordSession">جلسهٔ دوبله برای خروجی ذخیره شود</label></div>
+        <div class="field check wide"><input id="skipPersian" type="checkbox"><label for="skipPersian">اگر منبع فارسی است، دوبله انجام نشود</label></div>
+        <div class="field wide"><label for="skipLangs">زبان‌هایی که بلدی (کد، جدا با ویرگول، مثلاً en, es). دوبله نمی‌شوند.</label><input id="skipLangs" type="text" dir="ltr" placeholder="en, es"></div>
+        <div class="field"><label for="subtitleDomain">حوزه‌ی ویدیو برای ترجمه</label><select id="subtitleDomain"><option value="general">عمومی</option><option value="software">مهندسی نرم‌افزار</option><option value="medicine">پزشکی</option><option value="law">حقوق</option><option value="slang">عامیانه و اسلنگ</option></select></div>
+        <div class="actions wide dash-actions-row"><button id="saveBtn" class="primary" type="button">ذخیره تنظیمات</button><span id="saved" class="saved">ذخیره شد</span></div>
+      </div></div>
+    </section>
     <section class="dash-panel" data-panel="learning" id="learning">
       <div class="panel-title"><h2>یادگیری</h2><p>مرور لغت‌های ذخیره‌شده و تنظیمات یادگیری. دکمهٔ «یادگیری» توی پاپ‌آپ افزونه مستقیم صفحهٔ مرور لغت‌ها رو باز می‌کنه.</p></div>
       <div class="section" id="learn-tools">
@@ -370,12 +400,13 @@ button:focus-visible,a:focus-visible,summary:focus-visible,input:focus-visible,s
 
       <div class="section" id="learning-settings"><h2>تنظیمات یادگیری</h2><div class="card">
         <div class="notice">این تنظیمات روی زیرنویس سایت‌های پشتیبانی‌شده اعمال می‌شن. لغت‌های ذخیره‌شده طبق وضعیت مرورشان هایلایت می‌شن؛ «تازه» یعنی هنوز یک‌بار هم مرور نشده.</div>
-        <div class="grid" style="margin-top:12px">
+        <div class="field wide" style="margin-bottom:12px" id="presets"><span class="hint">پیش‌تنظیم‌ها: یک بار بزن و حالت یادگیری، سطح، حوزهٔ ویدیو و صدای اصلی دوبله با هم تنظیم می‌شن و همان لحظه ذخیره می‌شن.</span><div class="actions"><button type="button" data-preset="student">دانشجو</button><button type="button" data-preset="beginner">تازه‌کار</button><button type="button" data-preset="series">سریال و فیلم</button></div></div><div class="grid" style="margin-top:12px">
           <div class="field"><label for="lrnSmart">حالت تماشا (Smart Watching)</label>
             <select id="lrnSmart">
               <option value="relaxed">آرام (تماشای عادی)</option>
               <option value="learning">یادگیری (هایلایت + پخش دوباره)</option>
               <option value="active">فعال، یادگیری + توقف بعد از هر جمله</option>
+              <option value="study">مطالعه، یادگیری + توقف روی جمله‌ای که لغت مرور دارد</option>
             </select><div class="hint" id="lrnSmartNote">حالت فعال روی پخش زنده کار می‌کند. با مکث، زیرنویس‌ها متوقف می‌شوند و اگر ویدیو قابل مکث باشد، پخش هم مکث می‌شود.</div></div>
           <div class="field"><label for="lrnHighlight">هایلایت لغت‌های ذخیره‌شده</label>
             <select id="lrnHighlight">
@@ -394,7 +425,7 @@ button:focus-visible,a:focus-visible,summary:focus-visible,input:focus-visible,s
             <select id="lrnNative"><option value="fa">فارسی</option><option value="en">انگلیسی</option><option value="ar">عربی</option><option value="tr">ترکی</option><option value="es">اسپانیایی</option><option value="fr">فرانسوی</option><option value="de">آلمانی</option><option value="it">ایتالیایی</option><option value="pt">پرتغالی</option><option value="ru">روسی</option><option value="ja">ژاپنی</option><option value="ko">کره‌ای</option><option value="zh">چینی</option><option value="hi">هندی</option></select>
             <div class="hint">زیرنویس، دوبله و توضیح گرامر به این زبان ترجمه می‌شن.</div></div>
           <div class="field"><label for="lrnTarget">زبان ویدیو (زبانی که یاد می‌گیری)</label>
-            <select id="lrnTarget"><option value="fa">فارسی</option><option value="en">انگلیسی</option><option value="ar">عربی</option><option value="tr">ترکی</option><option value="es">اسپانیایی</option><option value="fr">فرانسوی</option><option value="de">آلمانی</option><option value="it">ایتالیایی</option><option value="pt">پرتغالی</option><option value="ru">روسی</option><option value="ja">ژاپنی</option><option value="ko">کره‌ای</option><option value="zh">چینی</option><option value="hi">هندی</option></select>
+            <select id="lrnTarget"><option value="">یکی را انتخاب کن</option><option value="fa">فارسی</option><option value="en">انگلیسی</option><option value="ar">عربی</option><option value="tr">ترکی</option><option value="es">اسپانیایی</option><option value="fr">فرانسوی</option><option value="de">آلمانی</option><option value="it">ایتالیایی</option><option value="pt">پرتغالی</option><option value="ru">روسی</option><option value="ja">ژاپنی</option><option value="ko">کره‌ای</option><option value="zh">چینی</option><option value="hi">هندی</option></select>
             <div class="hint">هایلایت لغت‌ها و دکمهٔ گرامر فقط روی زیرنویس این زبان فعال می‌شن.</div></div>
           <div class="field"><label for="lrnCefr">سطح CEFR</label>
             <select id="lrnCefr"><option value="A1">A1</option><option value="A2">A2</option><option value="B1">B1</option><option value="B2">B2</option><option value="C1">C1</option><option value="C2">C2</option></select></div>
@@ -404,24 +435,10 @@ button:focus-visible,a:focus-visible,summary:focus-visible,input:focus-visible,s
         <div class="hint" id="lrnSaved" style="margin-top:8px"></div>
       </div></div>
     </section>
-
-    <section class="dash-panel" data-panel="settings" id="settings">
-      <div class="panel-title"><h2>تنظیمات</h2><p>موتور و صدای دوبله، کلیدهای API و سرویس‌های اختصاصی، داده‌های ذخیره‌شده و گزارش فنی روی این دستگاه.</p></div>
-
-      <div class="section"><h2>دوبله</h2><div class="card grid">
-        <div class="field"><label for="engine">موتور دوبله</label><select id="engine"><option value="live">Live Translate</option><option value="chunked">Chunked fallback</option></select></div>
-        <div class="field"><label for="liveModel">مدل Live</label><select id="liveModel"><option value="gemini-3.5-live-translate-preview">gemini-3.5-live-translate-preview</option></select></div>
-        <div class="field"><label for="liveVoice">صدای Live</label><select id="liveVoice"><option value="auto">Auto، هماهنگ با گوینده</option><option value="Charon">Charon</option><option value="Puck">Puck</option><option value="Fenrir">Fenrir</option><option value="Orus">Orus</option><option value="Leda">Leda</option><option value="Kore">Kore</option><option value="Aoede">Aoede</option><option value="Zephyr">Zephyr</option></select></div>
-        <div class="field"><label for="sttModel">مدل تشخیص (STT)</label><select id="sttModel"><option value="gemini-3.5-flash">gemini-3.5-flash (پیش‌فرض)</option><option value="gemini-3-flash">gemini-3-flash</option><option value="gemini-3.1-flash-lite">gemini-3.1-flash-lite</option></select><div class="hint">پیش‌فرض روی gemini-3.5-flash قرار دارد.</div></div>
-        <div class="field"><label for="ttsModel">مدل صدا (TTS)</label><select id="ttsModel"><option value="gemini-3.1-flash-tts-preview">gemini-3.1-flash-tts-preview (پیش‌فرض)</option><option value="gemini-2.5-flash-preview-tts">gemini-2.5-flash-preview-tts</option></select><div class="hint">پیش‌فرض روی gemini-3.1-flash-tts-preview قرار دارد.</div></div>
-        <div class="field"><label for="recordMaxSeconds">حداکثر ضبط، دقیقه</label><input id="recordMaxSeconds" type="number" min="5" max="240" step="5"></div>
-        <div class="field check"><input id="autoFallback" type="checkbox"><label for="autoFallback">اگر Live در دسترس نبود، خودکار به Chunked برود</label></div>
-        <div class="field check"><input id="recordSession" type="checkbox"><label for="recordSession">جلسهٔ دوبله برای خروجی ذخیره شود</label></div>
-        <div class="field check wide"><input id="skipPersian" type="checkbox"><label for="skipPersian">اگر منبع فارسی است، دوبله انجام نشود</label></div>
-        <div class="actions wide dash-actions-row"><button id="saveBtn" class="primary" type="button">ذخیره تنظیمات</button><span id="saved" class="saved">ذخیره شد</span></div>
-      </div></div>
-
+    <section class="dash-panel" data-panel="keys" id="keys">
+      <div class="panel-title"><h2>کلیدها و سرویس‌ها</h2><p>کلید هر سرویس را اینجا بگذار. راهنمای قدم‌به‌قدم هر سرویس در همان کادر است.</p></div>
       <div class="section" id="api-keys"><h2>کلیدهای API و سرویس‌ها</h2><div class="card">
+        <p id="freeAiNote" class="notice" role="note">هوش مصنوعی رایگان: در حال بررسی…</p>
         <div class="notice">کلیدها فقط روی همین دستگاه (Storage محلی مرورگر) ذخیره می‌شن و جز به همان سرویسی که انتخاب کردی ارسال نمی‌شن. مدل هر سرویس از تب «ترجمه» در پاپ‌آپ انتخاب می‌شه.</div>
         <div class="key-guide">
           <h4>کلید Gemini رو بگیر (رایگان، حدود ۳ دقیقه)</h4>
@@ -456,8 +473,8 @@ button:focus-visible,a:focus-visible,summary:focus-visible,input:focus-visible,s
               <p>این بخش فقط برای سرویس‌هایی است که <b>Gemini، OpenRouter یا OpenAI</b> نیستند. اطلاعات API را از سایت همان سرویس کپی کن و اینجا وارد کن.</p>
             </div>
           </div>
-          <div class="notice novice-note"><strong>فقط همین ۴ چیز لازم است:</strong> اسم سرویس، آدرس API، کلید API و کد مدل. بعد «ذخیره و فعال‌سازی سرویس» را بزن.</div>
-          <div class="custom-flow" aria-label="مراحل افزودن سرویس"><span><b>۱</b> اطلاعات را وارد کن</span><span><b>۲</b> ذخیره و فعال‌سازی سرویس</span><span><b>۳</b> اتصال را تست کن</span><span><b>۴</b> در «ترجمه» انتخابش کن</span></div>
+          <div class="notice novice-note"><strong>فقط ۴ چیز لازم است:</strong> اسم، آدرس، کلید و کد مدل. همه را از سایت همان سرویس کپی کن.</div>
+          <div class="custom-presets"><span class="hint">شروع از الگو:</span><button type="button" class="ghost" data-cp-preset="deepseek">DeepSeek</button><button type="button" class="ghost" data-cp-preset="gisoo">Gisoo</button></div>
           <div class="grid" style="margin-top:10px">
             <div class="field"><label for="cp-name">اسم سرویس</label><input id="cp-name" type="text" placeholder="مثلاً سرویس من"><div class="hint">یک اسم ساده انتخاب کن؛ مثلاً «سرویس من».</div></div>
             <div class="field wide"><label for="cp-base">آدرس API</label><input id="cp-base" type="text" placeholder="مثلاً https://example.com/v1"><div class="hint">آدرس API را دقیقاً از سایت سرویس کپی کن.</div></div>
@@ -478,9 +495,25 @@ button:focus-visible,a:focus-visible,summary:focus-visible,input:focus-visible,s
           <p class="hint" id="cp-status" style="margin-top:8px"></p>
       </div>
       </div>
-
+    </section>
+    <section class="dash-panel" data-panel="account" id="account">
+      <div class="panel-title"><h2>حساب و پشتیبانی</h2><p>ورود، تیکت پشتیبانی، حریم خصوصی، گزارش فنی و نسخهٔ افزونه.</p></div>
+      <div class="section">
+        <div id="sfy-account-host"><div class="card"><span class="hint">در حال بررسی حساب…</span></div></div>
+        <div class="card" style="margin-top:12px"><div id="sfy-ext-status" class="sfy-status-list"><span class="hint">در حال بررسی…</span></div></div>
+      </div>
+      <div class="section"><h2>این نسخه</h2><div class="card">
+        <div class="notice">این نسخه برای Google Chrome است. دوبلهٔ صدای همان تب را هم در همین نسخه انجام می‌دهد.</div>
+        <div class="kv-grid" style="margin-top:14px">
+          <div class="kv"><label>نسخه</label><div id="extVersion">…</div></div>
+          <div class="kv"><label>ترجمهٔ زیرنویس</label><div id="extSubProvider">…</div></div>
+        </div>
+        <div class="quick-links" style="margin-top:14px">
+          <a href="storyboard.html" target="_blank" rel="noopener"><span>Storyboard</span><small>صفحهٔ Storyboard افزونه</small></a>
+        </div>
+      </div></div>
       <div class="section"><h2>حریم خصوصی و داده‌ها</h2><div class="card">
-        <div class="notice">کلیدهای API و تمام تنظیمات فقط روی همین دستگاه (Storage محلی مرورگر) ذخیره می‌شن و جز به همون سرویسی که خودت انتخاب کردی (Gemini/OpenRouter/OpenAI/Custom) به‌جای دیگه‌ای ارسال نمی‌شن. جزئیات کامل در فایل PRIVACY.md همراه افزونه.</div>
+        <div class="notice">کلیدهای API و تمام تنظیمات فقط روی همین دستگاه (Storage محلی مرورگر) ذخیره می‌شن و جز به همون سرویسی که خودت انتخاب کردی (Gemini/OpenRouter/OpenAI/Custom) به‌جای دیگه‌ای ارسال نمی‌شن. تنها داده‌ای که جدا از این می‌رود، آمار ناشناس روزانهٔ زیر است و قابل خاموش‌کردن است. جزئیات کامل در فایل PRIVACY.md همراه افزونه.</div>
         <div class="actions">
           <button id="clearDataBtn" type="button">پاک‌کردن کامل داده‌ها</button>
           <span id="clearDataStatus" class="hint"></span>
@@ -505,10 +538,6 @@ button:focus-visible,a:focus-visible,summary:focus-visible,input:focus-visible,s
         <div id="diag" class="diag">هنوز تستی اجرا نشده است.</div>
         <div id="techLog" class="hint" dir="ltr" style="display:none;max-height:260px;overflow:auto;margin-top:10px;text-align:left;white-space:pre-wrap;font-size:11px;line-height:1.6"></div>
       </div></div>
-    </section>
-
-    <section class="dash-panel" data-panel="help" id="help">
-      <div class="panel-title"><h2>راهنما و پشتیبانی</h2><p>برای گزارش مشکل، ابتدا وارد حساب شو تا تیکت ثبت کنی؛ یا مستقیم در تلگرام پیام بده.</p></div>
       <div class="section"><div class="card quick-links">
         <a href="https://t.me/subifysupp" target="_blank" rel="noopener noreferrer"><span>پشتیبانی تلگرام</span><small>t.me/subifysupp</small></a>
         <a href="#account"><span>ثبت تیکت</span><small>از داخل حساب من</small></a>
@@ -516,6 +545,22 @@ button:focus-visible,a:focus-visible,summary:focus-visible,input:focus-visible,s
         <a href="https://sub-ify.site/privacy/" target="_blank" rel="noopener noreferrer"><span>حریم خصوصی</span><small>داده‌ها و مجوزها</small></a>
         <a href="https://sub-ify.site/" target="_blank" rel="noopener noreferrer"><span>سایت Subify</span><small>sub-ify.site</small></a>
       </div></div>
+      <div class="section"><div class="card mobin-card">
+        <div class="mobin-card-head">
+          <div class="mobin-card-text">
+            <span class="mobin-card-label">ساخته‌شده توسط</span>
+            <strong class="mobin-card-name">مبین بی‌باک</strong>
+            <span class="mobin-card-role">موسس Subify و متخصص هوش مصنوعی</span>
+          </div>
+          <img class="mobin-card-photo" src="img/mobin.jpg" alt="" width="72" height="72"/>
+        </div>
+        <div class="mobin-card-links">
+          <a href="https://instagram.com/mobinbiback" target="_blank" rel="noopener noreferrer">Instagram</a>
+          <a href="https://github.com/mobinbiback" target="_blank" rel="noopener noreferrer">GitHub</a>
+          <a href="https://linkedin.com/in/mobinbibak" target="_blank" rel="noopener noreferrer">LinkedIn</a>
+        </div>
+      </div></div>
+      <div class="section"><a class="about-open" href="#about">درباره ما</a></div>
       <p class="subtle" style="text-align:start;margin-top:18px">برای کنترل سریع زیرنویس، موتور ترجمه و استایل از پاپ‌آپ افزونه استفاده کن؛ کلیدها و سرویس‌ها را اینجا در «تنظیمات» وارد کن.</p>
       <div class="section" id="about"><h2>درباره Subify</h2><div class="card">
         <p style="margin:0 0 6px;font-size:15px;font-weight:700;line-height:1.9">داستان Subify</p>
@@ -559,6 +604,22 @@ button:focus-visible,a:focus-visible,summary:focus-visible,input:focus-visible,s
 
   </div>
 </div>
+  <div id="whatsNew" class="wn-backdrop" hidden>
+    <div class="wn-dialog" role="dialog" aria-modal="true" aria-labelledby="wnTitle">
+      <div class="wn-head"><span>Subify</span><span id="wnVersion"></span></div>
+      <h2 id="wnTitle">افزونه با موفقیت به‌روزرسانی شد</h2>
+      <h3>تغییرات این نسخه</h3>
+      <ul class="wn-list">
+        <li><b>رابط کاربری هفت‌زبانه</b><span>پاپ‌آپ، تنظیمات و صفحه‌های هوش مصنوعی حالا به فارسی، انگلیسی، عربی، اسپانیایی، ترکی، فرانسوی و آلمانی هستند.</span></li>
+        <li><b>پاپ‌آپ تازه‌تر</b><span>طراحی شیشه‌ای و بدون فضای خالی پایین. همهٔ تب‌ها بدون اسکرول جا می‌شوند.</span></li>
+        <li><b>تنظیمات ساده‌تر</b><span>پنج بخش: خانه، ترجمه و دوبله، یادگیری، کلیدها و سرویس‌ها، حساب و پشتیبانی.</span></li>
+        <li><b>ورود و تیکت</b><span>ورود با Google، GitHub یا LinkedIn و ثبت تیکت پشتیبانی حالا به همهٔ زبان‌ها ترجمه شده‌اند.</span></li>
+      </ul>
+      <h3>سایت‌های پشتیبانی‌شده</h3>
+      <div class="wn-sites"><span>YouTube</span><span>Coursera</span><span>Udemy</span><span>TED</span><span>Khan Academy</span><span>edX</span></div>
+      <div class="wn-actions"><a class="wn-support" href="https://sub-ify.site/contact/" target="_blank" rel="noopener">پشتیبانی</a><button id="wnClose" type="button">متوجه شدم</button></div>
+    </div>
+  </div>
 </main>
 
 <script src="ui-language.js"></script><script src="select-menu.js"></script><script src="account-gate.js"></script><script src="learning-core.js"></script><script src="options.js"></script>

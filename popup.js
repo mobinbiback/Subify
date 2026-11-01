@@ -36,7 +36,6 @@ function paintStatus(){
   const label=$("stateLabel");
   label.textContent=on?(uiEn?"Subtitles are on":"زیرنویس فعال است"):"آماده";
   label.classList.toggle("on",on);
-  $("idleHint").hidden=on;
   const box=$("status");
   const err=currentState.error;
   if(err) setSafeHTML(box,`<span class="error">${escapeHtml(err)}</span>`);
@@ -102,7 +101,7 @@ async function loadDubQuick(){
   const {pd_settings={}}=await browser.storage.local.get("pd_settings");
   $("dubQuickGain").value=Number(pd_settings.dubGain??1.6);
   $("dubQuickRate").value=Number(pd_settings.playbackRate??1);
-  $("dubQuickDuck").value=Number(pd_settings.duckLevel??0.3);
+  $("dubQuickDuck").value=Number(pd_settings.duckLevel??0.2);
   paintDubQuick();
 }
 async function saveDubQuick(){
@@ -188,6 +187,7 @@ async function downloadSubtitle(which, format){
   a.href=URL.createObjectURL(new Blob(['\uFEFF'+text],{type:mime+';charset=utf-8'}));
   a.download=`subify-${which==='fa'?'fa':'original'}-${new Date().toISOString().slice(0,19).replace(/[:T]/g,'-')}.${ext}`;
   a.click();
+  browser.runtime.sendMessage({type:'subify-stat',key:'subtitleFiles'}).catch(()=>{});
   setTimeout(()=>URL.revokeObjectURL(a.href),30000);
 }
 
@@ -229,13 +229,45 @@ async function init(){
   const settings=await browser.storage.local.get(["subify_settings","pd_settings"]);
   const keysFrom=[settings.subify_settings||{},settings.pd_settings||{}];
   const hasProvider=keysFrom.some(s=>s.apiKey||s.openRouterKey||s.openaiKey||s.customProviders?.length);
-  providerWarning=hasProvider?"":`<span class="error">${document.documentElement.lang==='en'?'No translation key or service has been configured yet.':'هنوز هیچ کلید یا سرویس ترجمه‌ای تنظیم نشده است.'}</span>`;
+  providerWarning=hasProvider?"":`<span class="hint warn-hint" dir="auto">کلید نداری؟ ترجمه با سهمیهٔ رایگان Subify انجام می‌شود.</span>`;
   renderState(currentState);
 }
 init();
+paintStreak().catch(()=>{});
+
+// Recent videos from the account (synced from the extension and the app). Filled when the accordion opens.
+function recentRow(v){
+  const b=document.createElement("button");
+  b.type="button"; b.className="learn-link";
+  const copy=document.createElement("span"); copy.className="learn-link-copy";
+  const title=document.createElement("b"); title.textContent=v.title; copy.appendChild(title);
+  if(v.position>0){const small=document.createElement("small"); const s=Math.floor(v.position); const h=Math.floor(s/3600), m=Math.floor((s%3600)/60), sec=s%60; const p=n=>String(n).padStart(2,"0"); small.textContent="توقف در "+(h?h+":"+p(m):m)+":"+p(sec); copy.appendChild(small);}
+  b.appendChild(copy);
+  b.addEventListener("click",()=>{const url="https://www.youtube.com/watch?v="+encodeURIComponent(v.videoId)+(v.position>0?"&t="+Math.floor(v.position)+"s":""); browser.tabs.create({url});});
+  return b;
+}
+async function loadRecentVideos(){
+  const box=document.getElementById("recentVideos"); if(!box) return;
+  const note=(text)=>{box.replaceChildren(); const p=document.createElement("p"); p.className="note"; p.style.cssText="grid-column:1/-1;margin:0"; p.textContent=text; box.appendChild(p);};
+  note("در حال بارگذاری…");
+  const r=await browser.runtime.sendMessage({type:"subify-account-videos"}).catch(()=>null);
+  if(!r||!r.ok){note("اتصال به حساب برقرار نشد. اینترنت را بررسی کن.");return;}
+  if(!r.signedIn){note("برای دیدن ویدیوهای حساب، وارد شو (روی آیکون حساب بزن).");return;}
+  if(!r.items.length){note("هنوز ویدیویی همگام نشده است.");return;}
+  box.replaceChildren(...r.items.slice(0,20).map(recentRow));
+}
+document.getElementById("recentAcc")?.addEventListener("toggle",(e)=>{ if(e.currentTarget.open) loadRecentVideos(); });
 
 // Learning lives in the panel now; this button only opens its learning section.
 [...document.querySelectorAll("[data-tool-page]")].forEach((b)=>b.addEventListener("click",()=>browser.tabs.create({url:browser.runtime.getURL(b.dataset.toolPage)})));
+// One switch for every automatic feature: subtitles, dubbing and automatic page translation.
+$("allAutoOff")?.addEventListener("click",async()=>{
+  const {subify_settings={}}=await browser.storage.local.get("subify_settings");
+  const cur=subify_settings.pageAutoTranslate||{};
+  await browser.storage.local.set({subify_settings:{...subify_settings,pageAutoTranslate:{...cur,enabled:false}},subify_subtitle_enabled:false,subify_dubbing_enabled:false});
+  await browser.runtime.sendMessage({type:"popup-stop"}).catch(()=>{});
+  location.reload();
+});
 $("captureShot")?.addEventListener("click",async()=>{const tab=await activeTab();if(tab?.id)await browser.runtime.sendMessage({type:"subify-capture-shot",tabId:tab.id,download:true});});
 
 // Header tabs + compact style editor. All values share the same subify_settings
@@ -582,7 +614,8 @@ window.SubifyUI?.register({ en: {
     'ذخیره کن':'Save it','ساخته‌شده توسط Mobin Bibak ↗':'Made by Mobin Bibak ↗',
     'هنوز هیچ کلید یا سرویس ترجمه‌ای تنظیم نشده است.':'No translation key or service has been configured yet.','زیرنویس فعال است':'Subtitles are on','API اختصاصی':'Custom API','هنوز هیچ سرویسی اضافه نشده است':'No service has been added yet.',
     'فقط ترجمه':'Translation only','ترجمه+اصلی':'Translation + original','ترجمه + اصلی':'Translation + original','اصلی + ترجمه':'Original + translation','فقط اصلی':'Original only',
-    'خودکار (لحن خود گوینده)':'Auto (speaker tone)','مثلا سرویس من':'e.g. My service','مثلاً سرویس من':'e.g. My service','کلید سرویس':'Service key','مثلاً...':'e.g. ...','فونت انگلیسی':'English font'
+    'خودکار (لحن خود گوینده)':'Auto (speaker tone)','مثلا سرویس من':'e.g. My service','مثلاً سرویس من':'e.g. My service','کلید سرویس':'Service key','مثلاً...':'e.g. ...','فونت انگلیسی':'English font',
+    'کلید نداری؟ ترجمه با سهمیهٔ رایگان Subify انجام می‌شود.':'No key saved: translation uses the free Subify allowance.'
 } });
 // Onboarding language picker: same menu and keys as the header (ui-language.js); opens upward because the card sits at the bottom.
 (function initOnboardingLanguage(){
@@ -699,7 +732,7 @@ window.SubifyUI?.register({ en: {
   if(!toggle||!ring||!fill||!pct||!chip||!label) return;
   const FA_DIGITS='۰۱۲۳۴۵۶۷۸۹';
   const toFa=n=>String(n).replace(/\d/g,d=>FA_DIGITS[d]);
-  const NAMES={gemini:'Gemini',openrouter:'OpenRouter',openai:'OpenAI',custom:'Custom API'};
+  const NAMES={gemini:'Gemini',openrouter:'OpenRouter',openai:'OpenAI',custom:'Custom API',subify:'Free AI'};
   const OFF_TEXT='آماده';
   const CACHE_TEXT='آماده از کش؛ همین دکمه رو بزن';
   let cacheVideo='', cacheHit=false;
@@ -761,3 +794,52 @@ window.SubifyUI?.register({ en: {
   setInterval(tick,1000);
   browser.storage.onChanged.addListener(()=>{tick();});
 })();
+
+// Streak and daily goal, from this device's own stats (pd_stats). Nothing is sent. Same rules as the web app.
+const STREAK_GOALS=[5,10,20];
+const streakDay=(d)=>d.toISOString().slice(0,10);
+const faNum=(n)=>String(n).replace(/\d/g,(d)=>'۰۱۲۳۴۵۶۷۸۹'[d]);
+async function paintStreak(){
+  const STREAK_T={
+    fa:{start:'امروز شروع کن تا زنجیره‌ات ساخته شود',days:(n)=>`${faNum(n)} روز پشت‌سر هم`,done:'هدف امروز انجام شد',prog:(m,g)=>`امروز ${faNum(m)} از ${faNum(g)} دقیقه`,goal:(g)=>`هدف ${faNum(g)} دقیقه`},
+    en:{start:'Start today to begin a streak',days:(n)=>`${n} ${n===1?'day':'days'} in a row`,done:'Today’s goal is done',prog:(m,g)=>`Today: ${m} of ${g} min`,goal:(g)=>`Goal ${g} min`},
+    ar:{start:'ابدأ اليوم لتبدأ سلسلتك',days:(n)=>`${n} ${n===1?'يوم':'أيام'} متتالية`,done:'تم إنجاز هدف اليوم',prog:(m,g)=>`اليوم ${m} من ${g} دقيقة`,goal:(g)=>`الهدف ${g} دقيقة`},
+    es:{start:'Empieza hoy para iniciar tu racha',days:(n)=>`${n} ${n===1?'día':'días'} seguidos`,done:'Meta de hoy cumplida',prog:(m,g)=>`Hoy: ${m} de ${g} min`,goal:(g)=>`Meta ${g} min`},
+    tr:{start:'Seri başlatmak için bugün başla',days:(n)=>`${n} gün üst üste`,done:'Bugünkü hedef tamamlandı',prog:(m,g)=>`Bugün: ${m} / ${g} dk`,goal:(g)=>`Hedef ${g} dk`},
+    fr:{start:'Commencez aujourd’hui pour lancer votre série',days:(n)=>`${n} ${n===1?'jour':'jours'} d’affilée`,done:'Objectif du jour atteint',prog:(m,g)=>`Aujourd’hui : ${m} sur ${g} min`,goal:(g)=>`Objectif ${g} min`},
+    de:{start:'Starte heute, um eine Serie zu beginnen',days:(n)=>`${n} ${n===1?'Tag':'Tage'} in Folge`,done:'Tagesziel erreicht',prog:(m,g)=>`Heute: ${m} von ${g} Min.`,goal:(g)=>`Ziel ${g} Min.`}
+  };
+  const S=STREAK_T[document.documentElement.lang]||STREAK_T.fa;
+  const en=document.documentElement.lang==='en';
+  const {pd_stats={},subify_daily_goal_min}=await browser.storage.local.get(["pd_stats","subify_daily_goal_min"]);
+  const days=pd_stats.days||{};
+  const goal=STREAK_GOALS.includes(Number(subify_daily_goal_min))?Number(subify_daily_goal_min):10;
+  const isActive=(key)=>{const d=days[key];return !!d&&Object.values(d).some((v)=>typeof v==='number'&&v>0);};
+  const now=new Date();
+  let cursor=isActive(streakDay(now))?now:new Date(now.getTime()-86400000);
+  let streak=0;
+  while(isActive(streakDay(cursor))&&streak<400){streak++;cursor=new Date(cursor.getTime()-86400000);}
+  const today=days[streakDay(now)]||{};
+  const minutes=Math.floor(((Number(today.subtitleSeconds)||0)+(Number(today.dubSeconds)||0)+(Number(today.liveCaptionSeconds)||0))/60);
+  const streakText=streak===0?S.start:S.days(streak);
+  const progressText=minutes>=goal?S.done:S.prog(minutes,goal);
+  const line=document.getElementById('streakLine');
+  if(!line)return;
+  line.hidden=false;
+  document.getElementById('streakText').textContent=streakText+' · '+progressText;
+  const btn=document.getElementById('streakGoal');
+  btn.textContent=S.goal(goal);
+  btn.onclick=async()=>{const next=STREAK_GOALS[(STREAK_GOALS.indexOf(goal)+1)%STREAK_GOALS.length];await browser.storage.local.set({subify_daily_goal_min:next});paintStreak();};
+}
+
+// footer version comes from the manifest, so it never lags behind
+try{const v=document.getElementById("today");if(v)v.textContent="v"+(globalThis.browser||chrome).runtime.getManifest().version;}catch(_){}
+
+// no-key notice in every UI language (the Persian line is the key; dir=auto keeps punctuation on the correct side)
+window.SubifyUI?.register({"ar": {"کلید نداری؟ ترجمه با سهمیهٔ رایگان Subify انجام می‌شود.": "ليس لديك مفتاح محفوظ؟ تتم الترجمة بالحصة المجانية لـ Subify."}, "es": {"کلید نداری؟ ترجمه با سهمیهٔ رایگان Subify انجام می‌شود.": "¿Sin clave guardada? La traducción usa la cuota gratuita de Subify."}, "tr": {"کلید نداری؟ ترجمه با سهمیهٔ رایگان Subify انجام می‌شود.": "Kayıtlı anahtarın yok mu? Çeviri, Subify’ın ücretsiz kotasıyla yapılır."}, "fr": {"کلید نداری؟ ترجمه با سهمیهٔ رایگان Subify انجام می‌شود.": "Aucune clé enregistrée ? La traduction utilise le quota gratuit de Subify."}, "de": {"کلید نداری؟ ترجمه با سهمیهٔ رایگان Subify انجام می‌شود.": "Kein Schlüssel gespeichert? Die Übersetzung nutzt das kostenlose Kontingent von Subify."}});
+
+// Full-sentence translations for the popup (the walker swaps single words only, so whole sentences need their own key).
+window.SubifyUI?.register({"en": {"زیرنویس‌های خود ویدیو را پیدا می‌کند و زمان‌بندی‌شان را نگه می‌دارد": "Finds the video's own subtitles and keeps their timing.", "صدای ترجمه را روی ویدیو می‌گذارد و صدای اصلی را کم می‌کند": "Puts the translated audio on the video and lowers the original sound.", "خاموش کردن همه‌ی خودکارها": "Turn off all automation", "هدف ۱۰ دقیقه": "Goal 10 min", "کلمه‌ها هنگام پخش یکی‌یکی روشن می‌شوند": "Words light up one by one as they play", "صدای دوبله رو هم پخش کن": "Also play the dubbed audio", "اگر ویدیو زیرنویس ندارد، این حالت را انتخاب کن: فقط متن ترجمه را می‌بینی و صدای اصلی دست‌نخورده می‌ماند.": "If the video has no subtitles, choose this: you only see the translated text and the original sound stays as it is.", "نمایش/پنهان‌کردن پنل ترنسکریپت": "Show/hide transcript panel", "اضافه کردن": "Add", "صوت اصلی": "Original audio", "ویدیوهای اخیر حساب": "Recent videos", "از همان جایی ادامه بده که ماندی.": "Pick up where you left off.", "اتصال به حساب برقرار نشد. اینترنت را بررسی کن.": "Couldn't connect to your account. Check your internet.", "پشتیبانی و تماس · Support & contact": "Support & contact", "بازگشت به سایت · Back to website": "Back to website", "زبان رابط کاربری": "Interface language", "ببین در این نسخه چه چیزی تازه شده": "See what's new in this version", "زیرنویس، دوبله و ترجمه‌ی خودکار صفحه را با هم خاموش می‌کند.": "Turns off subtitles, dubbing and automatic page translation together.", "صدای اصلی ویدیو هنگام دوبله": "Original video volume during dubbing", "سرویس‌ها": "Services", "بلندی صدای دوبله": "Dubbing volume", "Vazirmatn (وزیر)": "Vazirmatn", "حتی": "Even", "اینجا": "here", "هم شکوفا می‌شوند.": "they bloom too.", "سرویس‌های ترجمه": "Translation services", "وضعیت هر سرویس روی همین دستگاه. کلیدها و API اختصاصی را در پنل مدیریت وارد کن.": "Each service's status is stored on this device. Add your keys and custom API in the management panel.", "کلید ثبت نشده؛ از پنل مدیریت وارد کن": "No key saved. Add it from the management panel.", "نیاز به کلید": "Key needed", "سرویس اختصاصی": "Custom service", "خالی": "Empty", "در حالت «خودکار»، سرویس‌های آماده به ترتیب OpenRouter، OpenAI و Gemini امتحان می‌شن.": "In Auto mode, ready services are tried in this order: OpenRouter, OpenAI and Gemini.", "کلیدها و API اختصاصی در پنل": "Keys and custom API in the panel", "وضعیت سرویس‌ها": "Service status"}, "ar": {"زیرنویس‌های خود ویدیو را پیدا می‌کند و زمان‌بندی‌شان را نگه می‌دارد": "يجد ترجمات الفيديو الخاصة ويحافظ على توقيتها.", "صدای ترجمه را روی ویدیو می‌گذارد و صدای اصلی را کم می‌کند": "يضع الصوت المترجم على الفيديو ويخفض الصوت الأصلي.", "خاموش کردن همه‌ی خودکارها": "إيقاف كل الميزات التلقائية", "هدف ۱۰ دقیقه": "الهدف 10 دقائق", "کلمه‌ها هنگام پخش یکی‌یکی روشن می‌شوند": "تضيء الكلمات واحدةً تلو الأخرى أثناء التشغيل", "صدای دوبله رو هم پخش کن": "شغّل الصوت المدبلج أيضًا", "اگر ویدیو زیرنویس ندارد، این حالت را انتخاب کن: فقط متن ترجمه را می‌بینی و صدای اصلی دست‌نخورده می‌ماند.": "إذا لم يكن للفيديو ترجمات، اختر هذا الوضع: ترى النص المترجم فقط، ويبقى الصوت الأصلي كما هو.", "نمایش/پنهان‌کردن پنل ترنسکریپت": "إظهار/إخفاء لوحة النص", "اضافه کردن": "إضافة", "صوت اصلی": "الصوت الأصلي", "ویدیوهای اخیر حساب": "الفيديوهات الأخيرة", "از همان جایی ادامه بده که ماندی.": "تابِع من حيث توقفت.", "اتصال به حساب برقرار نشد. اینترنت را بررسی کن.": "تعذّر الاتصال بالحساب. تحقّق من الإنترنت.", "پشتیبانی و تماس · Support & contact": "الدعم والتواصل", "بازگشت به سایت · Back to website": "العودة إلى الموقع", "زبان رابط کاربری": "لغة الواجهة", "ببین در این نسخه چه چیزی تازه شده": "شاهد الجديد في هذه النسخة", "زیرنویس، دوبله و ترجمه‌ی خودکار صفحه را با هم خاموش می‌کند.": "يوقف الترجمات والدبلجة والترجمة التلقائية للصفحة معًا.", "صدای اصلی ویدیو هنگام دوبله": "صوت الفيديو الأصلي أثناء الدبلجة", "سرویس‌ها": "الخدمات", "بلندی صدای دوبله": "مستوى صوت الدبلجة", "Vazirmatn (وزیر)": "Vazirmatn", "حتی": "حتى", "اینجا": "هنا", "هم شکوفا می‌شوند.": "تزدهر أيضًا.", "سرویس‌های ترجمه": "خدمات الترجمة", "وضعیت هر سرویس روی همین دستگاه. کلیدها و API اختصاصی را در پنل مدیریت وارد کن.": "حالة كل خدمة محفوظة على هذا الجهاز. أضف مفاتيحك وواجهة API الخاصة بك في لوحة الإدارة.", "کلید ثبت نشده؛ از پنل مدیریت وارد کن": "لم يُحفظ مفتاح. أضفه من لوحة الإدارة.", "نیاز به کلید": "يلزم مفتاح", "سرویس اختصاصی": "خدمة مخصّصة", "خالی": "فارغ", "در حالت «خودکار»، سرویس‌های آماده به ترتیب OpenRouter، OpenAI و Gemini امتحان می‌شن.": "في وضع «تلقائي» تُجرَّب الخدمات الجاهزة بهذا الترتيب: OpenRouter وOpenAI وGemini.", "کلیدها و API اختصاصی در پنل": "المفاتيح وواجهة API الخاصة في اللوحة", "وضعیت سرویس‌ها": "حالة الخدمات"}, "es": {"زیرنویس‌های خود ویدیو را پیدا می‌کند و زمان‌بندی‌شان را نگه می‌دارد": "Encuentra los subtítulos del propio video y conserva su sincronización.", "صدای ترجمه را روی ویدیو می‌گذارد و صدای اصلی را کم می‌کند": "Pone el audio traducido sobre el video y baja el sonido original.", "خاموش کردن همه‌ی خودکارها": "Desactivar todo lo automático", "هدف ۱۰ دقیقه": "Meta 10 min", "کلمه‌ها هنگام پخش یکی‌یکی روشن می‌شوند": "Las palabras se iluminan una a una al reproducir", "صدای دوبله رو هم پخش کن": "Reproducir también el audio doblado", "اگر ویدیو زیرنویس ندارد، این حالت را انتخاب کن: فقط متن ترجمه را می‌بینی و صدای اصلی دست‌نخورده می‌ماند.": "Si el video no tiene subtítulos, elige este modo: solo verás el texto traducido y el sonido original se mantiene.", "نمایش/پنهان‌کردن پنل ترنسکریپت": "Mostrar/ocultar panel de transcripción", "اضافه کردن": "Añadir", "صوت اصلی": "Audio original", "ویدیوهای اخیر حساب": "Videos recientes", "از همان جایی ادامه بده که ماندی.": "Continúa donde lo dejaste.", "اتصال به حساب برقرار نشد. اینترنت را بررسی کن.": "No se pudo conectar a tu cuenta. Revisa tu conexión a internet.", "پشتیبانی و تماس · Support & contact": "Soporte y contacto", "بازگشت به سایت · Back to website": "Volver al sitio web", "زبان رابط کاربری": "Idioma de la interfaz", "ببین در این نسخه چه چیزی تازه شده": "Ver las novedades de esta versión", "زیرنویس، دوبله و ترجمه‌ی خودکار صفحه را با هم خاموش می‌کند.": "Desactiva a la vez los subtítulos, el doblaje y la traducción automática de la página.", "صدای اصلی ویدیو هنگام دوبله": "Volumen del video original durante el doblaje", "سرویس‌ها": "Servicios", "بلندی صدای دوبله": "Volumen del doblaje", "Vazirmatn (وزیر)": "Vazirmatn", "حتی": "Incluso", "اینجا": "aquí", "هم شکوفا می‌شوند.": "también florecen.", "سرویس‌های ترجمه": "Servicios de traducción", "وضعیت هر سرویس روی همین دستگاه. کلیدها و API اختصاصی را در پنل مدیریت وارد کن.": "El estado de cada servicio se guarda en este dispositivo. Añade tus claves y tu API personalizada en el panel de administración.", "کلید ثبت نشده؛ از پنل مدیریت وارد کن": "Sin clave guardada; añádela desde el panel de administración.", "نیاز به کلید": "Necesita clave", "سرویس اختصاصی": "Servicio personalizado", "خالی": "Vacío", "در حالت «خودکار»، سرویس‌های آماده به ترتیب OpenRouter، OpenAI و Gemini امتحان می‌شن.": "En modo «Automático», se prueban los servicios listos en este orden: OpenRouter, OpenAI y Gemini.", "کلیدها و API اختصاصی در پنل": "Claves y API personalizada en el panel", "وضعیت سرویس‌ها": "Estado de los servicios"}, "tr": {"زیرنویس‌های خود ویدیو را پیدا می‌کند و زمان‌بندی‌شان را نگه می‌دارد": "Videonun kendi altyazılarını bulur ve zamanlamasını korur.", "صدای ترجمه را روی ویدیو می‌گذارد و صدای اصلی را کم می‌کند": "Çeviri sesini videonun üzerine koyar ve orijinal sesi kısar.", "خاموش کردن همه‌ی خودکارها": "Tüm otomatik özellikleri kapat", "هدف ۱۰ دقیقه": "Hedef 10 dk", "کلمه‌ها هنگام پخش یکی‌یکی روشن می‌شوند": "Kelimeler oynatılırken tek tek yanar", "صدای دوبله رو هم پخش کن": "Dublaj sesini de çal", "اگر ویدیو زیرنویس ندارد، این حالت را انتخاب کن: فقط متن ترجمه را می‌بینی و صدای اصلی دست‌نخورده می‌ماند.": "Videoda altyazı yoksa bu modu seç: yalnızca çeviri metnini görürsün ve orijinal ses olduğu gibi kalır.", "نمایش/پنهان‌کردن پنل ترنسکریپت": "Metin dökümü panelini göster/gizle", "اضافه کردن": "Ekle", "صوت اصلی": "Orijinal ses", "ویدیوهای اخیر حساب": "Son videolar", "از همان جایی ادامه بده که ماندی.": "Kaldığın yerden devam et.", "اتصال به حساب برقرار نشد. اینترنت را بررسی کن.": "Hesaba bağlanılamadı. İnternet bağlantını kontrol et.", "پشتیبانی و تماس · Support & contact": "Destek ve iletişim", "بازگشت به سایت · Back to website": "Web sitesine dön", "زبان رابط کاربری": "Arayüz dili", "ببین در این نسخه چه چیزی تازه شده": "Bu sürümdeki yenilikleri gör", "زیرنویس، دوبله و ترجمه‌ی خودکار صفحه را با هم خاموش می‌کند.": "Altyazıyı, dublajı ve otomatik sayfa çevirisini birlikte kapatır.", "صدای اصلی ویدیو هنگام دوبله": "Dublaj sırasında orijinal video sesi", "سرویس‌ها": "Servisler", "بلندی صدای دوبله": "Dublaj sesi seviyesi", "Vazirmatn (وزیر)": "Vazirmatn", "حتی": "Hatta", "اینجا": "burada", "هم شکوفا می‌شوند.": "bile çiçek açarlar.", "سرویس‌های ترجمه": "Çeviri servisleri", "وضعیت هر سرویس روی همین دستگاه. کلیدها و API اختصاصی را در پنل مدیریت وارد کن.": "Her servisin durumu bu cihazda tutulur. Anahtarlarını ve özel API'ni yönetim panelinden ekle.", "کلید ثبت نشده؛ از پنل مدیریت وارد کن": "Kayıtlı anahtar yok; yönetim panelinden ekle.", "نیاز به کلید": "Anahtar gerekli", "سرویس اختصاصی": "Özel servis", "خالی": "Boş", "در حالت «خودکار»، سرویس‌های آماده به ترتیب OpenRouter، OpenAI و Gemini امتحان می‌شن.": "«Otomatik» modunda hazır servisler şu sırayla denenir: OpenRouter, OpenAI ve Gemini.", "کلیدها و API اختصاصی در پنل": "Anahtarlar ve özel API panelde", "وضعیت سرویس‌ها": "Servis durumu"}, "fr": {"زیرنویس‌های خود ویدیو را پیدا می‌کند و زمان‌بندی‌شان را نگه می‌دارد": "Trouve les sous-titres de la vidéo et conserve leur synchronisation.", "صدای ترجمه را روی ویدیو می‌گذارد و صدای اصلی را کم می‌کند": "Met l'audio traduit sur la vidéo et baisse le son d'origine.", "خاموش کردن همه‌ی خودکارها": "Désactiver tout l'automatique", "هدف ۱۰ دقیقه": "Objectif 10 min", "کلمه‌ها هنگام پخش یکی‌یکی روشن می‌شوند": "Les mots s'allument un à un pendant la lecture", "صدای دوبله رو هم پخش کن": "Lire aussi l'audio doublé", "اگر ویدیو زیرنویس ندارد، این حالت را انتخاب کن: فقط متن ترجمه را می‌بینی و صدای اصلی دست‌نخورده می‌ماند.": "Si la vidéo n'a pas de sous-titres, choisissez ce mode : vous ne voyez que le texte traduit et le son d'origine reste intact.", "نمایش/پنهان‌کردن پنل ترنسکریپت": "Afficher/masquer le panneau de transcription", "اضافه کردن": "Ajouter", "صوت اصلی": "Audio d'origine", "ویدیوهای اخیر حساب": "Vidéos récentes", "از همان جایی ادامه بده که ماندی.": "Reprenez là où vous vous êtes arrêté.", "اتصال به حساب برقرار نشد. اینترنت را بررسی کن.": "Connexion au compte impossible. Vérifiez votre connexion Internet.", "پشتیبانی و تماس · Support & contact": "Assistance et contact", "بازگشت به سایت · Back to website": "Retour au site", "زبان رابط کاربری": "Langue de l'interface", "ببین در این نسخه چه چیزی تازه شده": "Voir les nouveautés de cette version", "زیرنویس، دوبله و ترجمه‌ی خودکار صفحه را با هم خاموش می‌کند.": "Désactive ensemble les sous-titres, le doublage et la traduction automatique de la page.", "صدای اصلی ویدیو هنگام دوبله": "Volume de la vidéo d'origine pendant le doublage", "سرویس‌ها": "Services", "بلندی صدای دوبله": "Volume du doublage", "Vazirmatn (وزیر)": "Vazirmatn", "حتی": "Même", "اینجا": "ici", "هم شکوفا می‌شوند.": "elles fleurissent aussi.", "سرویس‌های ترجمه": "Services de traduction", "وضعیت هر سرویس روی همین دستگاه. کلیدها و API اختصاصی را در پنل مدیریت وارد کن.": "L'état de chaque service est enregistré sur cet appareil. Ajoutez vos clés et votre API personnalisée dans le panneau de gestion.", "کلید ثبت نشده؛ از پنل مدیریت وارد کن": "Aucune clé enregistrée ; ajoutez-la depuis le panneau de gestion.", "نیاز به کلید": "Clé requise", "سرویس اختصاصی": "Service personnalisé", "خالی": "Vide", "در حالت «خودکار»، سرویس‌های آماده به ترتیب OpenRouter، OpenAI و Gemini امتحان می‌شن.": "En mode « Automatique », les services prêts sont essayés dans l'ordre : OpenRouter, OpenAI puis Gemini.", "کلیدها و API اختصاصی در پنل": "Clés et API personnalisée dans le panneau", "وضعیت سرویس‌ها": "État des services"}, "de": {"زیرنویس‌های خود ویدیو را پیدا می‌کند و زمان‌بندی‌شان را نگه می‌دارد": "Findet die eigenen Untertitel des Videos und behält ihren Zeitablauf bei.", "صدای ترجمه را روی ویدیو می‌گذارد و صدای اصلی را کم می‌کند": "Legt die übersetzte Tonspur über das Video und senkt den Originalton.", "خاموش کردن همه‌ی خودکارها": "Alle Automatiken ausschalten", "هدف ۱۰ دقیقه": "Ziel 10 Min.", "کلمه‌ها هنگام پخش یکی‌یکی روشن می‌شوند": "Wörter leuchten beim Abspielen nacheinander auf", "صدای دوبله رو هم پخش کن": "Auch die synchronisierte Tonspur abspielen", "اگر ویدیو زیرنویس ندارد، این حالت را انتخاب کن: فقط متن ترجمه را می‌بینی و صدای اصلی دست‌نخورده می‌ماند.": "Wenn das Video keine Untertitel hat, wähle diesen Modus: Du siehst nur den übersetzten Text und der Originalton bleibt unverändert.", "نمایش/پنهان‌کردن پنل ترنسکریپت": "Transkriptfeld ein-/ausblenden", "اضافه کردن": "Hinzufügen", "صوت اصلی": "Originalton", "ویدیوهای اخیر حساب": "Letzte Videos", "از همان جایی ادامه بده که ماندی.": "Mach dort weiter, wo du aufgehört hast.", "اتصال به حساب برقرار نشد. اینترنت را بررسی کن.": "Verbindung zum Konto fehlgeschlagen. Prüfe deine Internetverbindung.", "پشتیبانی و تماس · Support & contact": "Support & Kontakt", "بازگشت به سایت · Back to website": "Zurück zur Website", "زبان رابط کاربری": "Oberflächensprache", "ببین در این نسخه چه چیزی تازه شده": "Neuheiten dieser Version ansehen", "زیرنویس، دوبله و ترجمه‌ی خودکار صفحه را با هم خاموش می‌کند.": "Schaltet Untertitel, Synchronisation und die automatische Seitenübersetzung gemeinsam aus.", "صدای اصلی ویدیو هنگام دوبله": "Lautstärke des Originalvideos beim Synchronisieren", "سرویس‌ها": "Dienste", "بلندی صدای دوبله": "Lautstärke der Synchronisation", "Vazirmatn (وزیر)": "Vazirmatn", "حتی": "Sogar", "اینجا": "hier", "هم شکوفا می‌شوند.": "blühen sie auch.", "سرویس‌های ترجمه": "Übersetzungsdienste", "وضعیت هر سرویس روی همین دستگاه. کلیدها و API اختصاصی را در پنل مدیریت وارد کن.": "Der Status jedes Dienstes wird auf diesem Gerät gespeichert. Trage deine Schlüssel und deine eigene API im Verwaltungsbereich ein.", "کلید ثبت نشده؛ از پنل مدیریت وارد کن": "Kein Schlüssel gespeichert; im Verwaltungsbereich eintragen.", "نیاز به کلید": "Schlüssel nötig", "سرویس اختصاصی": "Eigener Dienst", "خالی": "Leer", "در حالت «خودکار»، سرویس‌های آماده به ترتیب OpenRouter، OpenAI و Gemini امتحان می‌شن.": "Im Modus „Automatisch“ werden die bereiten Dienste in dieser Reihenfolge getestet: OpenRouter, OpenAI und Gemini.", "کلیدها و API اختصاصی در پنل": "Schlüssel und eigene API im Bereich", "وضعیت سرویس‌ها": "Dienststatus"}});
+
+// Streak line follows the UI language and redraws on change.
+document.addEventListener('subify-ui-language',()=>{try{paintStreak();}catch(_){}});

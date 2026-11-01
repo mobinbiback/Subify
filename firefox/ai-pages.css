@@ -19,6 +19,10 @@ p{margin:0}
 .skip:focus{top:12px}
 
 .ai-head{display:flex;align-items:center;justify-content:space-between;gap:16px;max-width:980px;margin:0 auto;padding:26px 20px 8px}
+/* Title first, controls last, in both directions: the injected language/theme block is prepended in the DOM. */
+.ai-head>div:not(.header-controls):not(.header-actions){order:1;flex:1 1 auto;min-width:0}
+.ai-head>.header-controls{order:2;flex:none;margin-inline-start:0}
+.ai-head>.header-actions{order:3}
 .ai-sub{color:var(--muted);font-size:13.5px;margin-top:4px}
 .ai-nav{display:flex;flex-wrap:wrap;gap:8px;max-width:980px;margin:12px auto 0;padding:0 20px}
 .ai-nav a{display:inline-flex;align-items:center;min-height:38px;padding:0 14px;border-radius:999px;border:1px solid var(--line);background:var(--surface);color:var(--ink);text-decoration:none;font-weight:600;font-size:14px}
@@ -159,3 +163,8 @@ a{color:var(--accent-ink)}
 .ai-btn.ai-tile{height:auto;min-height:0;padding:12px 14px;justify-content:flex-start;text-align:start;line-height:1.5}
 .ai-btn.ai-tile .ai-stack{gap:4px;min-width:0;width:100%}
 .ai-btn.ai-tile .ai-small{line-height:1.6}
+
+/* Learning-language notice (practice pages) and the chip that shows the language once it is chosen. */
+.ai-notice{display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;padding:14px 18px;border-radius:16px;border:1px solid var(--warn);background:var(--surface);box-shadow:0 10px 26px var(--shadow)}
+.ai-notice .ai-stack{min-width:0;flex:1 1 260px}
+.ai-lang-chip{display:inline-flex;align-items:center;min-height:30px;padding:0 12px;border-radius:999px;border:1px solid var(--line);background:var(--surface2);color:var(--muted);font-size:12.5px;font-weight:600;white-space:nowrap}

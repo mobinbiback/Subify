@@ -11,61 +11,110 @@
 @font-face{font-family:"EstedadUI";src:url("fonts/Estedad-Medium.ttf") format("truetype");font-weight:500 900;font-style:normal;font-display:swap}
 @font-face{font-family:"Inter";src:url("fonts/Inter-400.woff2") format("woff2");font-weight:400;font-style:normal;font-display:swap}
 @font-face{font-family:"Inter";src:url("fonts/Inter-700.woff2") format("woff2");font-weight:700;font-style:normal;font-display:swap}
-:root{--bg:#0a0d12;--panel:#11161d;--panel2:#151b24;--line:#26303c;--text:#f4f6f8;--muted:#8f9aaa;--accent:#8b7cff;--accent2:#61d8ff;--ok:#32d69a;--shadow:0 18px 50px rgba(0,0,0,.35)}
-*{box-sizing:border-box}html,body{margin:0;min-height:100%;background:radial-gradient(circle at 15% 0%,#1a1834 0,#0a0d12 34%),var(--bg);color:var(--text)}
+:root{color-scheme:dark;--bg:#0a0d12;--panel:#11161d;--panel2:#151b24;--line:#26303c;--text:#f4f6f8;--muted:#8f9aaa;--accent:#8b7cff;--accent2:#61d8ff;--ok:#32d69a;--shadow:0 18px 50px rgba(0,0,0,.35)}
+:root[data-theme="light"]{color-scheme:light;--bg:#f5f7fb;--panel:#ffffff;--panel2:#f1f4f8;--line:#d9dfea;--text:#161a24;--muted:#556072;--accent:#5a3ee0;--accent2:#0a6f96;--ok:#0f7a5a;--shadow:0 18px 50px rgba(50,65,95,.14)}
+*{box-sizing:border-box}
+html,body{margin:0;min-height:100%;background:radial-gradient(circle at 15% 0%,rgba(139,124,255,.12) 0,transparent 34%),var(--bg);color:var(--text)}
 body{display:flex;align-items:center;justify-content:center;padding:32px 16px;font-family:"VazirUI",sans-serif;letter-spacing:.01em}
 .card{width:100%;max-width:650px;background:var(--panel);border:1px solid var(--line);border-radius:20px;box-shadow:var(--shadow);padding:24px}
-.head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:14px}.brand{display:flex;align-items:center;gap:8px;font-size:16px}.brand b{color:var(--accent2)}
-.head-actions{display:flex;align-items:center;gap:8px}.badge,.lang{padding:6px 10px;border-radius:999px;background:#8b7cff1a;border:1px solid #8b7cff40;color:#cfc9ff;font-size:10px}.lang{font:700 11px/1 "Inter",sans-serif;color:var(--text);background:var(--panel2);cursor:pointer}
-h1{margin:8px 0 3px;font-size:21px;color:var(--ok);text-align:center}.sub{margin:0 0 18px;color:var(--muted);font-size:12px;text-align:center;line-height:1.9}
-.section{margin-top:18px}.section h2{margin:0 0 9px;font-size:12px;color:var(--accent2);letter-spacing:.04em}
-ul{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px}li{display:flex;align-items:flex-start;gap:9px;font-size:12.5px;line-height:1.85;background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:10px 12px}li b{color:var(--text)}
-.dot{flex:0 0 auto;width:19px;height:19px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:11px;margin-top:1px}.dot.new{background:#32d69a26;color:var(--ok)}.dot.fix{background:#61d8ff26;color:var(--accent2)}
-.sites{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}.site{padding:8px 12px;border-radius:10px;background:var(--panel2);border:1px solid var(--line);font-size:11.5px;color:var(--text)}
-.note{margin-top:16px;padding:11px 13px;border-radius:12px;background:#61d8ff14;border:1px solid #61d8ff35;color:#cfeeff;font-size:11px;line-height:1.9}.cta{margin-top:20px;width:100%;padding:13px;border:0;border-radius:12px;background:linear-gradient(180deg,#8b7cff,#6f5fe0);color:#fff;font:700 13px/1.2 "EstedadUI","VazirUI",sans-serif;cursor:pointer}.cta:hover{filter:brightness(1.08)}
-h1,.section h2{font-family:"EstedadUI","VazirUI",sans-serif}html[lang="en"] .section h2{font-family:"Inter",sans-serif}html[lang="en"] body{font-family:"Inter",sans-serif;letter-spacing:0}html[lang="en"] h1,html[lang="en"] .cta{font-family:"Inter",sans-serif}.hidden{display:none!important}
+.head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:14px}
+.brand{display:flex;align-items:center;gap:8px;font-size:16px}.brand b{color:var(--accent2)}
+.header-actions{display:flex;align-items:center;gap:8px}
+.badge{padding:6px 10px;border-radius:999px;background:rgba(139,124,255,.12);border:1px solid rgba(139,124,255,.35);color:var(--accent);font:700 11px/1 "Inter",sans-serif}
+h1{margin:8px 0 3px;font-family:"EstedadUI","VazirUI",sans-serif;font-size:21px;color:var(--ok);text-align:center}
+.sub{margin:0 0 18px;color:var(--muted);font-size:12px;text-align:center;line-height:1.9}
+.section{margin-top:18px}.section h2{margin:0 0 9px;font-family:"EstedadUI","VazirUI",sans-serif;font-size:12px;color:var(--accent2);letter-spacing:.04em}
+ul{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px}
+li{display:flex;align-items:flex-start;gap:9px;font-size:12.5px;line-height:1.85;background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:10px 12px}
+li b{color:var(--text)}
+.dot{flex:0 0 auto;width:19px;height:19px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:11px;margin-top:1px}
+.dot.new{background:rgba(50,214,154,.15);color:var(--ok)}.dot.fix{background:rgba(97,216,255,.15);color:var(--accent2)}
+.sites{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
+.site{padding:8px 12px;border-radius:10px;background:var(--panel2);border:1px solid var(--line);font-size:11.5px;color:var(--text)}
+.note{margin-top:16px;padding:11px 13px;border-radius:12px;background:rgba(97,216,255,.08);border:1px solid rgba(97,216,255,.25);color:var(--text);font-size:11px;line-height:1.9}
+.cta{margin-top:20px;width:100%;min-height:44px;padding:13px;border:0;border-radius:12px;background:linear-gradient(180deg,#8b7cff,#6f5fe0);color:#fff;font:700 13px/1.2 "EstedadUI","VazirUI",sans-serif;cursor:pointer}
+.cta:hover{filter:brightness(1.08)}
+.cta:focus-visible{outline:2px solid var(--accent2);outline-offset:3px}
+html[lang="en"] body,html[lang="en"] h1,html[lang="en"] .section h2,html[lang="en"] .cta{font-family:"Inter",sans-serif;letter-spacing:0}
+@media (max-width:420px){.card{padding:18px}li{font-size:12px}}
 </style>
-<link rel="stylesheet" href="starfield.css"/><style id="sfy-sky">html:not([data-theme="light"]){background:radial-gradient(ellipse at 50% -10%,#1B2735,#090A0F) fixed!important}html[data-theme="light"]{background:#fafafa!important}body{background:transparent!important;isolation:isolate}body>.sfy-stars{z-index:-1}</style></head>
-<body><div class="sfy-stars" aria-hidden="true"><i class="l1"></i><i class="l2"></i><i class="l3"></i><i class="l4"></i></div>
+<link rel="stylesheet" href="starfield.css"/>
+<style id="sfy-sky">html:not([data-theme="light"]){background:radial-gradient(ellipse at 50% -10%,#1B2735,#090A0F) fixed!important}html[data-theme="light"]{background:#fafafa!important}body{background:transparent!important;isolation:isolate}body>.sfy-stars{z-index:-1}</style>
+</head>
+<body>
+<div class="sfy-stars" aria-hidden="true"><i class="l1"></i><i class="l2"></i><i class="l3"></i><i class="l4"></i></div>
 <main class="card">
-  <div class="head">
+  <header class="head">
     <div class="brand">🎬 <b>Subify lite</b></div>
-    <div class="head-actions"><span class="badge" id="versionBadge">نسخهٔ جدید</span><button class="lang" id="langToggle" type="button">EN</button></div>
-  </div>
-
-  <section data-lang="fa">
-    <h1>تغییرات مهم Subify lite</h1>
-    <p class="sub">نسخه جدید آماده است. اینجا مهم‌ترین قابلیت‌ها، پلتفرم‌های پشتیبانی‌شده و تغییرات ظاهری و فنی را یک‌جا می‌بینی.</p>
-    <div class="section"><h2>این نسخه: ۲.۹.۳۰ (یادگیری و Storyboard)</h2><ul>
-      <li><span class="dot new">＋</span><div><b>ابزارهای یادگیری در تنظیمات و پاپ‌آپ:</b> در بخش یادگیری تنظیمات وب‌اپ و در افزونه (بخش «یادگیری و ابزارها» در پاپ‌آپ و صفحهٔ یادگیری در تنظیمات) فهرست هفت ابزار هست: یادگیری و مرور لغت، Storyboard، نقش‌آفرینی، نوشتن از ویدیو، تمرین تلفظ، گفت‌وگو با ویدیو و خلاصهٔ ویدیو.</div></li>
-      <li><span class="dot new">＋</span><div><b>پس‌زمینهٔ ستاره‌ای در صفحه‌های هوش مصنوعی:</b> گفت‌وگو، خلاصه، نقش‌آفرینی، نوشتن و تمرین تلفظ همان آسمان ستاره‌ای بقیهٔ صفحه‌ها را دارند.</div></li>
-      <li><span class="dot new">＋</span><div><b>فهرست‌های انتخاب در وب‌اپ:</b> در نقش‌آفرینی و نوشتن، فهرست‌های انتخاب شکل تازه دارند، زیر کادر خودشان باز می‌شوند و با کیبورد هم کار می‌کنند.</div></li>
-      <li><span class="dot fix">↻</span><div><b>کلیدهای روشن و خاموش:</b> دایرهٔ کلید حالا در جای درست خودش است؛ در فارسی وقتی روشن است سمت چپ و وقتی خاموش است سمت راست می‌ایستد.</div></li>
-      <li><span class="dot fix">↻</span><div><b>کارت‌های سناریو در نقش‌آفرینی:</b> عنوان و توضیح هر سناریو داخل کادر جا می‌شود و از مرز بیرون نمی‌زند.</div></li>
+    <div class="header-actions"><span class="badge" id="versionBadge"></span></div>
+  </header>
+  <h1>تغییرات مهم Subify lite</h1>
+  <p class="sub">نسخه جدید آماده است. اینجا مهم‌ترین قابلیت‌ها، پلتفرم‌های پشتیبانی‌شده و تغییرات ظاهری و فنی را یک‌جا می‌بینی.</p>
+  <section class="section">
+    <h2>این نسخه: ۲.۹.۴۱</h2>
+    <ul>
+      <li><span class="dot fix">↻</span><div><b>صفحهٔ یادگیری:</b> کنترل زبان دیگر روی متن بالای صفحه نمی‌افتد و عنوان و توضیح کامل دیده می‌شوند.</div></li>
+      <li><span class="dot fix">↻</span><div><b>پشتیبانی:</b> دکمهٔ «پشتیبانی» در پنجرهٔ تازه‌ها به صفحهٔ تماس Subify می‌رود.</div></li>
+    </ul>
+  </section>
+  <section class="section">
+    <h2>نسخهٔ ۲.۹.۴۰</h2>
+    <ul>
+      <li><span class="dot new">＋</span><div><b>سری روزانه در پاپ‌آپ:</b> پاپ‌آپ نشان می‌دهد چند روز پشت‌هم کار کرده‌ای و امروز چند دقیقه از هدفت را رفته‌ای. با زدن روی هدف می‌توانی ۵، ۱۰ یا ۲۰ دقیقه انتخاب کنی. فقط روی همین دستگاه ذخیره می‌شود.</div></li>
+      <li><span class="dot new">＋</span><div><b>زبان رابط کاربری در ۷ زبان:</b> پاپ‌آپ، تنظیمات، حساب، صفحهٔ یادگیری و صفحه‌های هوش مصنوعی به فارسی، انگلیسی، عربی، اسپانیایی، ترکی، فرانسوی و آلمانی ترجمه شده‌اند. جهت متن هم با زبان تغییر می‌کند.</div></li>
+      <li><span class="dot new">＋</span><div><b>تنظیمات ساده‌تر:</b> صفحهٔ تنظیمات حالا در پنج بخش است: خانه، ترجمه و دوبله، یادگیری، کلیدها و سرویس‌ها، حساب و پشتیبانی. هر چیز فقط یک جا آمده است.</div></li>
+      <li><span class="dot new">＋</span><div><b>تازه‌های این نسخه در تنظیمات:</b> بار اول که تنظیمات را باز کنی، همین توضیح‌ها را در یک پنجرهٔ کوتاه می‌بینی. برای هر نسخه فقط یک بار نشان داده می‌شود.</div></li>
+      <li><span class="dot fix">↻</span><div><b>صفحه‌های هوش مصنوعی:</b> هدر و چیدمان گفت‌وگو، خلاصه، نقش‌آفرینی، نگارش و تمرین تلفظ با بقیهٔ صفحه‌ها یکدست شده و در زبان‌های چپ‌به‌راست و راست‌به‌چپ درست چیده می‌شوند.</div></li>
+      <li><span class="dot fix">↻</span><div><b>اعداد و متن‌ها:</b> در زبان‌های غیرفارسی عددها لاتین نشان داده می‌شوند و متن‌های نیمه‌فارسی دیگر در رابط کاربری دیده نمی‌شوند.</div></li>
+      <li><span class="dot fix">↻</span><div><b>حساب و ریست ماهانه:</b> زمان بازنشانی ماهانهٔ سهمیه با قالب تاریخ و ساعت همان زبان نشان داده می‌شود، نه عدد خام.</div></li>
+    </ul>
+  </section>
+  <section class="section">
+    <h2>نسخهٔ ۲.۹.۳۹</h2>
+    <ul>
+      <li><span class="dot new">＋</span><div><b>ورود با نام کاربری و رمز:</b> حساب را با نام کاربری و رمز بساز یا وارد شو (ایمیل اختیاری است). ورود با Google، GitHub یا LinkedIn هم هست.</div></li>
+      <li><span class="dot new">＋</span><div><b>یک کلمه را بزن تا مکث شود:</b> در حالت یادگیری، زدن روی یک کلمهٔ زیرنویس ویدیو را متوقف می‌کند تا معنی‌اش را بخوانی. با بستن معنی، پخش ادامه پیدا می‌کند.</div></li>
+      <li><span class="dot new">＋</span><div><b>کارت نقل‌قول با لینک:</b> کارت نقل‌قولی که از یادگیری ساخته می‌شود حالا لینک همان لحظهٔ ویدیوی یوتیوب را دارد. لینک هنگام ساخت کارت کپی می‌شود.</div></li>
+    </ul>
+  </section>
+  <section class="section">
+    <h2>نسخهٔ ۲.۹.۳۰: یادگیری و Storyboard</h2>
+    <ul>
       <li><span class="dot new">＋</span><div><b>بخش جدا با دو مسیر:</b> زیر «یادگیری و Storyboard» توی پاپ‌آپ دو مورد هست: «یادگیری لغت» برای مرور لغت‌های ذخیره‌شده، و «Storyboard» برای دیدن صحنه‌های ترجمه‌شده. هر کدام یک توضیح کوتاه دارد و با یک کلیک باز می‌شود.</div></li>
       <li><span class="dot new">＋</span><div><b>همین دو ابزار از وب‌اپ هم:</b> کارت «یادگیری و Storyboard» توی خانه و زیر بخش حساب کاربری در تنظیمات هست، پس لازم نیست حتماً از پلیر یا پاپ‌آپ بروی.</div></li>
       <li><span class="dot new">＋</span><div><b>خروجی Anki از یادگیری لغت:</b> لغت‌های ذخیره‌شده با معنی و جمله، به فایل متنی جدا می‌روند که Anki بدون تبدیل وارد می‌کند.</div></li>
       <li><span class="dot fix">↻</span><div><b>Storyboard با ترتیب زمان:</b> هر صحنه با شمارهٔ ترتیب و زمان شروع نشان داده می‌شود، جملهٔ اصلی بالا و ترجمه زیر آن می‌آید و در حالت روشن و تیره یکسان دیده می‌شود.</div></li>
-    </ul></div>
-    <div class="section"><h2>Google Meet و زیرنویس زنده</h2><ul>
+    </ul>
+  </section>
+  <section class="section">
+    <h2>Google Meet و زیرنویس زنده</h2>
+    <ul>
       <li><span class="dot new">＋</span><div><b>زیرنویس در Google Meet:</b> وقتی دوبلهٔ زنده را در Google Meet روشن می‌کنی، زیرنویس هم نشان داده می‌شود. این قابلیت فعلاً فقط در Chrome است، چون Firefox ضبط زندهٔ صدای جلسه را ندارد.</div></li>
       <li><span class="dot fix">↻</span><div><b>توقف هم‌زمان صدا و زیرنویس:</b> وقتی دوبلهٔ زنده را متوقف می‌کنی، صدای دوبله و زیرنویس با هم می‌ایستند و با هم ادامه پیدا می‌کنند، تا از هم جدا نشوند.</div></li>
       <li><span class="dot new">＋</span><div><b>Google Meet در فهرست پلتفرم‌ها:</b> Google Meet به پلتفرم‌های پشتیبانی‌شده اضافه شد.</div></li>
-    </ul></div>
-    <div class="section"><h2>رابط کاربری و تجربهٔ کاربری</h2><ul>
+    </ul>
+  </section>
+  <section class="section">
+    <h2>رابط کاربری و تجربهٔ کاربری</h2>
+    <ul>
       <li><span class="dot fix">↻</span><div><b>پاپ‌آپ بدون اسکرول:</b> همهٔ تب‌ها در ارتفاع ۶۰۰ پیکسل جا می‌شوند. دکمه‌ها حداقل ۳۲ پیکسل لمس دارند و کوچک‌ترین متن ۱۱٫۵ پیکسل است تا روی صفحه‌های کوچک هم خوانا باشد.</div></li>
-      <li><span class="dot fix">↻</span><div><b>بخش‌های جمع‌شونده:</b> «یادگیری و Storyboard» و «تنظیمات پیشرفته» جمع می‌شوند تا پاپ‌آپ شلوغ نشود. اسکرین‌شات هم یک ردیف جدا با توضیح کوتاه دارد.</div></li>
+      <li><span class="dot fix">↻</span><div><b>بخش‌های جمع‌شونده:</b> «یادگیری و Storyboard» و «تنظیمات پیشرفته» جمع می‌شوند تا پاپ‌آپ شلوغ نشود.</div></li>
       <li><span class="dot fix">↻</span><div><b>حالت روشن و تیره:</b> پاپ‌آپ، تنظیمات، صفحهٔ یادگیری و Storyboard هر دو حالت را دارند و رنگ‌ها در هر دو یکدست هستند.</div></li>
       <li><span class="dot fix">↻</span><div><b>توضیح بالای هر صفحه:</b> صفحهٔ یادگیری و Storyboard در بالا می‌گوید هر بخش چه کاری انجام می‌دهد و چطور شروع کنی.</div></li>
-      <li><span class="dot new">＋</span><div><b>زبان رابط:</b> متن‌های تازهٔ پاپ‌آپ برای فارسی، انگلیسی، عربی، اسپانیایی، ترکی، فرانسوی و آلمانی آماده‌اند.</div></li>
-    </ul></div>
-    <div class="section"><h2>ترجمه و هوش مصنوعی</h2><ul>
+    </ul>
+  </section>
+  <section class="section">
+    <h2>ترجمه و هوش مصنوعی</h2>
+    <ul>
       <li><span class="dot new">＋</span><div><b>چت، نقش‌آفرینی و نگارش بدون ورود باز هستند:</b> این سه بخش دیگر پشت صفحهٔ ورود قرار نمی‌گیرند.</div></li>
       <li><span class="dot new">＋</span><div><b>کلید خودت، هر سرویس:</b> چت، نقش‌آفرینی و نگارش با کلید Gemini، OpenRouter، OpenAI یا سرویس اختصاصی خودت کار می‌کنند. دوبلهٔ زنده فقط با Gemini کار می‌کند.</div></li>
       <li><span class="dot new">＋</span><div><b>ترجمهٔ کل صفحه:</b> همهٔ متن قابل‌دیدن صفحه ترجمه می‌شود، نه فقط بخش اول. ترجمهٔ هر آدرس روی همان مرورگر ذخیره می‌شود تا دوباره لازم نباشد از نو ترجمه شود.</div></li>
       <li><span class="dot new">＋</span><div><b>ده استفادهٔ رایگان:</b> ترجمه، دوبله و ترجمهٔ صفحه تا ده بار بدون ورود. هر ویدیو فقط یک بار حساب می‌شود، حتی اگر هم ترجمه و هم دوبله شود.</div></li>
-    </ul></div>
-    <div class="section"><h2>وب‌اپلیکیشن</h2><ul>
+    </ul>
+  </section>
+  <section class="section">
+    <h2>وب‌اپلیکیشن</h2>
+    <ul>
       <li><span class="dot new">＋</span><div><b>شروع سریع:</b> متن یا فایل زیرنویس را همان‌جا بگذار؛ ترجمه همان لحظه شروع می‌شود.</div></li>
       <li><span class="dot new">＋</span><div><b>کار بدون اینترنت:</b> بعد از اولین باز شدن، برنامه بدون اتصال هم باز می‌شود و لغت‌ها و Storyboard روی دستگاهت می‌مانند. وقتی اینترنت قطع یا کند می‌شود، نوار بالای صفحه این را نشان می‌دهد.</div></li>
       <li><span class="dot new">＋</span><div><b>ترجمهٔ صفحه‌نمایش:</b> یک تب یا برنامه را به اشتراک بگذار؛ متن آن ترجمه و روی تصویر نشان داده می‌شود.</div></li>
@@ -73,87 +122,16 @@ h1,.section h2{font-family:"EstedadUI","VazirUI",sans-serif}html[lang="en"] .sec
       <li><span class="dot new">＋</span><div><b>خروجی Word:</b> ترجمه‌ها، نقش‌آفرینی و نگارش را به فایل Word تبدیل کن.</div></li>
       <li><span class="dot fix">↻</span><div><b>مدل پشتیبان Gemini:</b> اگر مدل اصلی بعد از ۷ ثانیه جواب ندهد، مدل پشتیبان کار را ادامه می‌دهد؛ لغت و دستور زبان دیگر منتظر پیام «تقاضای زیاد» نمی‌مانند.</div></li>
       <li><span class="dot fix">↻</span><div><b>بررسی حساب در اتصال کند:</b> اگر اتصال خیلی کند باشد، بررسی ورود بعد از ۴ ثانیه تمام می‌شود و کارت «در حال بررسی» بی‌پایان نمی‌ماند.</div></li>
-    </ul></div>
-    <div class="section"><h2>نسخهٔ ۲.۹.۲۹: گرامر کنار جمله</h2><ul>
-      <li><span class="dot new">＋</span><div><b>توضیح گرامر هر جمله</b> کنار هر خط زیرنویس اصلی دکمهٔ «گرامر» هست. توضیح با توجه به خط قبل و بعد نشان داده می‌شود: معنی، زمان فعل، ساختار، قاعده، دو جایگزین طبیعی، یک جایگزین ساده‌تر و یک جایگزین پیشرفته‌تر.</div></li>
-      <li><span class="dot fix">↻</span><div>توضیح هر جمله بعد از اولین درخواست در همان جلسه ذخیره می‌شود. برای این قابلیت باید وارد حساب Subify باشی. فعلاً دکمه فقط روی زیرنویس اصلی صفحه است، نه در پنل ترنسکریپت.</div></li>
-    </ul></div>
-    <div class="section"><h2>قابلیت‌های جدید</h2><ul>
-      <li><span class="dot new">＋</span><div><b>پشتیبانی از پلتفرم‌های آموزشی بیشتر</b> Coursera، TED، edX، Udemy، Khan Academy و LinkedIn Learning به مسیرهای پشتیبانی Subify اضافه شدند.</div></li>
-      <li><span class="dot new">＋</span><div><b>ترجمه و زیرنویس سریع‌تر</b> ترجمه پیش‌دستانه و آماده‌سازی بخش‌های بعدی زیرنویس برای کاهش تأخیر در نمایش ترجمه.</div></li>
-      <li><span class="dot new">＋</span><div><b>استایل و فونت‌های بیشتر</b> فونت‌های فارسی و انگلیسی جداگانه، پیش‌نمایش زنده، پریست‌های آماده و کنترل رنگ، اندازه، موقعیت و جلوه‌های زیرنویس.</div></li>
-      <li><span class="dot new">＋</span><div><b>رابط کاربری دوزبانه</b> Popup، تنظیمات، صفحه یادگیری، Storyboard و بخش‌های اصلی رابط اکنون برای فارسی و انگلیسی آماده شده‌اند.</div></li>
-      <li><span class="dot new">＋</span><div><b>ترجمه کامل صفحه</b> امکان ترجمه متن قابل‌مشاهده صفحه با انتخاب زبان مقصد و فونت.</div></li>
-      <li><span class="dot new">＋</span><div><b>یادگیری لغت و دیکشنری</b> ذخیره کلمه، معنی و مرور واژگان با بخش Learn.</div></li>
-    </ul></div>
-    <div class="section"><h2>مهم‌ترین تغییرات ۲.۹.۱۲ تا ۲.۹.۲۸</h2><ul>
-      <li><span class="dot new">＋</span><div><b>یادگیری هنگام تماشا (۲.۹.۲۸)</b> لغت‌های ذخیره‌شده زیر زیرنویس خط می‌افتند، با دکمهٔ ↻ می‌توانی یک جمله را دوباره بشنوی و آمار یادگیری در تنظیمات دیده می‌شود.</div></li>
-      <li><span class="dot fix">↻</span><div><b>رفع گیر کردن زیرنویس بعد از Refresh (۲.۹.۱۶)</b> بعد از تازه‌سازی صفحهٔ یوتیوب زیرنویس دیگر قطع نمی‌شود و تلاش مجدد متوقف نمی‌شود.</div></li>
-      <li><span class="dot fix">↻</span><div><b>سبک‌تر و روان‌تر (۲.۹.۱۲)</b> اسکن ثابت ۱۰۰ میلی‌ثانیه حذف شد، حلقهٔ Karaoke سبک‌تر شد و پاپ‌آپ کم‌فشارتر است.</div></li>
-    </ul></div>
-    <div class="section"><h2>پلتفرم‌های آموزشی</h2><div class="sites"><span class="site">▶️ YouTube</span><span class="site">🎓 Coursera</span><span class="site">🎤 TED</span><span class="site">📘 edX</span><span class="site">🎓 Udemy</span><span class="site">🧠 Khan Academy</span><span class="site">💼 LinkedIn Learning</span><span class="site">🎥 Google Meet</span></div></div>
-    <div class="note">پشتیبانی Firefox و Firefox Android برای این نسخه آماده شده و تنظیمات Custom API در پنل مدیریت بدون باز کردن پنجرهٔ مجوز ذخیره می‌شود.<br><br>این صفحه فقط برای نمایش تغییرات مهم نسخه است. بعد از مطالعه، روی «متوجه شدم» بزن تا دوباره در شروع مرورگر نمایش داده نشود.</div>
-    <button class="cta" id="gotIt">متوجه شدم</button>
+    </ul>
   </section>
-
-  <section data-lang="en" class="hidden">
-    <h1>Important Subify lite Updates</h1>
-    <p class="sub">The new version is ready. Here are the main features, supported platforms, and UI and technical improvements in one place.</p>
-    <div class="section"><h2>THIS VERSION: 2.9.30 (LEARN AND STORYBOARD)</h2><ul>
-      <li><span class="dot new">＋</span><div><b>A section of its own with two entries:</b> Under “Learn and Storyboard” in the popup there are two entries: “Learn words” to review the words you saved, and “Storyboard” to see the translated scenes. Each has a short note and opens with one click.</div></li>
-      <li><span class="dot new">＋</span><div><b>The same two tools from the web app:</b> The Learn and Storyboard card is on Home and under your account in Settings, so you do not have to go through the player or the popup.</div></li>
-      <li><span class="dot new">＋</span><div><b>Anki export from Learn:</b> Saved words with their meaning and sentence go to a separate text file that Anki imports without conversion.</div></li>
-      <li><span class="dot fix">↻</span><div><b>Storyboard in time order:</b> Each scene shows its number and start time, the original line on top and the translation below, and it looks the same in light and dark mode.</div></li>
-    </ul></div>
-    <div class="section"><h2>GOOGLE MEET AND LIVE SUBTITLES</h2><ul>
-      <li><span class="dot new">＋</span><div><b>Subtitles in Google Meet:</b> When you turn on live dubbing in Google Meet, subtitles appear too. For now this works only in Chrome, because Firefox cannot capture the live audio of a meeting.</div></li>
-      <li><span class="dot fix">↻</span><div><b>Audio and subtitles stop together:</b> When you stop live dubbing, the dubbed audio and the subtitles stop together and resume together, so they do not drift apart.</div></li>
-      <li><span class="dot new">＋</span><div><b>Google Meet in the platform list:</b> Google Meet was added to the supported platforms.</div></li>
-    </ul></div>
-    <div class="section"><h2>INTERFACE AND USER EXPERIENCE</h2><ul>
-      <li><span class="dot fix">↻</span><div><b>Popup with no scrolling:</b> Every tab fits a 600 pixel high popup. Buttons have a touch area of at least 32 pixels, and the smallest text is 11.5 pixels, so it stays readable on small screens.</div></li>
-      <li><span class="dot fix">↻</span><div><b>Sections that fold:</b> “Learn and Storyboard” and “Advanced settings” fold away so the popup stays clear. The screenshot button has its own row with a short note.</div></li>
-      <li><span class="dot fix">↻</span><div><b>Light and dark mode:</b> The popup, Settings, the Learn page and Storyboard all support both modes, with the same colours in each.</div></li>
-      <li><span class="dot fix">↻</span><div><b>A short note at the top of each page:</b> The Learn and Storyboard pages say at the top what each part does and how to start.</div></li>
-      <li><span class="dot new">＋</span><div><b>Interface language:</b> New popup texts are ready in Persian, English, Arabic, Spanish, Turkish, French and German.</div></li>
-    </ul></div>
-    <div class="section"><h2>TRANSLATION AND AI</h2><ul>
-      <li><span class="dot new">＋</span><div><b>Chat, roleplay and writing open without sign-in:</b> These three areas no longer sit behind the sign-in screen.</div></li>
-      <li><span class="dot new">＋</span><div><b>Your own key, any service:</b> Chat, roleplay and writing work with your own Gemini, OpenRouter, OpenAI or custom service key. Live dubbing works only with Gemini.</div></li>
-      <li><span class="dot new">＋</span><div><b>Full-page translation:</b> All visible text on the page is translated, not only the first part. The translation of each address is kept in the same browser, so it does not need to be translated again.</div></li>
-      <li><span class="dot new">＋</span><div><b>Ten free uses:</b> Translation, dubbing and page translation, up to ten times without signing in. Each video counts once, even if you both translate and dub it.</div></li>
-    </ul></div>
-    <div class="section"><h2>WEB APP</h2><ul>
-      <li><span class="dot new">＋</span><div><b>Quick start:</b> Paste the subtitle text or drop the file in one place, and translation starts right away.</div></li>
-      <li><span class="dot new">＋</span><div><b>Works without the internet:</b> After the first visit, the app opens without a connection, and your words and Storyboard stay on your device. When the connection drops or slows down, a bar at the top says so.</div></li>
-      <li><span class="dot new">＋</span><div><b>Screen translation:</b> Share a tab or an app. Its text is translated and shown over the picture.</div></li>
-      <li><span class="dot new">＋</span><div><b>Word card image:</b> Make a 1080 by 1350 picture of a word with a dark or light background and share it.</div></li>
-      <li><span class="dot new">＋</span><div><b>Word export:</b> Turn translations, roleplay and writing into a Word file.</div></li>
-      <li><span class="dot fix">↻</span><div><b>Gemini backup model:</b> If the main model does not answer within 7 seconds, the backup model takes over, so words and grammar no longer wait for a “high demand” message.</div></li>
-      <li><span class="dot fix">↻</span><div><b>Account check on slow connections:</b> If the connection is very slow, the sign-in check ends after 4 seconds, and the account card does not stay on “checking”.</div></li>
-    </ul></div>
-    <div class="section"><h2>VERSION 2.9.29: SENTENCE GRAMMAR</h2><ul>
-      <li><span class="dot new">＋</span><div><b>Grammar for each sentence</b> a Grammar button beside each main subtitle line explains the sentence in context: meaning, tense, structure, rule, two natural alternatives, a simpler one and an advanced one.</div></li>
-      <li><span class="dot fix">↻</span><div>Each explanation is saved for the session after the first request and is not asked from the AI again. You need a Subify account. For now the button appears only on the main on-page subtitle, not in the transcript panel.</div></li>
-    </ul></div>
-    <div class="section"><h2>NEW FEATURES</h2><ul>
-      <li><span class="dot new">＋</span><div><b>More educational platforms</b> Coursera, TED, edX, Udemy, Khan Academy, and LinkedIn Learning were added to Subify's supported paths.</div></li>
-      <li><span class="dot new">＋</span><div><b>Faster translation and subtitles</b> predictive translation prepares upcoming subtitle segments to reduce the delay before translated text appears.</div></li>
-      <li><span class="dot new">＋</span><div><b>More style and font control</b> separate Persian and English fonts, live preview, ready-made presets, and controls for subtitle color, size, position, and effects.</div></li>
-      <li><span class="dot new">＋</span><div><b>Bilingual UI</b> the Popup, settings, Learn page, Storyboard, and main UI areas now support Persian and English.</div></li>
-      <li><span class="dot new">＋</span><div><b>Full-page translation</b> translate visible page text with a selectable target language and page font.</div></li>
-      <li><span class="dot new">＋</span><div><b>Vocabulary and dictionary learning</b> save words and meanings and review vocabulary through Learn.</div></li>
-    </ul></div>
-    <div class="section"><h2>IMPORTANT CHANGES: 2.9.12 TO 2.9.28</h2><ul>
-      <li><span class="dot new">＋</span><div><b>Smart Watching (2.9.28)</b> saved words are underlined in the subtitles, the ↻ button replays one sentence, and your learning stats appear in Settings.</div></li>
-      <li><span class="dot fix">↻</span><div><b>YouTube CC after Refresh (2.9.16)</b> subtitles no longer stop after you refresh the page, and the retry logic no longer gives up.</div></li>
-      <li><span class="dot fix">↻</span><div><b>Lighter and smoother (2.9.12)</b> removed the constant 100 ms scan, made the Karaoke loop lighter, and the popup uses less power.</div></li>
-    </ul></div>
-    <div class="section"><h2>EDUCATIONAL PLATFORMS</h2><div class="sites"><span class="site">▶️ YouTube</span><span class="site">🎓 Coursera</span><span class="site">🎤 TED</span><span class="site">📘 edX</span><span class="site">🎓 Udemy</span><span class="site">🧠 Khan Academy</span><span class="site">💼 LinkedIn Learning</span><span class="site">🎥 Google Meet</span></div></div>
-    <div class="note">Firefox and Firefox Android support is included in this version. Custom API settings can be saved from the management panel without opening a permission prompt.<br><br>This page shows the important changes for this version. After reading it, click “Got it” so it will not appear again at browser startup.</div>
-    <button class="cta" id="gotItEn">Got it</button>
+  <section class="section">
+    <h2>پلتفرم‌های آموزشی</h2>
+    <div class="sites"><span class="site">▶️ YouTube</span><span class="site">🎓 Coursera</span><span class="site">🎤 TED</span><span class="site">📘 edX</span><span class="site">🎓 Udemy</span><span class="site">🧠 Khan Academy</span><span class="site">💼 LinkedIn Learning</span><span class="site">🎥 Google Meet</span></div>
   </section>
+  <div class="note">این صفحه فقط برای نمایش تغییرات مهم نسخه است. بعد از مطالعه، روی «متوجه شدم» بزن تا دوباره در شروع مرورگر نمایش داده نشود.</div>
+  <button class="cta" id="gotIt" type="button">متوجه شدم</button>
 </main>
+<script src="ui-language.js"></script>
 <script src="whatsnew.js"></script>
 </body>
 </html>
