@@ -16,6 +16,7 @@
 ## چه چیزی به بیرون ارسال می‌شود
 
 - متن زیرنویس (برای ترجمه) و/یا صدای تب (برای دوبله) فقط به همان سرویسی که خودت در تنظیمات انتخاب و کلیدش را وارد کرده‌ای (Gemini، OpenRouter، OpenAI، یا یک Custom API دلخواه) ارسال می‌شود.
+- وقتی گیسو فعال است، متن زیرنویس و واژه‌های انتخاب‌شده برای توضیح، برای پردازش به gisoo.pro فرستاده می‌شوند. اگر گیسو فعال نباشد، چیزی به آن‌جا فرستاده نمی‌شود.
 - برای Custom API، افزونه پیش از اولین استفاده فقط برای همان یک دامنه که خودت وارد می‌کنی درخواست اجازهٔ دسترسی می‌کند (نه کل اینترنت).
 - وقتی معنی یک لغت انگلیسی را می‌خواهی، همان لغت (فقط خود کلمه، بدون متن زیرنویس) به `api.dictionaryapi.dev` فرستاده می‌شود. این سرویس برای جستجوی معنی لغت است و کلید یا داده دیگری دریافت نمی‌کند.
 - کش ترجمهٔ زیرنویس (برای همه، حتی بدون ورود): بعد از هر دستهٔ ترجمهٔ زیرنویس، این داده‌ها به `https://sub-ify.site/subify-api/cache` فرستاده می‌شود: شناسهٔ ویدیو، شناسهٔ آهنگ زیرنویس، زبان مقصد، زمان شروع و پایان هر خط، متن اصلی خط و ترجمه‌اش. این کش می‌تواند برای همان ویدیو دوباره خوانده شود تا هزینهٔ API تکرار نشود. کلید API و صدا در این درخواست‌ها نیست و درخواست‌ها بدون کوکی ورود فرستاده می‌شوند.
@@ -43,6 +44,9 @@
 - `vendor/lame.min.js` (کدگذاری MP3، پروژهٔ LAME، مجوز LGPL)، فقط برای ساختن فایل خروجی MP3 در همان دستگاه کاربر اجرا می‌شود، هیچ داده‌ای جایی ارسال نمی‌کند. متن مجوز: `vendor/lamejs-LICENSE.txt`.
 - فونت Lalezar (`fonts/Lalezar-Regular.ttf`, مجوز OFL)، فقط برای نمایش زیرنویس.
 
+
+## Gisoo
+When Gisoo is active, the subtitle text and the words selected for explanation are sent to gisoo.pro for processing. When Gisoo is not active, nothing is sent there. Gisoo is set up as a Custom API; the browser asks for access to gisoo.pro only when you add it.
 
 ## Account (only when login is required)
 The extension contacts `https://sub-ify.site/auth/me.php` (and `/auth/logout.php` when you sign out) to check whether you are signed in. The session cookie is HttpOnly on sub-ify.site; the extension does not read or store it. Only the account name and e-mail returned by the server are shown in the popup.

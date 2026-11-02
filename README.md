@@ -122,6 +122,7 @@
 
 - Google Gemini
 - OpenRouter
+- Gisoo ([gisoo.pro](https://gisoo.pro/?utm_source=github&utm_medium=referral&utm_campaign=subify)): از بخش «API اختصاصی» اضافه می‌شود؛ دکمهٔ «پر کردن با گیسو» فرم را پر می‌کند
 - OpenAI
 
 ### 🌍 محتوای چندزبانه

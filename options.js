@@ -351,6 +351,17 @@ $("cp-new").addEventListener("click", () => {
   clearCustomProviderForm();
   $("cp-status").textContent = "اطلاعات سرویس جدید رو وارد کن و ذخیره بزن.";
 });
+// Preset for Gisoo (https://gisoo.pro): an OpenAI-compatible gateway, so it is just a Custom API with a ready-made name, URL and model.
+$("cp-gisoo").addEventListener("click", () => {
+  $("cp-list").dataset.newId = `custom_${Date.now()}`;
+  $("cp-list").value = "";
+  clearCustomProviderForm();
+  $("cp-name").value = "Gisoo";
+  $("cp-base").value = "https://gisoo.pro/api/v1";
+  $("cp-model").value = "gemini-3.1-flash-lite";
+  $("cp-key").focus();
+  $("cp-status").textContent = "کلید API را از gisoo.pro بگیر و اینجا بگذار، بعد ذخیره بزن. اگر می‌خواهی گیسو فقط وقتی Gemini، OpenRouter یا OpenAI خطا دادند وارد شود، بعد از ذخیره موتور ترجمه را روی «خودکار» بگذار.";
+});
 $("cp-delete").addEventListener("click", async () => {
   const id = $("cp-list").value;
   if (!id) return;

@@ -2006,11 +2006,12 @@ browser.runtime.onMessage.addListener((msg, sender, sendResponse) => {
             break;
           }
           if (provider === "gemini" && !settings.apiKey) throw new Error("Gemini انتخاب شده، اما کلید Gemini ذخیره نشده است");
-          if (provider === "auto" && !settings.apiKey && !settings.openRouterKey && !settings.openaiKey) throw new Error("هیچ کلید Gemini، OpenRouter یا OpenAI ذخیره نشده است");
+          const customReady = (() => { const p = getCustomProvider(settings); return !!(p && p.apiKey && p.model); })();
+          if (provider === "auto" && !settings.apiKey && !settings.openRouterKey && !settings.openaiKey && !customReady) throw new Error("هیچ کلید Gemini، OpenRouter، OpenAI یا سرویس اختصاصی ذخیره نشده است");
           let results, usedProvider;
           if (provider === "auto") {
             // Auto does NOT prefer Gemini. Each configured provider is tried in turn:
-            // OpenRouter, then OpenAI, then Gemini. A quota or temporary error moves the
+            // OpenRouter, then OpenAI, then Gemini, then a saved Custom API. A quota or temporary error moves the
             // batch to the next one, and the popup shows which provider handled it.
             const chain = [];
             if (settings.openRouterKey) chain.push(["openrouter", () => translateSubtitleCuesOpenRouter(cues, settings)]);
@@ -2019,6 +2020,8 @@ browser.runtime.onMessage.addListener((msg, sender, sendResponse) => {
               const chosen = settings.geminiSubtitleModel || settings.sttModel;
               return withModelFallback({ ...settings, sttModel: chosen }, "sttModel", [chosen, ...STT_FALLBACKS], (m) => translateSubtitleCues(cues, { ...settings, subtitleProvider: "gemini" }, m));
             }]);
+            // A saved Custom API (for example Gisoo) is the last link: it takes over only after the others fail with a quota or temporary error, or when it is the only one set up.
+            if (customReady) chain.push(["custom", () => translateSubtitleCuesCustom(cues, settings)]);
             for (let i = 0; i < chain.length; i++) {
               try {
                 results = await chain[i][1]();
