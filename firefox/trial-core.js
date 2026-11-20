@@ -34,7 +34,23 @@
     return { removed: true, list: current.filter((item) => item !== key) };
   }
 
-  const api = { TRIAL_MAX, pageKey, take, refund };
+  // Own-key engines are never gated. Any other engine name, including an unknown or empty one, is Subify Server (fails closed).
+  const OWN_KEY_ENGINES = ['gemini', 'custom', 'openrouter', 'openai', 'own'];
+
+  // The access rule for one AI request. background.js, the overlay and the tests all use this one function.
+  // engine: 'subify' for Subify Server, 'own' or an own-key provider name for the user's own key.
+  // switchOn: the subscription switch (auth/me.php subscription). signedIn: a member is signed in.
+  // canary: a member on the billing canary list. It changes nothing here: with the switch off, everyone is already allowed.
+  // Returns 'allow' (Subify Server may run; with the switch off the guest and legacy quotas apply as before),
+  // 'needs_sign_in' (switch on and no member signed in) or 'own_key_free' (own key, never gated).
+  function subifyAccessDecision(input) {
+    const i = input || {};
+    if (OWN_KEY_ENGINES.includes(String(i.engine || ''))) return 'own_key_free';
+    if (i.switchOn && !i.signedIn) return 'needs_sign_in';
+    return 'allow';
+  }
+
+  const api = { TRIAL_MAX, pageKey, take, refund, subifyAccessDecision };
   root.SubifyTrial = api;
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
 })(typeof globalThis !== 'undefined' ? globalThis : this);

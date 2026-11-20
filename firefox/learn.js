@@ -465,3 +465,5 @@ $("listRun").addEventListener("click",runWordList);
 
 load();
 loadNotes();
+// The account's words (the web app's list) are pulled when this page opens. A changed list reloads.
+browser.runtime.sendMessage({type:"subify-vocab-sync"}).then(r=>{ if(r&&r.ok&&r.pulled) load(); }).catch(()=>{});

@@ -2,7 +2,7 @@
   "manifest_version": 2,
   "name": "Subify lite",
   "short_name": "Subify lite",
-  "version": "2.9.41",
+  "version": "2.11.0",
   "description": "ترجمه مستقیم زیرنویس زمان‌بندی‌شده YouTube با Cache ابری پایدار، ترجمه پیش‌دستانه و خروجی SRT، VTT و TXT.",
   "options_page": "options.html",
   "background": {
@@ -11,6 +11,7 @@
       "page-translate-core.js",
       "trial-core.js",
       "ai-route-core.js",
+      "subify-api-core.js",
       "background.js"
     ],
     "persistent": false
@@ -29,8 +30,10 @@
     "https://openrouter.ai/*",
     "https://api.openai.com/*",
     "https://sub-ify.site/*",
+    "https://app.sub-ify.site/*",
     "https://api.dictionaryapi.dev/*",
-    "<all_urls>"
+    "<all_urls>",
+    "cookies"
   ],
   "content_scripts": [
     {

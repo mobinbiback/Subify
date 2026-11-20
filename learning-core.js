@@ -486,6 +486,18 @@
   }
   // Pairs each word with its entry from a batch reply. Matches by the word (any case), else by position when the entry has no word.
   // A word with no entry that has a meaning gets null.
+  // Words the reply left out: no entry under the word's own name, and no unnamed entry at its position.
+  // A word with an entry but no meaning is not omitted (it is not saved, as before). The drill re-asks for omitted words only.
+  function omittedWords(words, reply) {
+    const list = reply && Array.isArray(reply.entries) ? reply.entries : Array.isArray(reply) ? reply : [];
+    const named = new Set();
+    for (const e of list) if (e && typeof e === "object" && cardText(e.word)) named.add(cardText(e.word).toLowerCase());
+    return (Array.isArray(words) ? words : []).filter((w, i) => {
+      if (named.has(cardText(w).toLowerCase())) return false;
+      const at = list[i];
+      return !(at && typeof at === "object" && !cardText(at.word));
+    });
+  }
   function matchWordEntries(words, reply) {
     const list = reply && Array.isArray(reply.entries) ? reply.entries : Array.isArray(reply) ? reply : [];
     const byWord = new Map();
@@ -737,7 +749,7 @@
     sanitizeLearning, effectiveHighlight, learningStats,
     toAnkiTsv, toAnkiTsvSourced, ANKI_SOURCE_COLUMNS, ankiSource, formatMmSs, sourceOpenUrl, groupNotes,
     CARD_TAG_KEYS, WORD_LIST_MAX, WORD_BATCH_MAX, ANKI_RICH_COLUMNS, cardText, richCardFields, entryCardFields,
-    cardMistakes, cardTags, ankiRichCells, splitWordList, wordListPrompt, matchWordEntries
+    cardMistakes, cardTags, ankiRichCells, splitWordList, wordListPrompt, matchWordEntries, omittedWords
   };
   root.SubifyLearning = api;
   if (typeof module !== "undefined" && module.exports) module.exports = api;

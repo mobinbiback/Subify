@@ -140,6 +140,7 @@ var browser = globalThis.browser || globalThis.chrome; // Chrome has no browser 
         audio: opts.audio || undefined,
         temperature: opts.temperature,
         maxTokens: opts.maxTokens,
+        noContinue: !!opts.noContinue,
         videoId: opts.videoId || ""
       });
       if (!res || typeof res !== "object") return fail("unknown", "پاسخی از افزونه نیامد. صفحه را دوباره باز کن.");

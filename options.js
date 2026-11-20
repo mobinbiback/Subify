@@ -602,6 +602,7 @@ function providerLabelOf(p) { return p === "github" ? "GitHub" : p === "google" 
 function subtitleRouteLabel(s) {
   const p = s.subtitleProvider;
   if (!p || p === "auto") return "خودکار";
+  if (p === "subify") return "Subify Server";
   if (p === "custom") {
     const list = Array.isArray(s.customProviders) ? s.customProviders : [];
     const c = list.find((x) => x.id === s.customProviderId) || list[0];
@@ -689,8 +690,8 @@ async function loadFreeAiNote() {
   const note = $("freeAiNote");
   if (!note) return;
   try {
-    const r = await fetch("https://sub-ify.site/auth/ai.php?action=state", { credentials: "include", cache: "no-store" });
-    const s = await r.json();
+    const r = await browser.runtime.sendMessage({ type: "subify-api", path: "/auth/ai.php?action=state" });
+    const s = r && r.json;
     if (!s || s.ok === false || !s.enabled) {
       note.textContent = "هوش مصنوعی رایگان الان خاموش است یا وارد حساب نشده‌ای. کلید خودت را ذخیره کن، یا وارد حساب شو.";
       return;

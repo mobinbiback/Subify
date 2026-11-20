@@ -92,7 +92,7 @@ function showDubQuick(on){
   if(on)loadDubQuick();
 }
 function paintDubQuick(){
-  const fa=(n)=>String(n).replace(/\./g,"٫").replace(/\d/g,(d)=>"۰۱۲۳۴۵۶۷۸۹"[d]);
+  const fa=(n)=>window.SubifyUI?window.SubifyUI.digits(n):String(n).replace(/\./g,"٫").replace(/\d/g,(d)=>"۰۱۲۳۴۵۶۷۸۹"[d]);
   $("dubQuickGainOut").textContent=fa(Number($("dubQuickGain").value).toFixed(1))+"×";
   $("dubQuickRateOut").textContent=fa(Number($("dubQuickRate").value).toFixed(2))+"×";
   $("dubQuickDuckOut").textContent=fa(String(Math.round(Number($("dubQuickDuck").value)*100)))+"٪";
@@ -394,10 +394,38 @@ $("captureShot")?.addEventListener("click",async()=>{const tab=await activeTab()
     $('popup-provider').value=pd_settings.subtitleProvider||'auto';
     updateProviderUi($('popup-provider').value, pd_settings); await loadCustomProviders();
   }
+  // Subify Server panel (Part 3): the model list and exact prices from the server, and the cost card. Shows numbers only; nothing is charged here.
+  async function refreshSubifyPanel(pd={}){
+    const sel=$('popup-subify-model'), card=$('popup-subify-cost'); if(!sel||!card) return;
+    const R=SubifyAiRoute, lang=document.documentElement.lang||'fa', fmt=(n)=>R.formatToman(n,lang);
+    const T=(s)=>(window.SubifyUI&&typeof SubifyUI.t==='function'?SubifyUI.t(s):s);
+    const tn=(tpl,n)=>T(tpl).replace('{n}',n);
+    let st=null;
+    try{ const r=await browser.runtime.sendMessage({type:'subify-api',path:'/auth/ai.php?action=state'}); st=r&&r.json&&r.json.ok!==false?r.json:null; }catch(e){ st=null; }
+    const rows=st&&st.pick&&Array.isArray(st.pick.models)?st.pick.models:[];
+    sel.innerHTML='';
+    rows.forEach(r=>{ const o=document.createElement('option'); o.value=r.model; o.textContent=r.model+' · '+R.priceLabel(r,lang,T); o.disabled=!r.allowed; sel.appendChild(o); });
+    const row=R.pickRow(st,pd.subifyModel||'');
+    if(row) sel.value=row.model;
+    card.replaceChildren();
+    if(!row){ card.textContent=T('مدلی برای حساب تو فعال نیست یا وضعیت سرور در دسترس نیست.'); return; }
+    const line=(label,value,title)=>{ const d=document.createElement('div'); d.style.cssText='display:flex;justify-content:space-between;gap:10px;padding:3px 0'; const a=document.createElement('span'); a.textContent=label; const b=document.createElement('b'); b.textContent=value; if(title) d.title=title; d.append(a,b); card.appendChild(d); };
+    const m=R.minuteToman(row,st);
+    line(T('هزینه هر دقیقه'), m!==null?tn('{n} تومان',fmt(m)):(row.toman_per_minute!=null?tn('{n} تومان',fmt(row.toman_per_minute)):T('نامشخص')));
+    const t=R.estimateTokens(R.SAMPLE_LINES*R.SAMPLE_CHARS*2), j=R.jobToman(row,t.input,t.output);
+    line(tn('هزینه تقریبی هر {n} خط', fmt(R.SAMPLE_LINES)), j!==null?'≈ '+tn('{n} تومان',fmt(j)):T('نامشخص'));
+    const b=R.balanceMicro(st);
+    line(T('موجودی'), b!==null?tn('{n} تومان',fmt(b/1000000)):T('نامشخص'));
+    const note=document.createElement('div'); note.style.cssText='font-size:11px;opacity:.75;margin-top:4px'; note.textContent=T('این تخمین است. هزینه نهایی بر اساس توکن‌های واقعی مصرف‌شده حساب می‌شود.'); card.appendChild(note);
+    if(window.SubifyWallet) card.insertAdjacentHTML('beforeend', SubifyWallet.jobButtonHtml(j));
+  }
   function updateProviderUi(v,pd={}){
-    const labels={auto:'خودکار',gemini:'Gemini',openrouter:'OpenRouter',openai:'OpenAI',custom:'سرویس سفارشی'};
-    if($('providerBadge'))$('providerBadge').textContent=labels[v]||'خودکار';
-    if($('providerHint'))$('providerHint').textContent=v==='auto'?'خودکار: اول OpenRouter، سپس OpenAI و بعد Gemini؛ فقط سرویسی که کلید دارد استفاده می‌شود.':`موتور انتخاب‌شده: ${labels[v]||v}. فقط همان سرویس برای ترجمه استفاده می‌شود.`;
+    const view=SubifyAiRoute.engineView(v);
+    if($('providerBadge'))$('providerBadge').textContent=(window.SubifyUI&&SubifyUI.t?SubifyUI.t(view.badge):view.badge);
+    if($('providerHint'))$('providerHint').textContent=(window.SubifyUI&&SubifyUI.t?SubifyUI.t(view.hint):view.hint);
+    if($('subify-model-panel')){ $('subify-model-panel').style.display=view.model?'':'none'; if(view.model) refreshSubifyPanel(pd); }
+    // r13f: the legacy provider-model row shows for every engine except Subify Server, which has its own model picker.
+    const modelRow=document.querySelector('.provider-model-row'); if(modelRow) modelRow.style.display=v==='subify'?'none':'';
     const input=$('popup-provider-model'), select=$('popup-gemini-models'), manual=$('popup-gemini-model-manual'), fetchBtn=$('fetch-gemini-models'), hint=$('providerModelHint');
     if(!input||!select)return;
     const isGemini=v==='gemini', isOR=v==='openrouter', isOAI=v==='openai', isCustom=v==='custom';
@@ -496,6 +524,7 @@ $('subify-tab-subtitle')?.addEventListener('change',async e=>{await browser.stor
     if(tab?.id)try{await browser.tabs.sendMessage(tab.id,{type:'subify-target-language-changed'});}catch(_){}
   });
   $('popup-provider')?.addEventListener('change',async e=>{const {pd_settings={}}=await browser.storage.local.get('pd_settings');const next={...pd_settings,subtitleProvider:e.target.value};await browser.storage.local.set({pd_settings:next});if(e.target.value==='custom') await loadCustomProviders();updateProviderUi(e.target.value,next);});
+  $('popup-subify-model')?.addEventListener('change',async e=>{const {pd_settings={}}=await browser.storage.local.get('pd_settings');const next={...pd_settings,subifyModel:e.target.value};await browser.storage.local.set({pd_settings:next});refreshSubifyPanel(next);});
   $('popup-provider-model')?.addEventListener('change',async e=>{const {pd_settings={}}=await browser.storage.local.get('pd_settings');const provider=e.target.dataset.provider||$('popup-provider').value;const value=e.target.value.trim();const patch=provider==='openrouter'?{openRouterModel:value||'openrouter/free'}:provider==='openai'?{openaiModel:value||'gpt-5.6-luna'}:{sttModel:value||'gemini-3.5-flash',geminiSubtitleModel:value||'gemini-3.5-flash'};await browser.storage.local.set({pd_settings:{...pd_settings,...patch}});});
   $('popup-gemini-models')?.addEventListener('change',async e=>{const {pd_settings={}}=await browser.storage.local.get('pd_settings');const value=e.target.value;await browser.storage.local.set({pd_settings:{...pd_settings,sttModel:value,geminiSubtitleModel:value}});});
   $('popup-gemini-model-manual')?.addEventListener('change',async e=>{const value=e.target.value.trim();if(!value)return;const {pd_settings={}}=await browser.storage.local.get('pd_settings');await browser.storage.local.set({pd_settings:{...pd_settings,sttModel:value,geminiSubtitleModel:value}});});
@@ -522,7 +551,7 @@ $('subify-tab-subtitle')?.addEventListener('change',async e=>{await browser.stor
   // among providers that are already saved.
   $('manage-custom-providers')?.addEventListener('click',()=>{browser.tabs.create({url:browser.runtime.getURL('options.html')+'#custom-providers'});});
   // Services board: read-only status of each provider on this device. Keys are typed in the panel.
-  const SVC_LAST_NAMES={gemini:'Gemini',openrouter:'OpenRouter',openai:'OpenAI',custom:'سرویس اختصاصی'};
+  const SVC_LAST_NAMES={gemini:'Gemini',openrouter:'OpenRouter',openai:'OpenAI',custom:'سرویس اختصاصی',subify:'Subify Server'};
   function svcTime(t){try{return new Date(t).toLocaleTimeString('fa-IR',{hour:'2-digit',minute:'2-digit'});}catch(_){return '';}}
   function setSvc(id,text,cls){const el=$(id);if(!el)return;el.textContent=text;if(cls!==undefined){el.className=cls;}}
   async function loadPopupServices(){
@@ -731,7 +760,7 @@ window.SubifyUI?.register({ en: {
   const label=document.getElementById('stateLabel');
   if(!toggle||!ring||!fill||!pct||!chip||!label) return;
   const FA_DIGITS='۰۱۲۳۴۵۶۷۸۹';
-  const toFa=n=>String(n).replace(/\d/g,d=>FA_DIGITS[d]);
+  const toFa=n=>window.SubifyUI?window.SubifyUI.digits(n):String(n).replace(/\d/g,d=>FA_DIGITS[d]);
   const NAMES={gemini:'Gemini',openrouter:'OpenRouter',openai:'OpenAI',custom:'Custom API',subify:'Free AI'};
   const OFF_TEXT='آماده';
   const CACHE_TEXT='آماده از کش؛ همین دکمه رو بزن';
@@ -798,7 +827,7 @@ window.SubifyUI?.register({ en: {
 // Streak and daily goal, from this device's own stats (pd_stats). Nothing is sent. Same rules as the web app.
 const STREAK_GOALS=[5,10,20];
 const streakDay=(d)=>d.toISOString().slice(0,10);
-const faNum=(n)=>String(n).replace(/\d/g,(d)=>'۰۱۲۳۴۵۶۷۸۹'[d]);
+const faNum=(n)=>window.SubifyUI?window.SubifyUI.digits(n):String(n).replace(/\d/g,(d)=>'۰۱۲۳۴۵۶۷۸۹'[d]);
 async function paintStreak(){
   const STREAK_T={
     fa:{start:'امروز شروع کن تا زنجیره‌ات ساخته شود',days:(n)=>`${faNum(n)} روز پشت‌سر هم`,done:'هدف امروز انجام شد',prog:(m,g)=>`امروز ${faNum(m)} از ${faNum(g)} دقیقه`,goal:(g)=>`هدف ${faNum(g)} دقیقه`},
@@ -843,3 +872,18 @@ window.SubifyUI?.register({"en": {"زیرنویس‌های خود ویدیو ر�
 
 // Streak line follows the UI language and redraws on change.
 document.addEventListener('subify-ui-language',()=>{try{paintStreak();}catch(_){}});
+
+// Part 7: wallet, top-up and the payment tab (subify-wallet.js). Opening the popup refreshes the wallet once; focus refreshes after a gap.
+if(window.SubifyWallet){
+  const sfwSend=(m)=>browser.runtime.sendMessage(Object.assign({type:'subify-api'},m)).catch(()=>({ok:false,status:0,error:'network'}));
+  SubifyWallet.mount({
+    root:document.getElementById('sfwScreen'),
+    statusEl:document.getElementById('sfwStatus'),
+    send:sfwSend,
+    openTab:(url)=>browser.tabs.create({url:url,active:true}),
+    signIn:(provider)=>browser.runtime.sendMessage({type:'subify-auth-open',provider:provider}).catch(()=>{})
+  });
+}
+
+// Footer legal links (six languages); Persian is the key.
+window.SubifyUI?.register({en:{'راهنما':'Guide','شرایط استفاده':'Terms','حریم خصوصی':'Privacy'},ar:{'راهنما':'الدليل','شرایط استفاده':'الشروط','حریم خصوصی':'الخصوصية'},es:{'راهنما':'Guía','شرایط استفاده':'Términos','حریم خصوصی':'Privacidad'},tr:{'راهنما':'Rehber','شرایط استفاده':'Koşullar','حریم خصوصی':'Gizlilik'},fr:{'راهنما':'Guide','شرایط استفاده':'Conditions','حریم خصوصی':'Confidentialité'},de:{'راهنما':'Anleitung','شرایط استفاده':'Nutzungsbedingungen','حریم خصوصی':'Datenschutz'}});

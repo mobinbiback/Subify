@@ -1383,7 +1383,8 @@ function setSafeHTML(el, html) {
       // Cloud cache is the durable cross-refresh/device path.
       try {
         const targetLanguage = String(state.settings?.targetLanguage || "fa").toLowerCase();
-        const cloud = await browser.runtime.sendMessage({
+        // Dubbing on: no shared-cache call (the dubbed text must not reach the Subify server, Part 5).
+        const cloud = state.firefoxDubEnabled === true ? null : await browser.runtime.sendMessage({
           type: "subify-cloud-cache-get",
           payload: {
             video_id: String(state.videoId || ""),
@@ -1448,7 +1449,8 @@ function setSafeHTML(el, html) {
         // A line the person corrected stays local until the shared correction is accepted,
         // so a single person's guess never becomes the shared translation.
         const pending = rows.filter(r => !r.fixed && !state.cloudSyncedCueKeys.has(r.ck)).slice(0,500);
-        if (!pending.length || state.cloudSyncBusy) return;
+        // Dubbing on: the translations are not shared with the Subify server (Part 5).
+        if (!pending.length || state.cloudSyncBusy || state.firefoxDubEnabled === true) return;
         state.cloudSyncBusy = true;
         try {
           const targetLanguage = String(state.settings?.targetLanguage || "fa").toLowerCase();
@@ -1535,7 +1537,7 @@ function setSafeHTML(el, html) {
     el.addEventListener("pointermove",e=>{if(!state.drag||state.drag.id!==e.pointerId)return;const d=state.drag,x=Math.max(3,Math.min(97,(e.clientX-d.r.left)/d.r.width*100)),y=Math.max(3,Math.min(92,(e.clientY-d.r.top)/d.r.height*100));state.settings.positionX=Math.round(x*10)/10;state.settings.positionY=Math.round(y*10)/10;state.settings.positionMode="custom";el.style.left="0";el.style.right="0";el.style.top="0";el.style.bottom="0";el.style.transform="none";el.style.justifyContent="flex-start";el.style.alignItems="stretch";el.style.paddingTop=`${y}%`;el.style.paddingBottom="0";el.style.setProperty("--subify-drag-x",`${e.clientX-(d.r.left+d.r.width/2)}px`);});
     el.addEventListener("click",e=>{const w=e.target.closest(".subify-subtitle-line--orig .subify-word");if(!w||!state.activeCue)return;const word=clean(w.textContent).replace(/^[^\p{L}\p{N}]+|[^\p{L}\p{N}]+$/gu,"");if(!word)return;void lookUpWord(w,word,state.activeCue.text,state.activeFa);
       // Learning modes: a word lookup pauses the video so the learner can read it; closing the popup resumes.
-      const v=state.video;if(v&&!v.paused&&state.learnCfg&&state.learnCfg.smartMode&&state.learnCfg.smartMode!=="relaxed"){v.pause();state.lookupPaused=true;}});
+      const v=state.video;if(v&&!v.paused){v.pause();state.lookupPaused=true;}});
     const done=()=>{if(!state.drag)return;state.drag=null;el.classList.remove("subify-dragging");const id=state.videoId||getVideoIdFromUrl();if(id)browser.storage.local.set({[`subify_video_${id}`]:{positionX:state.settings.positionX,positionY:state.settings.positionY,positionMode:"custom"}}).catch(()=>{});};el.addEventListener("pointerup",done);el.addEventListener("pointercancel",done);
   }
   function cueWords(cue,text){const parts=clean(text).match(/\S+\s*/g)||[clean(text)];const dur=Math.max(.1,cue.end-cue.start);const src=Array.isArray(cue.words)&&cue.words.length?cue.words:null;return parts.map((w,i)=>{const t=src?.[i];return{text:w,start:Number(t?.start??cue.start+dur*i/parts.length),end:Number(t?.end??cue.start+dur*(i+1)/parts.length)};});}
@@ -1586,7 +1588,7 @@ function setSafeHTML(el, html) {
   // ---------- Subify account gate (in-page prompt) ----------
   // When the site admin made login mandatory and nobody is signed in, subtitles are hidden and a sign-in prompt is shown on the
   // player. The decision comes from background.js (it asks sub-ify.site); this code only reacts to it.
-  const subifyAuth = { blocked: false, el: null, timer: null, providers: {}, checking: false };
+  const subifyAuth = { blocked: false, refused: false, el: null, timer: null, providers: {}, checking: false };
   function subifyAuthText() {
     // both languages always: Persian line, then English line
     const pair = (fa, en) => `${fa}<br><span style="opacity:.72;font-size:.85em;font-weight:400;direction:ltr;display:inline-block;margin-top:2px">${en}</span>`;
@@ -1631,7 +1633,11 @@ function setSafeHTML(el, html) {
       const r = await browser.runtime.sendMessage({ type: "subify-auth-status", force: !!force, videoId: new URL(location.href).searchParams.get("v") || "" });
       subifyAuth.providers = (r && r.providers) || {};
       const was = subifyAuth.blocked;
-      subifyAuth.blocked = !!(r && r.required && !r.user && !(r.trial && r.trial.allowed));
+      const wall = !!(r && r.required && !r.user && !(r.trial && r.trial.allowed));
+      // Switch on: no wall. Sign-in is asked only after a Subify Server request was refused; own-key use is never blocked.
+      // shortcut: the refusal holds until sign-in or reload, even after an own key is saved; upgrade: clear it when the settings change.
+      if (r && r.user) subifyAuth.refused = false;
+      subifyAuth.blocked = r && r.subscription ? !!(subifyAuth.refused && !r.user) : wall;
       if (subifyAuth.blocked) subifyAuthShow();
       else { subifyAuthHide(); if (was) { state.lastShownId = ""; void loadSettings(); } }
     } catch (e) { /* background not reachable: keep the previous state */ }
@@ -1644,11 +1650,13 @@ function setSafeHTML(el, html) {
   // background.js refused a translation or dubbing request (the free sources are used up): block now and show the prompt.
   function subifyAuthBlockNow() {
     subifyAuth.blocked = true;
+    subifyAuth.refused = true;
     subifyAuthShow();
     subifyAuthSchedule();
   }
   // The free Subify AI (owner's key on the server) refused a batch: say why, once per reason per page load.
   const subifyFreeNoticeSeen = new Set();
+  let subifyBalanceHalt = false;
   function subifyFreeAiNotice(text, code) {
     if (!text || subifyFreeNoticeSeen.has(code)) return;
     subifyFreeNoticeSeen.add(code);
@@ -1657,8 +1665,20 @@ function setSafeHTML(el, html) {
     box.setAttribute("role", "status");
     box.style.cssText = "position:absolute;left:50%;bottom:16%;transform:translateX(-50%);z-index:2147483000;width:min(380px,86%);padding:9px 14px;border-radius:12px;background:rgba(10,14,22,.94);color:#eef1f8;border:1px solid rgba(124,92,255,.5);box-shadow:0 12px 40px rgba(0,0,0,.5);text-align:center;font:600 13px/1.8 Vazirmatn,system-ui,sans-serif;direction:rtl;pointer-events:none";
     box.textContent = text;
+    const halted = code === "balance_empty";
+    if (halted) {
+      // The top-up is the one control in this notice, so the box takes clicks for it and stays longer.
+      box.style.pointerEvents = "auto";
+      const link = document.createElement("a");
+      link.href = "https://sub-ify.site/";
+      link.target = "_blank";
+      link.rel = "noopener";
+      link.textContent = "شارژ کیف پول";
+      link.style.cssText = "display:block;margin-top:4px;color:#c4b5ff;text-decoration:underline";
+      box.appendChild(link);
+    }
     (state.player || document.body).appendChild(box);
-    setTimeout(() => box.remove(), 9000);
+    setTimeout(() => box.remove(), halted ? 30000 : 9000);
   }
   // ---------- end Subify account gate ----------
 
@@ -1799,13 +1819,13 @@ function setSafeHTML(el, html) {
 
   // Labels for the overlay follow the viewer's own language (subify_learning.nativeLang). Unknown codes use English.
   const AI_UI = {
-    fa: { note: "یادداشت برای این لحظه", saved: "ذخیره شد", failed: "ذخیره نشد", ai: "ابزارهای هوش مصنوعی", chat: "گفت‌وگو با ویدیو", summary: "خلاصهٔ ویدیو", roleplay: "نقش‌آفرینی", writer: "نوشتن از ویدیو", shadow: "تمرین تلفظ", practice: "تمرین این ویدیو", writeVideo: "نوشتن از این ویدیو", seek: "برو به این لحظه" },
-    en: { note: "Note at this moment", saved: "Saved", failed: "Not saved", ai: "AI tools", chat: "Chat about the video", summary: "Video summary", roleplay: "Roleplay", writer: "Write from the video", shadow: "Pronunciation practice", practice: "Practice this video", writeVideo: "Write from this video", seek: "Jump to this moment" },
-    ar: { note: "ملاحظة عند هذه اللحظة", saved: "تم الحفظ", failed: "تعذّر الحفظ", ai: "أدوات الذكاء الاصطناعي", chat: "محادثة حول الفيديو", summary: "ملخص الفيديو", roleplay: "لعب الأدوار", writer: "الكتابة من الفيديو", shadow: "تدريب النطق", practice: "تدرّب على هذا الفيديو", writeVideo: "اكتب من هذا الفيديو", seek: "انتقل إلى هذه اللحظة" },
-    es: { note: "Nota en este momento", saved: "Guardado", failed: "No se pudo guardar", ai: "Herramientas de IA", chat: "Chat sobre el video", summary: "Resumen del video", roleplay: "Juego de roles", writer: "Escribir desde el video", shadow: "Práctica de pronunciación", practice: "Practicar con este video", writeVideo: "Escribir a partir de este video", seek: "Ir a este momento" },
-    tr: { note: "Bu an için not", saved: "Kaydedildi", failed: "Kaydedilemedi", ai: "YZ araçları", chat: "Video hakkında sohbet", summary: "Video özeti", roleplay: "Rol yapma", writer: "Videodan yaz", shadow: "Telaffuz pratiği", practice: "Bu videoyla pratik yap", writeVideo: "Bu videodan yaz", seek: "Bu ana git" },
-    fr: { note: "Note à ce moment", saved: "Enregistré", failed: "Échec de l’enregistrement", ai: "Outils IA", chat: "Discuter de la vidéo", summary: "Résumé de la vidéo", roleplay: "Jeu de rôle", writer: "Écrire à partir de la vidéo", shadow: "Entraînement à la prononciation", practice: "S’entraîner avec cette vidéo", writeVideo: "Écrire à partir de cette vidéo", seek: "Aller à ce moment" },
-    de: { note: "Notiz zu diesem Moment", saved: "Gespeichert", failed: "Nicht gespeichert", ai: "KI-Werkzeuge", chat: "Chat über das Video", summary: "Videozusammenfassung", roleplay: "Rollenspiel", writer: "Aus dem Video schreiben", shadow: "Aussprache üben", practice: "Mit diesem Video üben", writeVideo: "Aus diesem Video schreiben", seek: "Zu diesem Moment springen" }
+    fa: { note: "یادداشت برای این لحظه", bilingual: "نمایش دوزبانه", addWord: "افزودن به لغت‌های من", wordSaved: "در لغت‌های من ذخیره شد", saved: "ذخیره شد", failed: "ذخیره نشد", ai: "ابزارهای هوش مصنوعی", chat: "گفت‌وگو با ویدیو", summary: "خلاصهٔ ویدیو", roleplay: "نقش‌آفرینی", writer: "نوشتن از ویدیو", shadow: "تمرین تلفظ", practice: "تمرین این ویدیو", writeVideo: "نوشتن از این ویدیو", seek: "برو به این لحظه" },
+    en: { note: "Note at this moment", bilingual: "Bilingual subtitles", addWord: "Add to my words", wordSaved: "Saved to my words", saved: "Saved", failed: "Not saved", ai: "AI tools", chat: "Chat about the video", summary: "Video summary", roleplay: "Roleplay", writer: "Write from the video", shadow: "Pronunciation practice", practice: "Practice this video", writeVideo: "Write from this video", seek: "Jump to this moment" },
+    ar: { note: "ملاحظة عند هذه اللحظة", bilingual: "ترجمة ثنائية اللغة", addWord: "أضف إلى كلماتي", wordSaved: "تم الحفظ في كلماتي", saved: "تم الحفظ", failed: "تعذّر الحفظ", ai: "أدوات الذكاء الاصطناعي", chat: "محادثة حول الفيديو", summary: "ملخص الفيديو", roleplay: "لعب الأدوار", writer: "الكتابة من الفيديو", shadow: "تدريب النطق", practice: "تدرّب على هذا الفيديو", writeVideo: "اكتب من هذا الفيديو", seek: "انتقل إلى هذه اللحظة" },
+    es: { note: "Nota en este momento", bilingual: "Subtítulos bilingües", addWord: "Añadir a mis palabras", wordSaved: "Guardado en mis palabras", saved: "Guardado", failed: "No se pudo guardar", ai: "Herramientas de IA", chat: "Chat sobre el video", summary: "Resumen del video", roleplay: "Juego de roles", writer: "Escribir desde el video", shadow: "Práctica de pronunciación", practice: "Practicar con este video", writeVideo: "Escribir a partir de este video", seek: "Ir a este momento" },
+    tr: { note: "Bu an için not", bilingual: "İki dilli altyazı", addWord: "Kelimelerime ekle", wordSaved: "Kelimelerime kaydedildi", saved: "Kaydedildi", failed: "Kaydedilemedi", ai: "YZ araçları", chat: "Video hakkında sohbet", summary: "Video özeti", roleplay: "Rol yapma", writer: "Videodan yaz", shadow: "Telaffuz pratiği", practice: "Bu videoyla pratik yap", writeVideo: "Bu videodan yaz", seek: "Bu ana git" },
+    fr: { note: "Note à ce moment", bilingual: "Sous-titres bilingues", addWord: "Ajouter à mes mots", wordSaved: "Enregistré dans mes mots", saved: "Enregistré", failed: "Échec de l’enregistrement", ai: "Outils IA", chat: "Discuter de la vidéo", summary: "Résumé de la vidéo", roleplay: "Jeu de rôle", writer: "Écrire à partir de la vidéo", shadow: "Entraînement à la prononciation", practice: "S’entraîner avec cette vidéo", writeVideo: "Écrire à partir de cette vidéo", seek: "Aller à ce moment" },
+    de: { note: "Notiz zu diesem Moment", bilingual: "Zweisprachige Untertitel", addWord: "Zu meinen Wörtern hinzufügen", wordSaved: "In meinen Wörtern gespeichert", saved: "Gespeichert", failed: "Nicht gespeichert", ai: "KI-Werkzeuge", chat: "Chat über das Video", summary: "Videozusammenfassung", roleplay: "Rollenspiel", writer: "Aus dem Video schreiben", shadow: "Aussprache üben", practice: "Mit diesem Video üben", writeVideo: "Aus diesem Video schreiben", seek: "Zu diesem Moment springen" }
   };
   function aiUi() {
     return AI_UI[String(state.learnCfg?.nativeLang || "fa")] || AI_UI.en;
@@ -2757,9 +2777,10 @@ function setSafeHTML(el, html) {
   async function _translateBatchNow(cues, session, epoch = state.translationEpoch) {
     const fresh = cues
       .filter(c => c?.text && !state.translations.has(c.id) && !state.translating.has(c.id))
-      .slice(0, 20);
+      .slice(0, 120);
     if (!fresh.length || session !== state.session || epoch !== state.translationEpoch) return false;
     if (subifyAuth.blocked) { subifyAuthShow(); return false; }
+    if (subifyBalanceHalt) return false;
 
     fresh.forEach(c => state.translating.add(c.id));
     try {
@@ -2769,10 +2790,21 @@ function setSafeHTML(el, html) {
         videoId: state.videoId,
         trackKey: state.trackKey || state.persistentCacheKey,
         targetLanguage: String(state.settings?.targetLanguage || "fa").toLowerCase(),
-        sourceLanguage: String(state.trackLanguage || state.capturedCaptionLang || "").split(/[-_]/)[0].toLowerCase()
+        sourceLanguage: String(state.trackLanguage || state.capturedCaptionLang || "").split(/[-_]/)[0].toLowerCase(),
+        // Dubbing speaks this text, so the background uses only the user's own Gemini key for it (Part 5).
+        dubbing: state.firefoxDubEnabled === true
       });
       if (response?.authRequired) subifyAuthBlockNow();
+      // No Gemini key for dubbing: the dub stops here and the captions go on without it.
+      if (response?.code === "dub_key_required") {
+        firefoxDubDisable();
+        browser.storage.local.set({ subify_dubbing_enabled: false }).catch(() => {});
+        subifyFreeAiNotice(response.error, "dub_key");
+      }
       if (response?.freeAi && session === state.session) subifyFreeAiNotice(response.error, response.code);
+      // The Subify balance ran out: the cues translated so far stay, and no more batches are sent on this page.
+      // shortcut: the halt lasts until the page reloads; upgrade: clear it when the balance changes.
+      if (response?.code === "balance_empty") subifyBalanceHalt = true;
       if (session !== state.session || epoch !== state.translationEpoch || !response?.ok) {
         log("subtitle translation batch failed: " + (response?.code || "no-answer") + (response?.error ? " - " + response.error : ""));
         return false;
@@ -3292,6 +3324,13 @@ function setSafeHTML(el, html) {
           <span class="subify-panel-switch-track"></span>
         </label>
       </label>
+      <label class="subify-panel-row subify-panel-toggle-row">
+        <span id="subify-panel-bilingual-label"></span>
+        <label class="subify-panel-switch subify-panel-switch-sm">
+          <input type="checkbox" id="subify-panel-bilingual">
+          <span class="subify-panel-switch-track"></span>
+        </label>
+      </label>
       <div class="subify-panel-row subify-panel-offset-row">
         <span>هماهنگی زیرنویس</span>
         <span class="subify-panel-offset-controls">
@@ -3318,6 +3357,7 @@ function setSafeHTML(el, html) {
     `);
     panel.querySelector("#subify-panel-subtitle").addEventListener("change", (e) => setSubtitleEnabled(e.target.checked));
     panel.querySelector("#subify-panel-dubbing").addEventListener("change", (e) => togglePanelDubbing(e.target.checked));
+    panel.querySelector("#subify-panel-bilingual").addEventListener("change", (e) => applyPanelSetting({ displayMode: e.target.checked ? "dual" : "translation" }));
     // AI tools: a small group of links that open the extension pages in a new tab.
     const aiToggle = panel.querySelector("#subify-panel-ai-toggle");
     const aiMenu = panel.querySelector("#subify-panel-ai-menu");
@@ -3379,6 +3419,10 @@ function setSafeHTML(el, html) {
         dubbingToggle.checked = subify_dubbing_enabled === true;
       });
     }
+    const bilingualToggle = panel.querySelector("#subify-panel-bilingual");
+    if (bilingualToggle) bilingualToggle.checked = s.displayMode === "dual";
+    const bilingualLabel = panel.querySelector("#subify-panel-bilingual-label");
+    if (bilingualLabel) bilingualLabel.textContent = aiUi().bilingual;
     const offsetValue = panel.querySelector("#subify-panel-offset-value");
     if (offsetValue) {
       const off = Number(s.subtitleOffsetSec || 0);
@@ -3761,10 +3805,10 @@ function setSafeHTML(el, html) {
   // Instant dictionary-style popup for a clicked word — shown immediately
   // next to the word, in addition to (not instead of) saving it for later
   // review in the learning section (learn.html).
-  function closeWordPopup() {
+  function closeWordPopup(rerender) {
     state.wordPopupEl?.remove();
     state.wordPopupEl = null;
-    if (state.lookupPaused) {
+    if (!rerender && state.lookupPaused) {
       state.lookupPaused = false;
       const v = state.video;
       if (v && v.paused) void v.play().catch(() => {});
@@ -3883,7 +3927,7 @@ function setSafeHTML(el, html) {
     document.body.appendChild(el);
     state.wordPopupEl = el;
     placePopup(anchorEl, el);
-    closeBtn.addEventListener("click", closeWordPopup);
+    closeBtn.addEventListener("click", () => closeWordPopup());
     armOutsideClose(anchorEl, el);
 
     const gcfg = state.learnCfg || LRN.sanitizeLearning(null);
@@ -3905,7 +3949,7 @@ function setSafeHTML(el, html) {
   }
 
   function showWordDefinitionPopup(anchorEl, card, opts = {}) {
-    closeWordPopup();
+    closeWordPopup(true);
     installFonts();
     const el = document.createElement("div");
     el.id = "subify-word-popup";
@@ -3937,11 +3981,17 @@ function setSafeHTML(el, html) {
         if (card.exampleFa) ex.appendChild(mk("div", "subify-word-popup-example-fa", card.exampleFa));
         el.appendChild(ex);
       }
-      if (card.note) el.appendChild(mk("div", "subify-word-popup-note", "💡 " + card.note));
+      if (card.note && !opts.onAdd) el.appendChild(mk("div", "subify-word-popup-note", "💡 " + card.note));
       if (!card.meaning && !card.definition) el.appendChild(mk("div", "subify-word-popup-loading", opts.error ? "توضیح دریافت نشد: " + opts.error : "توضیحی دریافت نشد."));
-      const foot = card.enriched ? "ذخیره شد در بخش یادگیری" + (card.level ? ` · سطح ${card.level}` : "")
-                                 : "کلمه ذخیره شد؛ توضیح کامل رو از بخش یادگیری بگیر";
-      el.appendChild(mk("div", "subify-word-popup-foot", foot));
+      const saved = !!(opts.saved || card.enriched);
+      if (!saved && opts.onAdd) {
+        const add = mk("button", "subify-word-popup-add", aiUi().addWord);
+        add.type = "button";
+        add.addEventListener("click", () => { add.disabled = true; opts.onAdd(add); });
+        el.appendChild(add);
+      } else if (saved) {
+        el.appendChild(mk("div", "subify-word-popup-foot", aiUi().wordSaved + (card.level ? " · " + card.level : "")));
+      }
     }
 
     document.body.appendChild(el);
@@ -3955,7 +4005,7 @@ function setSafeHTML(el, html) {
     el.style.top = `${Math.max(8, top) + window.scrollY}px`;
     el.style.left = `${left + window.scrollX}px`;
 
-    closeBtn.addEventListener("click", closeWordPopup);
+    closeBtn.addEventListener("click", () => closeWordPopup());
     const onDocClick = (e) => {
       if (!state.wordPopupEl || state.wordPopupEl !== el) { document.removeEventListener("click", onDocClick, true); return; }
       if (!el.contains(e.target) && e.target !== anchorEl && !anchorEl.contains(e.target)) {
@@ -3968,22 +4018,38 @@ function setSafeHTML(el, html) {
 
   // Click-to-define flow shared by the live subtitle and the transcript panel:
   // open the popup instantly in a loading state, then swap in the full entry.
+  // Click a word: pause, show a quick dictionary tooltip (nothing saved yet), and save with one button.
+  function wordLang() { return String(state.trackLanguage || "auto").split("-")[0]; }
+  function offerAdd(anchorEl, word, sentence, translation, quick, error) {
+    showWordDefinitionPopup(anchorEl, quick, { onAdd: () => addWordFromPopup(anchorEl, word, sentence, translation, quick), error });
+  }
   async function lookUpWord(anchorEl, word, sentence, translation) {
+    const saved = state.vocabIndex?.get(LRN.wordKey(wordLang(), word));
+    if (saved) { showWordDefinitionPopup(anchorEl, saved, { saved: true }); return; }
     anchorEl.classList.add("subify-saving");
     showWordDefinitionPopup(anchorEl, { word }, { loading: true });
     try {
-      const r = await browser.runtime.sendMessage({ type: "subify-vocab-enrich", word, sentence, translation, fromSubtitle: true, lang: state.trackLanguage || "auto", t: state.video ? state.video.currentTime : null });
-      if (r?.ok && r.card) {
-        if (!state.vocabIndex) state.vocabIndex = new Map();
-        state.vocabIndex.set(LRN.wordKey(r.card && r.card.lang, word), r.card);
-        reapplyHighlight();
-        showWordDefinitionPopup(anchorEl, r.card, { error: r.aiError });
-      }
-      else showWordDefinitionPopup(anchorEl, { word }, { error: r?.error || "ذخیره نشد" });
+      const r = await browser.runtime.sendMessage({ type: "subify-word-lookup", word, lang: wordLang() });
+      offerAdd(anchorEl, word, sentence, translation, r?.ok && r.card ? r.card : { word });
     } catch (err) {
       showWordDefinitionPopup(anchorEl, { word }, { error: String(err?.message || err) });
     } finally {
       anchorEl.classList.remove("subify-saving");
+    }
+  }
+  async function addWordFromPopup(anchorEl, word, sentence, translation, quick) {
+    try {
+      const r = await browser.runtime.sendMessage({ type: "subify-vocab-enrich", word, sentence, translation, fromSubtitle: true, lang: wordLang(), t: state.video ? state.video.currentTime : null });
+      if (r?.ok && r.card) {
+        if (!state.vocabIndex) state.vocabIndex = new Map();
+        state.vocabIndex.set(LRN.wordKey(wordLang(), word), r.card);
+        reapplyHighlight();
+        showWordDefinitionPopup(anchorEl, r.card, { saved: true, error: r.aiError });
+      } else {
+        offerAdd(anchorEl, word, sentence, translation, quick, r?.error || aiUi().failed);
+      }
+    } catch (err) {
+      offerAdd(anchorEl, word, sentence, translation, quick, String(err?.message || err));
     }
   }
 
@@ -4294,6 +4360,8 @@ function setSafeHTML(el, html) {
     for (const c of cues) if (state.translations.has(c.id) || state.translations.has(String(c.id))) done++;
     sendResponse({ total: cues.length, done });
   });
+// r14-fix3: finished Subify Server batches arrive while the request is still running; they are shown at once.
+browser.runtime.onMessage.addListener((msg)=>{if(msg?.type!=="subify-batch-result")return false;if(msg.videoId && String(msg.videoId)!==String(state.videoId||""))return false;let added=0;for(const r of Array.isArray(msg.results)?msg.results:[]){const fa=clean(r?.fa||r?.translation||r?.text||"");if(r?.id&&fa){state.translations.set(String(r.id),fa);added++;}}if(added){schedulePersistentCacheWrite();void publishSubtitleCues();}return false;});
   browser.runtime.onMessage.addListener((msg,sender,sendResponse)=>{if(msg?.type==="firefox-dub-toggle"){if(msg.enabled)firefoxDubEnable();else firefoxDubDisable();sendResponse({ok:true});return false;}if(msg?.type==="firefox-dub-audio-toggle"){firefoxDubSetAudioEnabled(msg.enabled);sendResponse({ok:true});return false;}if(msg?.type==="subify-get-current-cue"){const now=Number(state.video?.currentTime||0),cue=activeCue(now);sendResponse({ok:true,cue:cue?{id:cue.id,start:cue.start,end:cue.end,text:cue.text,fa:state.translations.get(cue.id)||""}:null,videoId:state.videoId,currentTime:now});return false;}if(msg?.type==="subify-refresh-settings"){state.videoSettingsLoaded=false;void loadSettings();sendResponse({ok:true});return false;}if(msg?.type==="subify-clear-local-cache"){void clearLocalCache().then(()=>sendResponse({ok:true}));return true;}if(msg?.type==="subify-target-language-changed"){(async()=>{state.translations.clear();state.lastShownId="";state.persistentCacheLoaded=false;state.persistentCacheKey="";await loadSettings();if(state.trackKey){const base=state.trackKey.replace(/\|tl:[^|]*$/,"");state.trackKey=withTargetLang(base);}await loadPersistentTranslations();if(state.cues.length)void queueTranslateAll(state.cues,state.session,Number(state.video?.currentTime||0));sendResponse({ok:true});})();return true;}if(msg?.type==="subify-live-capture-started"){liveBeginCapture();state.liveTimeBase=Number(state.video?.currentTime||0);state.liveCue=null;state.liveHoldAt=null;state.liveForcedPause=false;state.lastLiveCueStart=null;return false;}if(msg?.type==="subify-live-hold"){if(!liveHold.userPaused)state.liveHoldAt=state.liveTimeBase+(Number(msg.at)||0);return false;}if(msg?.type==="subify-live-cue"){onLiveCue(msg);return false;}if(msg?.type==="subify-toggle-transcript"){toggleTranscriptPanel();sendResponse({ok:true,open:Boolean(state.transcriptPanelEl)});return false;}if(msg?.type==="subify-generated-subtitle-cue"){addGeneratedCue(msg.start,msg.end,msg.text);return false;}return false;});
 
   browser.storage.onChanged.addListener((changes, area) => {

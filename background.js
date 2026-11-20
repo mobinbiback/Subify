@@ -147,11 +147,11 @@ async function clearAllLocalData(){
 // picked for subtitles (Gemini / OpenRouter / OpenAI / custom OpenAI-compatible).
 // In "auto" every configured provider is tried in turn.
 async function callTextLLM(settings,prompt,opts={}){
-  const want=settings.subtitleProvider||"auto";
+  const want=settings.subtitleProvider==="subify"?"auto":(settings.subtitleProvider||"auto");
   // No key of the learner's own at all (word cards, grammar, explanations): the owner's key on the server, within the free allowance.
   const hasOwnKey=!!(settings.apiKey||settings.openRouterKey||settings.openaiKey||(getCustomProvider(settings)||{}).apiKey);
-  if(!hasOwnKey){
-    const free=await subifyPracticeFree({feature:"",messages:[{role:"user",content:prompt}],temperature:opts.fast?0.1:0.15,maxTokens:Number(opts.maxTokens)||2048});
+  if(!hasOwnKey||settings.subtitleProvider==="subify"){
+    const free=await subifyPracticeFree({feature:"",model:settings.subifyModel||"",messages:[{role:"user",content:prompt}],temperature:opts.fast?0.1:0.15,maxTokens:Number(opts.maxTokens)||2048});
     if(free.ok){
       // A reply cut at the token limit is not valid JSON for the callers: say so instead of a parse error.
       if(free.cut) throw new Error("پاسخ هوش مصنوعی کامل نشد؛ دوباره امتحان کن");
@@ -731,7 +731,7 @@ async function startDubbing(tabId) {
     // dubbingAudioEnabled:false = "captions only" — see offscreen.js's playLiveAudio().
     const settings = { ...baseSettings, dubbingEnabled: baseSettings.dubbingAudioEnabled !== false };
     if (!settings.apiKey) {
-      await setState({ error: "No API key: add your Gemini key in Settings." });
+      await setState({ error: DUB_KEY_TEXT });
       await log("No API key configured", "error");
       browser.runtime.openOptionsPage();
       return;
@@ -888,14 +888,56 @@ const SUBTITLE_DOMAIN_HINTS = {
   slang: "The speech is informal slang. Use a natural colloquial equivalent in the target language, not a literal one.\n"
 };
 
+// Part 4: the r12 subtitle rule set (the web app's prompt-r12.txt, same wording). {LANG} is the target language name.
+const SUB_RULES_HEAD = [
+"You are the subtitle localization editor for Subify.",
+"Translate the following subtitle cues into {LANG}.",
+"CORE GOAL",
+"Produce a highly accurate, natural, context-aware translation of spoken video dialogue. It must sound like a real native speaker talking and keep the complete meaning of the source.",
+"TRANSLATION RULES",
+"- Translate meaning, not single words. Use natural everyday conversational language for spoken dialogue.",
+"- Do NOT produce stiff, literary, academic, robotic or word-for-word translations unless the source is intentionally formal.",
+"- Preserve the speaker's tone, emotion, politeness, sarcasm, humor, hesitation, emphasis, certainty, uncertainty, questions, commands, warnings, insults and implied meaning.",
+"- Preserve tense, aspect, modality, negation, conditionals, pronouns, relationships, comparisons, quantities, cause/effect and logical connections exactly.",
+"- Never weaken, strengthen, soften or invent meaning.",
+"- Use adjacent cues for context when a sentence, clause, noun phrase, phrasal verb or idea is split across cues. Do not translate a cue in isolation when its neighbours give clear grammatical or semantic context.",
+"SPECIALIZED TERMINOLOGY",
+"- Correctly understand and translate specialized terms in law, medicine, engineering, science, technology, finance, economics, business, computing, cybersecurity, AI, aviation, military, education and other professional fields correctly.",
+"- Law: keep legal concepts, distinctions, legal and procedural terms, rights, obligations, liability, jurisdiction, evidence, contracts, statutes and court terms accurate. Do not replace a precise legal term with a vague everyday synonym when that changes the meaning.",
+"- Medicine: keep diagnoses, symptoms, anatomy, drugs, procedures, lab and clinical terms, dosages, contraindications and medical distinctions accurate. Do not invent medical information.",
+"- Engineering, science and technical: keep units, formulas written as text, component names, standards, measurements, technical processes and domain terms accurate.",
+"- Use the established professional equivalent in the target language when one exists. Do not replace a precise professional term with vague slang. The sentence around a technical term may be colloquial; the term itself must stay semantically and professionally correct.",
+"- If the source is legal, medical, engineering, scientific, financial or technical, put conceptual accuracy first and natural spoken delivery second. Never sacrifice a professional distinction just to sound casual.",
+"- When the source intentionally uses an English term that professionals commonly use, keep it where appropriate rather than forcing an unnatural translation.",
+"- Keep names of people, organizations, products, laws, standards, software, programming languages, APIs, URLs, email addresses, model names, version numbers, identifiers and proper nouns accurate.",
+];
+const SUB_RULES_PERSIAN = [
+"PERSIAN-SPECIFIC RULES",
+"- When translating into Persian, use natural, conversational Iranian Persian (Farsi), fluent as people actually speak in everyday conversation. Avoid bookish, overly formal, literal machine-translation phrasing and unnatural word order.",
+"- Write spoken forms (می‌خوام، نمی‌دونم، تموم بشه، یه چیزی) and keep a correct subject, object and verb order, with the verb at the end. Never leave a sentence cut off or a «که» without a finished clause.",
+"- Do not make professional terms inaccurate just to sound colloquial. Keep the concept precise, then phrase the sentence naturally.",
+"- Preserve Persian punctuation, and keep each translation readable on one subtitle line.",
+];
+const SUB_RULES_TAIL = [
+"SUBTITLE RULES",
+"- Do not merge, split or omit cues. Do not invent dialogue.",
+"- Return every id exactly once, in the same order.",
+"- Keep each translation concise enough for subtitles while preserving the complete meaning.",
+"- Do not add explanations, notes, commentary, transliterations or translator remarks.",
+"- Input: one cue per line as <id>|<text>. Output: exactly one line per id as <id>|<translation>, with the same id and nothing else, and no line break inside a translation. A translation may contain \"|\".",
+];
+
+// The rules for one target language: the r12 set, plus the Persian-only section for Persian.
+function subtitlePromptRules(lang) {
+  const t = LANGUAGE_NAMES[lang];
+  const fill = (lines) => lines.map(l => l.replace("{LANG}", t));
+  return [...fill(SUB_RULES_HEAD), ...(lang === "fa" ? fill(SUB_RULES_PERSIAN) : []), ...fill(SUB_RULES_TAIL)];
+}
+
+// Part 4: the request is numbered "id|text" lines (1..n within the batch). No timestamps, no JSON wrapper.
 function subtitleItemsAndPrompt(cues, settings) {
-  const items = cues.map(c => ({ id: String(c.id), text: cleanSubtitleText(c.text) })).filter(x => x.text);
+  const items = cues.map(c => ({ id: String(c.id), start: c.start, end: c.end, text: cleanSubtitleText(c.text) })).filter(x => x.text);
   const lang = targetLangCode(settings);
-  const domainLine =
-    "Correctly and consistently handle terminology from these domains when it appears: programming, software " +
-    "engineering, AI, machine learning, computer science, cybersecurity, law, data protection, science, business, " +
-    "finance, education, movies/TV dialogue, and casual conversation. Keep the same term for the same concept " +
-    "across the whole batch.\n";
   const glossaryEntries = Array.isArray(settings?.glossary)
     ? settings.glossary.filter(g => g && String(g.term || "").trim() && String(g.translation || "").trim())
     : [];
@@ -904,10 +946,7 @@ function subtitleItemsAndPrompt(cues, settings) {
       "(case-insensitive match on the source term):\n" +
       glossaryEntries.map(g => `- "${String(g.term).trim()}" -> "${String(g.translation).trim()}"`).join("\n") + "\n"
     : "";
-  // "auto" (default) leaves the speaker's own register intact — the
-  // per-language blocks below already do that in detail. An explicit
-  // choice here overrides it for every line, regardless of how the
-  // source actually sounds.
+  // "auto" (default) keeps the speaker's own register. An explicit tone overrides it for every line.
   const toneLine = settings?.translationTone === "formal"
     ? "Override the speaker's natural register: render every single line in formal, polite, respectful language " +
       "(formal pronouns/verb forms where the target language distinguishes them), even where the source speech " +
@@ -922,188 +961,77 @@ function subtitleItemsAndPrompt(cues, settings) {
       "correct technical/disciplinary terminology, no slang, no filler words, no contractions — even where the " +
       "source speech itself is casual, rambling or colloquial.\n"
     : "";
-  const sharedTail =
-    domainLine +
-    glossaryLine +
-    toneLine +
-    "Remove non-speech labels like music, applause, laughter and sound descriptions.\n" +
-    "Keep names, numbers, units, code and URLs unchanged. Output ONLY compact JSON.\n" +
-    `The target language is ${LANGUAGE_NAMES[lang]}. Do NOT translate into Persian unless the target language is Persian.\n` +
-    "Format: {\"results\":[{\"id\":\"original-id\",\"translation\":\"translation\"}]}\n";
-
-  // Each of these is a native, idiomatically-written instruction block in
-  // its own target language (not an English template with the language name
-  // substituted in) — meaning-first, non-literal, tone-preserving, with the
-  // exact same substantive rules in every language: understand full context
-  // before translating; never translate idioms/slang/proverbs/irony word for
-  // word; keep the speaker's register (casual/formal/humor/poetic/romantic/
-  // street slang); pick the sense a real native speaker would actually say
-  // when several are possible; leave proper names/brands/foreign terms
-  // alone; never guess at unclear audio without real contextual evidence;
-  // and the same priority order (correct meaning > naturalness > context >
-  // tone > idiom/emotion > subtitle formatting). Languages outside this set
-  // fall through to the generic template below.
-  const NATIVE_PROMPTS = {
-    fa:
-      "شما یک مترجم حرفه‌ای زیرنویس فارسی هستید. ترجمه باید روان، دقیق، طبیعی و کاملاً متناسب با فضای گفت‌وگو باشد؛ " +
-      "به هیچ‌وجه حالت ترجمهٔ ماشینی یا کلمه‌به‌کلمه نداشته باشد.\n" +
-      "اول مفهوم کامل جمله، فضای صحبت، لحن گوینده، اصطلاح‌ها، عامیانه‌ها و کنایه‌ها و منظور واقعی گوینده را بفهم، " +
-      "بعد طبیعی‌ترین معادل فارسی را بنویس — در صورت نیاز کل ساختار جمله را تغییر بده، به‌شرطی که معنی و احساس اصلی حفظ شود.\n" +
-      "اگر ترجمهٔ تحت‌اللفظی جمله‌ای بی‌معنی یا عجیب در فارسی می‌سازد، این کار ممنوع است — باید مفهوم واقعی منتقل شود " +
-      "(مثلاً عبارتی ترکی مثل «Sebebi yâr» هرگز نباید به‌شکل نادرست و تحت‌اللفظی مثل «سببش یارت» ترجمه شود؛ " +
-      "باید کاربرد واقعی‌اش فهمیده شود و معادل طبیعی فارسی نوشته شود). همین قانون برای اصطلاح، ضرب‌المثل، عبارت " +
-      "عاشقانه/ادبی/شاعرانه، طنز، عامیانه و کنایه هم صدق می‌کند.\n" +
-      "لحن گوینده را حفظ کن: صمیمی→صمیمی، محاوره‌ای→محاوره‌ای، رسمی→رسمی، طنز→طنز، شاعرانه→شاعرانه، " +
-      "عاشقانه→طبیعی و احساسی، خیابانی/اسلنگ→معادل طبیعی و قابل‌فهم فارسی. اگر چند ترجمهٔ طبیعی ممکن است، همیشه " +
-      "همانی را انتخاب کن که برای یک فارسی‌زبان واقعی طبیعی‌تر است.\n" +
-      "اسم‌های خاص، اسم افراد، مکان‌ها، برندها و اصطلاح‌های خارجی را بی‌دلیل تغییر نده. اگر بخشی نامفهوم است، بی‌دلیل " +
-      "حدس نزن؛ فقط زمانی از کانتکست برای بازسازی استفاده کن که شواهد کافی وجود داشته باشد.\n" +
-      "اولویت: درستی معنی > طبیعی‌بودن > حفظ کانتکست > حفظ لحن > حفظ اصطلاح و احساس > حفظ ساختار زیرنویس.\n" +
-      "یک نقطهٔ سادهٔ (.) در انتهای جمله را، وقتی نشانهٔ معنادار (؟ ! …) نیست، حذف کن؛ کاما و علامت نقل‌قول را در " +
-      "جای لازم نگه دار.\n",
-    en:
-      "You are a professional subtitle translator producing natural, idiomatic English — never robotic or " +
-      "word-for-word.\n" +
-      "First understand the full meaning of the line: context, the speaker's tone, idioms, slang, sarcasm, and " +
-      "what they actually mean — then write the most natural English equivalent, restructuring the sentence " +
-      "completely if needed, as long as the meaning and feeling survive intact.\n" +
-      "If a literal translation would sound strange or meaningless in English, that literal version is not " +
-      "allowed — convey the real meaning instead. The same applies to idioms, proverbs, romantic or poetic " +
-      "lines, humor, slang, and sarcasm (e.g. a line like the Turkish 'Sebebi yâr' should never become a stiff, " +
-      "incorrect literal phrase — figure out what it actually means and phrase it the way a native English " +
-      "speaker would).\n" +
-      "Match the speaker's register: casual stays casual, formal stays formal, humor stays funny, poetic stays " +
-      "poetic, romantic lines stay warm and natural, street slang gets a natural English slang equivalent. When " +
-      "more than one natural translation is possible, pick whichever a real native English speaker would " +
-      "actually say.\n" +
-      "Never alter proper names, people, places, brands, or foreign terms without reason. Never guess at " +
-      "unclear audio — only fill a gap from context when there is real evidence for it.\n" +
-      "Priority order: correct meaning > natural phrasing > context > tone > idiom/emotion > subtitle " +
-      "formatting.\n",
-    tr:
-      "Sen profesyonel bir altyazı çevirmenisin ve çevirin doğal, akıcı ve bağlama tam oturan bir Türkçe olmalı " +
-      "— asla makine çevirisi ya da kelime kelime çeviri gibi durmamalı.\n" +
-      "Önce cümlenin tam anlamını, bağlamı, konuşmacının tonunu, deyimleri, argoyu ve gerçek niyetini kavra, " +
-      "sonra en doğal Türkçe karşılığını yaz; gerekirse cümle yapısını tamamen değiştir, yeter ki anlam ve " +
-      "duygu korunsun.\n" +
-      "Birebir çeviri Türkçede anlamsız ya da tuhaf bir cümle oluşturuyorsa bu kesinlikle yasak — gerçek anlam " +
-      "aktarılmalı. Aynı kural deyimler, atasözleri, romantik/edebi/şiirsel ifadeler, mizah, argo ve kinaye için " +
-      "de geçerli ('Sebebi yâr' gibi bir ifade asla yanlış ve birebir çevrilmemeli — gerçek kullanımı anlaşılıp " +
-      "doğal bir karşılık yazılmalı).\n" +
-      "Konuşmacının tonunu koru: samimi→samimi, günlük konuşma dili→günlük konuşma dili, resmi→resmi, " +
-      "esprili→esprili, şiirsel→şiirsel, romantik→doğal ve duygusal, sokak dili/argo→doğal ve anlaşılır bir " +
-      "Türkçe karşılık. Birden fazla doğal çeviri mümkünse, gerçek bir Türkçe konuşucunun söyleyeceği ifadeyi " +
-      "seç.\n" +
-      "Özel isimleri, kişi adlarını, yer adlarını, marka isimlerini ve yabancı terimleri sebepsiz yere değiştirme. " +
-      "Anlaşılmayan bir kısmı asla tahmin etme; bağlamı sadece yeterli kanıt olduğunda kullan.\n" +
-      "Öncelik sırası: anlamın doğruluğu > doğallık > bağlamın korunması > tonun korunması > deyim ve duygunun " +
-      "korunması > altyazı biçiminin korunması.\n",
-    es:
-      "Eres un traductor profesional de subtítulos y tu traducción al español debe sonar natural, fluida y " +
-      "perfectamente adaptada al contexto — nunca como una traducción automática o palabra por palabra.\n" +
-      "Primero entiende el significado completo de la frase, el contexto, el tono del hablante, los modismos, " +
-      "la jerga y la intención real; luego escribe el equivalente más natural en español, cambiando la " +
-      "estructura de la frase si hace falta, siempre que se conserve el significado y el sentimiento original.\n" +
-      "Si una traducción literal suena rara o no tiene sentido en español, esa traducción literal queda " +
-      "prohibida — hay que transmitir el significado real. La misma regla aplica a modismos, refranes, frases " +
-      "románticas o poéticas, humor, jerga e ironía (una expresión como la turca 'Sebebi yâr' nunca debería " +
-      "traducirse de forma literal e incorrecta; hay que entender su uso real y dar un equivalente natural).\n" +
-      "Mantén el registro del hablante: cercano→cercano, coloquial→coloquial, formal→formal, gracioso→gracioso, " +
-      "poético→poético, romántico→cálido y natural, callejero/jerga→un equivalente natural y comprensible en " +
-      "español. Si hay varias traducciones naturales posibles, elige la que diría un hispanohablante nativo de " +
-      "verdad.\n" +
-      "No cambies nombres propios, personas, lugares, marcas ni términos extranjeros sin motivo. Nunca inventes " +
-      "una parte que no se entiende; usa el contexto para reconstruirla solo cuando haya evidencia suficiente.\n" +
-      "Orden de prioridad: exactitud del significado > naturalidad > contexto > tono > modismos y emoción > " +
-      "formato del subtítulo.\n",
-    de:
-      "Du bist ein professioneller Untertitel-Übersetzer, und deine deutsche Übersetzung muss natürlich, " +
-      "flüssig und genau zum Kontext passen — niemals wie eine Maschinenübersetzung oder Wort-für-Wort-" +
-      "Übertragung klingen.\n" +
-      "Verstehe zuerst die volle Bedeutung des Satzes, den Kontext, den Tonfall des Sprechers, Redewendungen, " +
-      "Slang und die tatsächliche Absicht — schreibe dann die natürlichste deutsche Entsprechung, notfalls mit " +
-      "komplett anderem Satzbau, solange Bedeutung und Gefühl erhalten bleiben.\n" +
-      "Wenn eine wörtliche Übersetzung im Deutschen seltsam oder sinnlos klingt, ist diese wörtliche Version " +
-      "verboten — die eigentliche Bedeutung muss vermittelt werden. Dieselbe Regel gilt für Redewendungen, " +
-      "Sprichwörter, romantische oder poetische Zeilen, Humor, Slang und Ironie (ein Ausdruck wie das türkische " +
-      "„Sebebi yâr“ sollte niemals falsch wörtlich übersetzt werden — erst die tatsächliche Bedeutung verstehen, " +
-      "dann ein natürliches deutsches Äquivalent finden).\n" +
-      "Behalte den Ton des Sprechers bei: locker→locker, umgangssprachlich→umgangssprachlich, förmlich→förmlich, " +
-      "witzig→witzig, poetisch→poetisch, romantisch→warm und natürlich, Straßenslang→ein natürliches, " +
-      "verständliches deutsches Äquivalent. Wenn mehrere natürliche Übersetzungen möglich sind, wähle die, die " +
-      "ein echter deutscher Muttersprachler tatsächlich sagen würde.\n" +
-      "Ändere Eigennamen, Personen, Orte, Marken oder fremdsprachige Begriffe nicht ohne Grund. Rate niemals bei " +
-      "unverständlichen Stellen — nutze den Kontext zur Rekonstruktion nur, wenn es dafür ausreichend " +
-      "Anhaltspunkte gibt.\n" +
-      "Prioritätsreihenfolge: inhaltliche Richtigkeit > Natürlichkeit > Kontext > Ton > Redewendung und Emotion " +
-      "> Untertitelformat.\n",
-    it:
-      "Sei un traduttore professionista di sottotitoli e la tua traduzione in italiano deve suonare naturale, " +
-      "scorrevole e perfettamente calata nel contesto — mai come una traduzione automatica o parola per " +
-      "parola.\n" +
-      "Prima capisci il significato completo della frase, il contesto, il tono di chi parla, i modi di dire, lo " +
-      "slang e l'intenzione reale; poi scrivi l'equivalente italiano più naturale, cambiando pure del tutto la " +
-      "struttura della frase, purché restino intatti significato ed emozione.\n" +
-      "Se una traduzione letterale suona strana o senza senso in italiano, quella traduzione letterale è vietata " +
-      "— va reso il significato vero. Vale la stessa regola per modi di dire, proverbi, frasi romantiche o " +
-      "poetiche, umorismo, slang e ironia (un'espressione come quella turca 'Sebebi yâr' non va mai tradotta " +
-      "letteralmente in modo scorretto: bisogna capire il suo uso reale e trovare un equivalente naturale in " +
-      "italiano).\n" +
-      "Mantieni il registro di chi parla: colloquiale→colloquiale, informale→informale, formale→formale, " +
-      "comico→comico, poetico→poetico, romantico→caldo e naturale, slang di strada→un equivalente naturale e " +
-      "comprensibile in italiano. Se sono possibili più traduzioni naturali, scegli quella che direbbe davvero " +
-      "un madrelingua italiano.\n" +
-      "Non modificare nomi propri, persone, luoghi, marchi o termini stranieri senza motivo. Non indovinare mai " +
-      "una parte incomprensibile; usa il contesto per ricostruirla solo quando ci sono prove sufficienti.\n" +
-      "Ordine di priorità: correttezza del significato > naturalezza > contesto > tono > modi di dire ed " +
-      "emozione > formato del sottotitolo.\n"
-  };
-
-  const prompt = NATIVE_PROMPTS[lang]
-    ? NATIVE_PROMPTS[lang] + sharedTail + JSON.stringify(items)
-    : `You are a professional subtitle translator. Translate into natural, fluent, native-sounding ${LANGUAGE_NAMES[lang]}, ` +
-      "understanding full context, tone, idiom and intent before choosing the most natural phrasing rather than " +
-      "a literal one — appropriate for spoken dialogue and educational/technical content alike.\n" +
-      sharedTail +
-      JSON.stringify(items);
+  // Extension rules that the r12 set does not state. Persian trailing full stops are removed after the reply (applyPersianPunctuation).
+  const extra = [
+    "Keep the same term for the same concept across the whole batch.",
+    "Never guess at unclear audio; use the neighbouring cues only when they give clear evidence.",
+    "Priority: correct meaning > natural phrasing > context > tone > idiom and emotion > subtitle format.",
+    "Remove non-speech labels such as music, applause, laughter and sound descriptions."
+  ].join("\n") + "\n";
   const domainNote = SUBTITLE_DOMAIN_HINTS[settings && settings.subtitleDomain] || "";
-  return { items, prompt: domainNote + prompt, lang };
+  const prompt = domainNote + subtitlePromptRules(lang).join("\n") + "\n" + extra + toneLine + glossaryLine +
+    "CUES:\n" + SubifyAiRoute.subtitleLines(items.map(x => x.text)) + "\n";
+  return { items, prompt, lang };
 }
 
-function parseSubtitleResults(text, provider, lang = "fa") {
-  const cleaned = String(text || "").replace(/```json|```/g, "").trim();
-  if (!cleaned) throw new Error(`${provider} returned no subtitle translation text`);
-  let parsed;
-  try { parsed = JSON.parse(cleaned); }
-  catch (_) {
-    const match = cleaned.match(/\[[\s\S]*\]/);
-    if (!match) throw new Error(`${provider} returned invalid subtitle translation JSON`);
-    try { parsed = JSON.parse(match[0]); } catch (_) { throw new Error(`${provider} returned invalid subtitle translation JSON`); }
+// r14-fix2: a translated line never ends in one period. An ellipsis (... or ..), ?, ؟ and ! stay.
+function stripTrailingPeriod(text) {
+  const t = String(text ?? "").replace(/\s+$/, "");
+  return t.endsWith(".") && !t.endsWith("..") ? t.slice(0, -1) : t;
+}
+
+// The reply, read strictly. An "id|text" reply is read line by line; a reply that starts with { or [ (or has no id line)
+// is read as the old JSON shape. Nothing is assigned to a cue unless its id is in the batch.
+function parseSubtitleResults(text, provider, lang = "fa", items = []) {
+  const reply = String(text || "").replace(/```json|```/g, "").trim();
+  if (!reply) throw new Error(`${provider} returned no subtitle translation text`);
+  let texts = null;
+  if (!/^[\[{]/.test(reply)) {
+    const r = SubifyAiRoute.parseIdLines(reply, items.length);
+    if (!r.ok) throw new Error(`${provider} subtitle reply ids do not match the batch (${r.reason})`);
+    if (r.texts.some(Boolean)) texts = r.texts;
   }
-  const arr = Array.isArray(parsed) ? parsed : Array.isArray(parsed.results) ? parsed.results : [];
-  const out = arr
-    .map(x => {
-      const translation = String(
-        x.translation ?? x.text ?? x[lang] ?? x.fa ?? ""
-      ).trim();
-      const text = lang === "fa" ? applyPersianPunctuation(translation) : translation;
-      // Keep `fa` as a compatibility alias because older UI/export code reads it.
-      return { id: String(x.id || ""), text, fa: text, translation: text };
-    })
-    .filter(x => x.id && x.text);
+  if (!texts) texts = jsonReplyTexts(reply, provider, lang, items);
+  const out = SubifyAiRoute.attachTexts(items, texts).map(x => {
+    const t = stripTrailingPeriod(lang === "fa" ? applyPersianPunctuation(x.text) : x.text);
+    // Keep `fa` as a compatibility alias because older UI/export code reads it.
+    return { id: x.id, start: x.start, end: x.end, text: t, fa: t, translation: t };
+  }).filter(x => x.id && x.text);
   if (!out.length) throw new Error(`${provider} returned an empty subtitle translation`);
   return out;
 }
 
+// The old JSON reply ({"results":[{"id","translation"}]} or a bare array). An id is read as the batch number first, then as
+// the cue's own id. An id that is neither, or a repeated one, rejects the reply.
+function jsonReplyTexts(reply, provider, lang, items) {
+  let parsed = null;
+  try { parsed = JSON.parse(reply); }
+  catch (_) {
+    const m = reply.match(/\{[\s\S]*\}/) || reply.match(/\[[\s\S]*\]/);
+    try { parsed = m ? JSON.parse(m[0]) : null; } catch (_2) { parsed = null; }
+  }
+  if (!parsed) throw new Error(`${provider} returned invalid subtitle translation JSON`);
+  const arr = Array.isArray(parsed) ? parsed : Array.isArray(parsed.results) ? parsed.results : [];
+  const texts = new Array(items.length).fill(null);
+  const seen = new Set();
+  for (const x of arr) {
+    const key = String(x?.id ?? "");
+    const n = Number(key);
+    const idx = /^\d+$/.test(key) && n >= 1 && n <= items.length ? n - 1 : items.findIndex(it => it.id === key);
+    if (idx < 0) throw new Error(`${provider} subtitle reply ids do not match the batch`);
+    if (seen.has(idx)) throw new Error(`${provider} subtitle reply repeats an id`);
+    seen.add(idx);
+    texts[idx] = String(x.translation ?? x.text ?? x[lang] ?? x.fa ?? "").trim() || null;
+  }
+  return texts;
+}
+
 async function translateSubtitleCuesGemini(cues, settings, model) {
   const url = `${GEMINI_BASE}/${model}:generateContent?key=${encodeURIComponent(settings.apiKey)}`;
-  const { prompt, lang } = subtitleItemsAndPrompt(cues, settings);
+  const { prompt, lang, items } = subtitleItemsAndPrompt(cues, settings);
   const body = {
     contents: [{ role: "user", parts: [{ text: prompt }] }],
-    // NOTE: batches can carry up to 24 cues (see "subify-translate" below) and Persian
-    // JSON output runs heavier on tokens than the source text — 2048 was clipping
-    // longer batches mid-JSON and breaking parseSubtitleResults(). Matched to the
-    // 4096 ceiling already used by the OpenRouter/OpenAI/Custom code paths.
+    // NOTE: batches can carry up to 24 cues. The id|text reply is short, but the ceiling stays at 4096 for long batches.
     generationConfig: { temperature: 0.1, maxOutputTokens: 4096 }
   };
   const res = await fetch(url, {
@@ -1115,12 +1043,12 @@ async function translateSubtitleCuesGemini(cues, settings, model) {
   if (!res.ok) throw new Error(`Subtitle translation ${res.status}: ${raw.slice(0, 260)}`);
   const data = JSON.parse(raw);
   const text = (data.candidates?.[0]?.content?.parts || []).map(p => p.text || "").join("").trim();
-  return parseSubtitleResults(text, "Gemini", lang);
+  return parseSubtitleResults(text, "Gemini", lang, items);
 }
 
 async function translateSubtitleCuesOpenRouter(cues, settings) {
   if (!settings.openRouterKey) throw new Error("No OpenRouter API key saved");
-  const { prompt, lang } = subtitleItemsAndPrompt(cues, settings);
+  const { prompt, lang, items } = subtitleItemsAndPrompt(cues, settings);
   const res = await fetch(`${OPENROUTER_BASE}/chat/completions`, {
     method: "POST",
     headers: {
@@ -1140,14 +1068,14 @@ async function translateSubtitleCuesOpenRouter(cues, settings) {
   if (!res.ok) throw new Error(`OpenRouter ${res.status}: ${raw.slice(0, 260)}`);
   const data = JSON.parse(raw);
   const text = data.choices?.[0]?.message?.content || "";
-  return parseSubtitleResults(text, "OpenRouter", lang);
+  return parseSubtitleResults(text, "OpenRouter", lang, items);
 }
 
 
 
 async function translateSubtitleCuesOpenAI(cues, settings) {
   if (!settings.openaiKey) throw new Error("No OpenAI API key saved");
-  const { prompt, lang } = subtitleItemsAndPrompt(cues, settings);
+  const { prompt, lang, items } = subtitleItemsAndPrompt(cues, settings);
   const res = await fetch("https://api.openai.com/v1/responses", {
     method: "POST",
     headers: {
@@ -1171,7 +1099,7 @@ async function translateSubtitleCuesOpenAI(cues, settings) {
     text = data.output.flatMap(item => Array.isArray(item.content) ? item.content : [])
       .map(part => part?.text || "").filter(Boolean).join("\n").trim();
   }
-  return parseSubtitleResults(text, "OpenAI", lang);
+  return parseSubtitleResults(text, "OpenAI", lang, items);
 }
 
 
@@ -1190,7 +1118,7 @@ async function translateSubtitleCuesCustom(cues, settings){
   if(!provider) throw new Error("Custom API انتخاب شده، اما سرویسی تنظیم نشده است");
   if(!provider.apiKey) throw new Error(`برای ${provider.name||'Custom API'} کلید API ذخیره نشده است`);
   if(!provider.model) throw new Error(`برای ${provider.name||'Custom API'} شناسه مدل ترجمه وارد نشده است`);
-  const {prompt}=subtitleItemsAndPrompt(cues, settings);
+  const {prompt, items, lang}=subtitleItemsAndPrompt(cues, settings);
   const base=normalizeCustomBaseUrl(provider.baseUrl);
   const url=/\/chat\/completions$/i.test(base)?base:`${base}/chat/completions`;
   const res=await fetch(url,{method:"POST",headers:{"Authorization":`Bearer ${provider.apiKey}`,"Content-Type":"application/json","X-Title":"Subify YouTube Persian subtitles"},body:JSON.stringify({model:provider.model,messages:[{role:"user",content:prompt}],temperature:0.15,max_tokens:4096})});
@@ -1198,7 +1126,7 @@ async function translateSubtitleCuesCustom(cues, settings){
   if(!res.ok) throw new Error(`Custom API ${res.status}: ${raw.slice(0,260)}`);
   let data; try{data=JSON.parse(raw)}catch(_){throw new Error("Custom API پاسخ JSON معتبر نداد")}
   const text=data.choices?.[0]?.message?.content||data.output_text||"";
-  return parseSubtitleResults(String(text),provider.name||"Custom API");
+  return parseSubtitleResults(String(text),provider.name||"Custom API",lang,items);
 }
 async function listCustomModels(provider){
   if(!provider?.apiKey) throw new Error("کلید Custom API وارد نشده است");
@@ -1244,7 +1172,7 @@ async function withTransientRetry(fn, delaysMs = [1200, 2800]) {
 }
 
 async function translateSubtitleCues(cues, settings, model) {
-  const provider = settings.subtitleProvider || "auto";
+  const provider = settings.subtitleProvider === "subify" ? "auto" : (settings.subtitleProvider || "auto");
   if (provider === "openrouter") return translateSubtitleCuesOpenRouter(cues, settings);
   if (provider === "openai") return translateSubtitleCuesOpenAI(cues, settings);
   if (provider === "custom") return translateSubtitleCuesCustom(cues, settings);
@@ -1568,6 +1496,12 @@ function noteSubtitleProvider(provider, from = "") {
 // ---------- Subify cloud translation cache ----------
 const SUBIFY_CLOUD_CACHE_URL = "https://sub-ify.site/subify-api/cache";
 
+// r14-fix3: the free public cache is for the user's own key only. Subify Server lines are billed from the shared cache instead.
+async function subifyPublicCacheAllowed() {
+  const s = await getSettings();
+  return subifyHasTextKey(s, s.subtitleProvider || "auto");
+}
+
 async function subifyCloudCacheGet(payload) {
   const res = await fetch(`${SUBIFY_CLOUD_CACHE_URL}/get`, {
     method: "POST",
@@ -1709,6 +1643,9 @@ if (typeof importScripts === "function") importScripts("page-translate-core.js")
 if (typeof importScripts === "function") importScripts("trial-core.js");
 // Provider routing for the AI pages (ai-route-core.js). Chrome loads it here; Firefox lists it in manifest.json.
 if (typeof importScripts === "function") importScripts("ai-route-core.js");
+// Member-endpoint bridge (subify-api-core.js). Chrome loads it here; Firefox lists it in manifest.json.
+if (typeof importScripts === "function") importScripts("subify-api-core.js");
+const subifyApi = globalThis.SubifyApiCore.create();
 const PAGE_CORE = globalThis.SubifyPageTranslateCore;
 let pageCacheWriteChain = Promise.resolve();
 async function pageCacheRead() {
@@ -1755,7 +1692,7 @@ async function translatePageTexts(texts, targetLanguage) {
 
 // One provider call for the lines that are not cached yet.
 async function translatePageCuesFresh(cues, pageSettings) {
-  const provider = pageSettings.subtitleProvider || "auto";
+  const provider = pageSettings.subtitleProvider === "subify" ? "auto" : (pageSettings.subtitleProvider || "auto");
   let results;
   if (provider === "openrouter") results = await translateSubtitleCuesOpenRouter(cues, pageSettings);
   else if (provider === "openai") results = await translateSubtitleCuesOpenAI(cues, pageSettings);
@@ -1792,32 +1729,41 @@ browser.tabs.onUpdated.addListener(async (tabId, info, tab) => {
 
 // ---------- Subify account gate (login required) ----------
 // The session cookie lives on sub-ify.site (HttpOnly). The extension never sees a token: it only asks
-// https://sub-ify.site/auth/me.php "who is signed in?" and the answer is cached for one minute.
+// https://sub-ify.site/auth/me.php "who is signed in?" is asked through the bridge (subify-api-core.js), kept for one minute.
 const SUBIFY_SITE = "https://sub-ify.site";
 const SUBIFY_GATED = new Set(["subify-translate", "subify-page-translate", "subify-vocab-enrich", "subify-vocab-batch", "subify-grammar", "subify-vocab-grammar", "popup-start", "popup-test-live", "subify-cloud-cache-get", "subify-cloud-cache-put", "subify-cache-status", "subify-set-dubbing", "subify-set-dubbing-audio"]);
-let subifyAuthCache = { at: 0, value: null };
 
 async function subifyAuthState(force) {
   const now = Date.now();
-  if (!force && subifyAuthCache.value && now - subifyAuthCache.at < 60000) return subifyAuthCache.value;
   let value;
   try {
-    const res = await fetch(SUBIFY_SITE + "/auth/me.php", { credentials: "include", cache: "no-store" });
-    const j = await res.json();
-    if (!j || !j.ok) throw new Error("bad response");
-    value = { ok: true, required: !!j.required, open: !!j.registration, providers: j.providers || {}, user: j.user || null, fetchedAt: now };
-    try { await browser.storage.local.set({ subifyLoginRequired: value.required }); } catch (e) {}
+    const r = await subifyApi.me(!!force);
+    const j = r.json;
+    if (!r.ok || !j || !j.ok) throw new Error("bad response");
+    value = { ok: true, required: !!j.required, subscription: !!j.subscription, canary: !!(j.user && j.user.canary), open: !!j.registration, providers: j.providers || {}, user: j.user || null, fetchedAt: now };
+    try { await browser.storage.local.set({ subifyLoginRequired: value.required, subifySubscriptionOn: value.subscription }); } catch (e) {}
   } catch (e) {
     // server unreachable: stay open unless login was required the last time we could check (fail closed)
-    let was = false;
-    try { was = !!(await browser.storage.local.get("subifyLoginRequired")).subifyLoginRequired; } catch (e2) {}
-    value = { ok: false, offline: true, required: was, open: was, providers: {}, user: null, fetchedAt: now, error: String(e && e.message || e) };
+    let was = false, wasSub = false;
+    try { const st = await browser.storage.local.get(["subifyLoginRequired", "subifySubscriptionOn"]); was = !!st.subifyLoginRequired; wasSub = !!st.subifySubscriptionOn; } catch (e2) {}
+    value = { ok: false, offline: true, required: was, subscription: wasSub, canary: false, open: was, providers: {}, user: null, fetchedAt: now, error: String(e && e.message || e) };
   }
-  subifyAuthCache = { at: now, value };
   return value;
 }
 
 const SUBIFY_AUTH_ERROR = "ده ویدیوی اول بدون ورود رایگان بود؛ برای ادامه وارد شو (روی آیکون افزونه بزن ← ورود) · The first 10 videos were free without sign-in; sign in to continue (click the extension icon → Sign in)";
+
+// Subify Server with the subscription switch on: sign-in is asked for and guests get no trial. Own-key use never sees this.
+const SUBIFY_SIGNIN_TEXT = "برای استفاده از Subify Server با Google یا GitHub وارد شو · Sign in with Google or GitHub to use Subify Server";
+// The engine a gated request will use: "own" when the user has a key for it (never gated), else "subify" (Subify Server).
+async function subifyEngineOf(type) {
+  // Dubbing and the live test run only on the user's own Gemini key.
+  if (type === "popup-test-live" || type === "subify-set-dubbing" || type === "subify-set-dubbing-audio") return "own";
+  const settings = await getSettings();
+  if (type === "subify-translate" || type === "popup-start") return subifyHasTextKey(settings, settings.subtitleProvider || "auto") ? "own" : "subify";
+  const hasOwnKey = !!(settings.apiKey || settings.openRouterKey || settings.openaiKey || (getCustomProvider(settings) || {}).apiKey);
+  return hasOwnKey ? "own" : "subify";
+}
 
 // ---------- no-sign-in trial: the first 10 sources work without an account ----------
 // Only applies when sub-ify.site requires login. A source counts once, on its first gated action:
@@ -1866,9 +1812,14 @@ async function subifyTrialStatus(videoId) {
 // A request tied to a video counts toward the no-sign-in trial. An AI request with no video never counts.
 async function subifyAuthBlock(type, msg, sender) {
   if (!SUBIFY_GATED.has(type)) return "";
+  // Dubbing text uses only the user's own Gemini key (checked in the handler): no account check and no Subify path.
+  if (type === "subify-translate" && msg && msg.dubbing) return "";
   const a = await subifyAuthState(false);
+  const access = SubifyTrial.subifyAccessDecision({ switchOn: a.subscription, canary: a.canary, signedIn: !!a.user, engine: await subifyEngineOf(type) });
+  if (access === "own_key_free") return "";
+  if (access === "needs_sign_in") return SUBIFY_SIGNIN_TEXT;
+  // allow: with the switch off, the login wall and the guest trial work exactly as before
   if (!(a.required && !a.user)) return "";
-  const videoId = await subifyTrialVideoId(msg, sender);
   if (await subifyTrialTake(await subifyTrialKeyOf(type, msg, sender))) return "";
   return SUBIFY_AUTH_ERROR;
 }
@@ -1877,6 +1828,9 @@ async function subifyAuthBlock(type, msg, sender) {
 // Used only when the user has no usable text-AI key for the chosen provider. sub-ify.site/auth/ai.php identifies the
 // signed-in member by the session cookie and counts each video (source yt:<id>) once per month. No key is in the extension.
 const SUBIFY_FREE_AI_TEXT = {
+  no_credits: "اعتبار Subify تمام شده؛ کلید AI خودت را ذخیره کن، یا بعداً کیف پول را شارژ کن",
+  trial_budget: "بودجه‌ی امروز ترجمه‌ی آزمایشی تمام شده؛ فردا دوباره امتحان کن یا کلید AI خودت را ذخیره کن",
+  trial_unavailable: "ترجمه‌ی آزمایشی الان در دسترس نیست؛ کمی بعد دوباره امتحان کن",
   auth: "برای ترجمه‌ی رایگان Subify وارد حساب شو، یا کلید AI خودت را ذخیره کن",
   disabled: "ترجمه‌ی رایگان Subify فعلاً خاموش است؛ کلید AI خودت را ذخیره کن",
   quota: "سهمیه‌ی رایگان ماهانه‌ات تمام شده؛ کلید AI خودت را ذخیره کن، دوستانت را دعوت کن یا اشتراک بگیر",
@@ -1884,10 +1838,14 @@ const SUBIFY_FREE_AI_TEXT = {
   network: "اتصال به سرور Subify برقرار نشد؛ اینترنت را بررسی کن و دوباره امتحان کن",
   upstream: "سرویس هوش مصنوعی Subify پاسخ نداد؛ چند دقیقه دیگر دوباره امتحان کن",
   empty: "هوش مصنوعی جواب خالی داد؛ در پنل مدیریت «تست اتصال» را بزن و مدل دیگری انتخاب کن",
-  failed: "ترجمه‌ی رایگان انجام نشد؛ دوباره امتحان کن"
+  failed: "ترجمه‌ی رایگان انجام نشد؛ دوباره امتحان کن",
+  balance_empty: "اعتبار Subify تمام شد و ترجمه‌ی بقیه‌ی زیرنویس متوقف شد. کیف پول را شارژ کن، سپس دوباره امتحان کن",
+  model_not_allowed: "این مدل برای حساب تو فعال نیست؛ در تنظیمات مدل دیگری انتخاب کن"
 };
 const SUBIFY_FREE_AI_STATUS_CODES = { 401: "auth", 402: "quota", 403: "disabled", 429: "capacity", 502: "upstream", 503: "capacity", 504: "upstream" };
 const SUBIFY_FREE_AI_HOLD_MS = 60000;
+// Dubbing needs the user's own Gemini key. Without it the dub refuses; it never calls Subify Server, the wallet or auth/ai.php.
+const DUB_KEY_TEXT = "برای دوبله کلید Gemini شخصی لازم است";
 let subifyFreeAiHold = { until: 0, code: "" };
 const subifyFreeAiFinishSeen = new Set();
 
@@ -1902,6 +1860,7 @@ function subifyFreeAiError(code) {
 
 // True when the chosen provider has a saved key this translation can use (the same rules as the branches in subify-translate).
 function subifyHasTextKey(settings, provider) {
+  if (provider === "subify") return false; // Subify Server chosen: never the user's key
   if (provider === "openrouter") return !!settings.openRouterKey;
   if (provider === "openai") return !!settings.openaiKey;
   if (provider === "custom") return !!(getCustomProvider(settings) || {}).apiKey;
@@ -1910,7 +1869,7 @@ function subifyHasTextKey(settings, provider) {
 }
 
 // One subtitle batch through the owner's key on the server. Throws an Error whose .code is a key of SUBIFY_FREE_AI_TEXT.
-async function subifyFreeAiTranslate(cues, settings, videoId) {
+async function subifyFreeAiTranslate(cues, settings, videoId, model = "", cacheCtx = null) {
   if (!videoId) throw subifyFreeAiError("failed");
   if (Date.now() < subifyFreeAiHold.until) throw subifyFreeAiError(subifyFreeAiHold.code);
   // A refusal or a lost connection pauses this fallback for a minute, so the overlay's one-second pump does not call the server every time.
@@ -1921,7 +1880,7 @@ async function subifyFreeAiTranslate(cues, settings, videoId) {
     subifyFreeAiHold = { until: Date.now() + ms, code: c };
     return subifyFreeAiError(c);
   };
-  const { prompt, lang } = subtitleItemsAndPrompt(cues, settings);
+  const { prompt, lang, items } = subtitleItemsAndPrompt(cues, settings);
   let res;
   try {
     res = await fetch(SUBIFY_SITE + "/auth/ai.php?action=chat", {
@@ -1932,6 +1891,9 @@ async function subifyFreeAiTranslate(cues, settings, videoId) {
         install: await telemetryInstallId(),
         source: "yt:" + videoId,
         kind: "translate",
+        target_lang: LANGUAGE_NAMES[targetLangCode(settings)] || "",
+        model: String(model || ""),
+        ...(cacheCtx ? { cache: cacheCtx } : {}),
         messages: [{ role: "user", content: prompt }],
         temperature: 0.2,
         max_tokens: 4096
@@ -1946,11 +1908,136 @@ async function subifyFreeAiTranslate(cues, settings, videoId) {
     await log(`Free Subify AI: HTTP ${res.status} ${data.error || ""}`.trim(), "warn");
     throw refuse(data.error || SUBIFY_FREE_AI_STATUS_CODES[res.status] || "failed");
   }
+  await subifyRecordJob(data, model);
   let results = [];
-  try { results = parseSubtitleResults(String(data.choices?.[0]?.message?.content || ""), "Subify", lang); } catch (e) { results = []; }
+  try { results = parseSubtitleResults(String(data.choices?.[0]?.message?.content || ""), "Subify", lang, items); } catch (e) { results = []; }
   // An empty or unreadable answer is said on the page, not left as a line stuck on "در حال ترجمه".
   if (!Array.isArray(results) || !results.length) { await log("Free Subify AI: reply had no subtitle lines", "warn"); throw refuse("empty"); }
   return results;
+}
+
+// The billing the server returns for one call, when it returns any: reserve_micro and settled_micro (micro-toman). The popup
+// shows the last one. Nothing is computed here; a server that does not send it leaves the popup's "not returned" label.
+async function subifyRecordJob(data, model) {
+  const b = data && data.billing && typeof data.billing === "object" ? data.billing : null;
+  if (!b) return;
+  const num = (v) => (typeof v === "number" && isFinite(v) ? v : null);
+  const job = { reserve_micro: num(b.reserve_micro), settled_micro: num(b.settled_micro), model: String(model || ""), at: Date.now() };
+  if (job.reserve_micro === null && job.settled_micro === null) return;
+  try { await browser.storage.local.set({ subify_last_job: job }); } catch (e) { /* no storage: the popup shows "not returned" */ }
+}
+
+// Subify Server subtitles in batches sized to the balance (ai-route-core.js planNextBatch, ported from sfy-batch.js). The
+// batches go out one after another. While the balance is low it is read again after each batch, so a shrinking balance
+// shrinks the next batch. A balance that runs out stops the run and the cues already translated are kept. Nothing here
+// reserves or charges: the server does both.
+async function subifyStateRead() {
+  try {
+    const r = await subifyApi.call({ path: "/auth/ai.php?action=state" });
+    return r && r.ok && r.json && r.json.ok !== false ? r.json : null;
+  } catch (e) { return null; }
+}
+// r14-fix3: the Subify Server batches. With the balance known and enough for the whole run: 80-line batches, three at a
+// time, each finished batch reported as it arrives (opts.onBatch). With the balance low: one batch after another, sized to
+// the balance (as before). A batch is served from the shared cache where it can be (billed at the standard rate); only the
+// lines it lacks go to the AI. Capacity and upstream trouble retry the batch with a longer wait each time.
+const SUBIFY_POOL_LANES = 3;
+const SUBIFY_RETRY_MAX = 3;
+const SUBIFY_RETRY_CODES = ["capacity", "upstream"];
+async function subifyCacheLookup(batch, settings, videoId, model, src) {
+  try {
+    const r = await subifyApi.call({
+      path: "/auth/ai.php?action=sub_cache_get",
+      method: "POST",
+      body: { video_id: String(videoId || ""), src, tgt: targetLangCode(settings), model, lines: batch.map(c => cleanSubtitleText(c.text)) }
+    });
+    if (!r || !r.ok || !r.json || r.json.ok === false) return new Map();
+    return new Map(Object.entries(r.json.hits || {})
+      .map(([k, v]) => [Number(k), String(v || "")])
+      .filter(([k, v]) => Number.isInteger(k) && v));
+  } catch (e) { return new Map(); }
+}
+// The merged lines back to their own cues: each cue gets its share of the translation, with its own timing.
+function expandMergedResults(results, groupsById) {
+  const out = [];
+  for (const r of Array.isArray(results) ? results : []) {
+    const g = groupsById.get(String(r && r.id));
+    if (!g) { out.push(r); continue; }
+    const parts = SubifyAiRoute.splitTranslation(String(r.fa || r.translation || r.text || ""), g.members);
+    g.members.forEach((m, i) => {
+      const t = parts[i] || "";
+      if (t) out.push({ id: m.id, start: m.start, end: m.end, text: t, fa: t, translation: t });
+    });
+  }
+  return out;
+}
+async function subifyManagedBatches(cues, settings, videoId, opts = {}) {
+  const st0 = await subifyStateRead();
+  const row = SubifyAiRoute.pickRow(st0, settings.subifyModel || "");
+  const model = row ? row.model : (settings.subifyModel || "");
+  const src = String(opts.sourceLang || "").toLowerCase() || "auto";
+  let avail = row && SubifyAiRoute.tomanPrices(row) ? SubifyAiRoute.balanceMicro(st0) : null;
+  const costOf = (batch) => {
+    const t = SubifyAiRoute.estimateTokens(new TextEncoder().encode(subtitleItemsAndPrompt(batch, settings).prompt).length);
+    return SubifyAiRoute.jobMicro(row, t.input, t.output);
+  };
+  const onBatch = typeof opts.onBatch === "function" ? opts.onBatch : () => {};
+  // One batch: its cached lines, then the AI for the lines it lacks.
+  const translateBatch = async (batch) => {
+    const hits = await subifyCacheLookup(batch, settings, videoId, model, src);
+    const missing = batch.filter((_, i) => !hits.has(i));
+    let fresh = [];
+    if (missing.length) {
+      const cacheCtx = { video_id: String(videoId || ""), src, tgt: targetLangCode(settings), model, lines: missing.map(c => cleanSubtitleText(c.text)) };
+      fresh = await subifyFreeAiTranslate(missing, settings, videoId, model, cacheCtx);
+    }
+    const cached = batch
+      .map((c, i) => hits.has(i) ? { id: String(c.id), start: c.start, end: c.end, text: hits.get(i), fa: hits.get(i), translation: hits.get(i) } : null)
+      .filter(Boolean);
+    const got = cached.concat(fresh);
+    if (got.length) onBatch(got);
+    return got;
+  };
+  const runBatch = async (batch) => {
+    for (let attempt = 0; ; attempt++) {
+      try { return await translateBatch(batch); }
+      catch (e) {
+        if (!SUBIFY_RETRY_CODES.includes(e.code) || attempt >= SUBIFY_RETRY_MAX) throw e;
+        await new Promise(r => setTimeout(r, 800 * (2 ** attempt)));
+      }
+    }
+  };
+  const haltOf = (e) => (e.code === "no_credits" ? "balance_empty" : subifyFreeAiCode(e.code));
+  const results = [];
+  // The whole run fits the balance (or the balance is unknown and the server decides per request): the pool.
+  const all = SubifyAiRoute.groupCues(cues, Infinity, 80);
+  const total = avail === null ? 0 : all.reduce((n, b) => n + costOf(b), 0);
+  // The pool only when the balance is not low (low balance keeps the shrinking batches below).
+  const notLow = avail === null || avail >= SubifyAiRoute.LOW_TOMAN * SubifyAiRoute.MICRO_PER_TOMAN;
+  if (avail === null || (notLow && total <= avail * 0.9)) {
+    let next = 0;
+    let halt = "";
+    const lane = async () => {
+      while (!halt && next < all.length) {
+        const batch = all[next++];
+        try { results.push(...await runBatch(batch)); }
+        catch (e) { halt = haltOf(e); }
+      }
+    };
+    await Promise.all(Array.from({ length: Math.min(SUBIFY_POOL_LANES, all.length) }, lane));
+    return { results, halt };
+  }
+  // The balance is low: one batch after another, each sized to what the balance can pay for.
+  let remaining = cues.slice();
+  while (remaining.length) {
+    const plan = SubifyAiRoute.planNextBatch(remaining, avail, costOf);
+    if (plan.halt) return { results, halt: "balance_empty" };
+    try { results.push(...await runBatch(plan.batch)); }
+    catch (e) { return { results, halt: haltOf(e) }; }
+    remaining = remaining.slice(plan.batch.length);
+    if (plan.low && remaining.length) { const next = SubifyAiRoute.balanceMicro(await subifyStateRead()); if (next !== null) avail = next; }
+  }
+  return { results, halt: "" };
 }
 
 // Per browser session (storage.session): the videos the owner's key translated part of ("served"), and the ones reported finished ("done").
@@ -1989,7 +2076,7 @@ function scheduleVocabSync() {
 
 async function subifyLogout() {
   try { await fetch(SUBIFY_SITE + "/auth/logout.php", { method: "POST", credentials: "include" }); } catch (e) {}
-  subifyAuthCache = { at: 0, value: null };
+  subifyApi.forgetMe();
 }
 // ---------- sign-in result: a failed sign-in returns to sub-ify.site with ?sfy_auth=<code>; keep the code for the gate ----------
 browser.tabs.onUpdated.addListener((tabId, info, tab) => {
@@ -2039,13 +2126,11 @@ async function subifyVocabSync() {
       .slice(0, 400).map(r => ({ k: r.key, updatedAt: Number(r.value.updatedAt) || startedAt, data: r.value }));
     const deleted = Object.entries(tombs).filter(([, at]) => Number(at) >= pushedAt - 1000)
       .slice(0, 100).map(([k, at]) => ({ k, at: Number(at) }));
-    const res = await fetch(SUBIFY_SITE + "/auth/vocab.php", {
-      method: "POST", credentials: "include", headers: { "Content-Type": "text/plain;charset=UTF-8" },
-      body: JSON.stringify({ cursor, cards, deleted })
-    });
-    if (res.status === 401) return { ok: false, error: "auth" };
-    const data = await res.json().catch(() => null);
-    if (!res.ok || !data || !data.ok) return { ok: false, error: "server" };
+    // Through the bridge (subify-api-core.js), like every member call. Same body and merge rules as before.
+    const r = await subifyApi.call({ path: "/auth/vocab.php", method: "POST", body: { cursor, cards, deleted } });
+    if (r.status === 401) return { ok: false, error: "auth" };
+    const data = r.json;
+    if (!r.ok || !data || !data.ok) return { ok: false, error: "server" };
     let pulled = 0;
     for (const c of data.cards || []) {
       if (!c.data || typeof c.data !== "object") continue;
@@ -2210,27 +2295,27 @@ async function subifyProviderText(name, settings, req) {
 }
 // Practice calls with no own key (chat, writer, roleplay, shadow): the owner's key on the server, one daily cap per feature.
 // Text only, so audio never comes here. The server's error codes become Persian messages in ai-route-core.js (freeFailure).
+// Practice calls on Subify Server (chat, roleplay, shadow, the word drill): one request through the bridge (subify-api-core.js).
+// Part 2 comes first: with the subscription switch on and no sign-in, the call is refused with the sign-in text and nothing is sent.
+// Own-key engines never reach this function.
+const PRACTICE_TIMEOUT_MS = 60000;
 async function subifyPracticeFree(req) {
   const feature = SubifyAiRoute.FREE_FEATURES.includes(req.feature) ? req.feature : "";
+  const a = await subifyAuthState(false);
+  if (SubifyTrial.subifyAccessDecision({ switchOn: a.subscription, canary: a.canary, signedIn: !!a.user, engine: "subify" }) === "needs_sign_in") {
+    return { ok: false, code: "auth", error: SUBIFY_SIGNIN_TEXT, authRequired: true };
+  }
   const turns = (Array.isArray(req.messages) ? req.messages : []).map((m) => ({ role: m.role, content: String(m.content) }));
   const messages = (req.system ? [{ role: "system", content: String(req.system) }] : []).concat(turns);
   const temperature = Math.min(Math.max(Number(req.temperature) || 0.4, 0), 1);
   const maxTokens = Math.min(Math.max(Number(req.maxTokens) || 2048, 256), 8192);
-  let res;
-  try {
-    res = await fetch(SUBIFY_SITE + "/auth/ai.php?action=chat", {
-      method: "POST",
-      credentials: "include",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ install: await telemetryInstallId(), feature, source: "", kind: String(req.kind || ""), messages, temperature, max_tokens: maxTokens })
-    });
-  } catch (e) {
-    return { ok: false, code: "network", error: SubifyAiRoute.FREE_TEXT.network };
-  }
-  const data = await res.json().catch(() => ({}));
-  if (!res.ok) return SubifyAiRoute.freeFailure(res.status, data, feature);
-  const choice = data.choices?.[0] || {};
-  const text = String(choice.message?.content ?? "");
+  const body = { install: await telemetryInstallId(), feature, source: "", kind: String(req.kind || ""), messages, temperature, max_tokens: maxTokens };
+  body.model = String(req.model || "").slice(0, 120);
+  const r = await subifyApi.call({ path: "/auth/ai.php?action=chat", method: "POST", body, timeoutMs: PRACTICE_TIMEOUT_MS });
+  if (r.status === 0) return { ok: false, code: "network", error: SubifyAiRoute.FREE_TEXT.network };
+  if (!r.ok) return SubifyAiRoute.freeFailure(r.status, r.json, feature);
+  const choice = (r.json && r.json.choices && r.json.choices[0]) || {};
+  const text = String(choice.message && choice.message.content != null ? choice.message.content : "");
   if (!text.trim()) return { ok: false, code: "empty", error: SubifyAiRoute.FREE_TEXT.failed };
   return { ok: true, text, model: "subify", cut: choice.finish_reason === "length" };
 }
@@ -2243,7 +2328,8 @@ async function subifyAiRoute(req) {
     openrouter: (r) => subifyProviderText("openrouter", settings, r),
     openai: (r) => subifyProviderText("openai", settings, r),
     custom: (r) => subifyProviderText("custom", settings, r),
-    free: (r) => subifyPracticeFree(r)
+    subify: (r) => subifyPracticeFree({ ...r, model: settings.subifyModel || "" }),
+    free: (r) => subifyPracticeFree({ ...r, model: settings.subifyModel || "" })
   });
 }
 
@@ -2264,9 +2350,12 @@ browser.runtime.onMessage.addListener((msg, sender, sendResponse) => {
       case "subify-tickets-get": { sendResponse(await subifyTicketCall("GET", null, msg.id)); break; }
       case "subify-tickets-create": { sendResponse(await subifyTicketCall("POST", { action: "create", subject: String(msg.subject || ""), category: String(msg.category || "other"), body: String(msg.body || "") })); break; }
       case "subify-tickets-reply": { sendResponse(await subifyTicketCall("POST", { action: "reply", id: Number(msg.id) || 0, body: String(msg.body || "") })); break; }
+      case "subify-api": { sendResponse(await subifyApi.call(msg)); break; }
       case "subify-auth-status": {
         const st = await subifyAuthState(!!msg.force);
-        sendResponse({ ...st, trial: await subifyTrialStatus(msg.videoId ? String(msg.videoId) : "") });
+        // Switch on: the no-sign-in trial is closed. Sign-in is asked per request, not with a wall.
+        const trial = st.subscription ? { max: SUBIFY_TRIAL_VIDEOS, used: 0, allowed: false } : await subifyTrialStatus(msg.videoId ? String(msg.videoId) : "");
+        sendResponse({ ...st, trial });
         break;
       }
       case "subify-auth-logout": {
@@ -2276,6 +2365,7 @@ browser.runtime.onMessage.addListener((msg, sender, sendResponse) => {
       }
       case "subify-cloud-cache-get": {
         try {
+          if (!(await subifyPublicCacheAllowed())) { sendResponse({ ok: true, rows: [], skipped: "subify_server" }); break; }
           const result = await subifyCloudCacheGet(msg.payload || {});
           sendResponse(result);
         } catch (e) {
@@ -2309,6 +2399,7 @@ browser.runtime.onMessage.addListener((msg, sender, sendResponse) => {
       }
       case "subify-cloud-cache-put": {
         try {
+          if (!(await subifyPublicCacheAllowed())) { sendResponse({ ok: true, skipped: "subify_server" }); break; }
           const result = await subifyCloudCachePut(msg.payload || {});
           sendResponse(result);
         } catch (e) {
@@ -2333,8 +2424,24 @@ browser.runtime.onMessage.addListener((msg, sender, sendResponse) => {
       case "subify-translate": {
         try {
           const settings = await getSettings();
-          const cues = Array.isArray(msg.cues) ? msg.cues.slice(0, 24) : [];
+          // r14-fix3: a managed run takes up to 120 lines (merged, batched and run three at a time); the other paths keep 24.
+          const managedRun = !msg.dubbing && !subifyHasTextKey(settings, settings.subtitleProvider || "auto");
+          const cues = Array.isArray(msg.cues) ? msg.cues.slice(0, managedRun ? 120 : 24) : [];
           if (!cues.length) { sendResponse({ ok: true, results: [] }); break; }
+          if (msg.dubbing) {
+            // Dubbing text: the user's own Gemini key only. Without it the dub refuses, with no call to Subify Server or the wallet.
+            if (!settings.apiKey) { sendResponse({ ok: false, dubbing: true, code: "dub_key_required", error: DUB_KEY_TEXT }); break; }
+            try {
+              const chosen = settings.geminiSubtitleModel || settings.sttModel;
+              const dubResults = await withModelFallback({ ...settings, sttModel: chosen }, "sttModel", [chosen, ...STT_FALLBACKS],
+                (m) => translateSubtitleCues(cues, { ...settings, subtitleProvider: "gemini" }, m));
+              sendResponse({ ok: true, provider: "gemini", results: Array.isArray(dubResults) ? dubResults : [] });
+            } catch (e) {
+              await log("Dubbing text not translated: " + (e.message || e), "warn");
+              sendResponse({ ok: false, dubbing: true, error: String(e.message || e) });
+            }
+            break;
+          }
           const provider = settings.subtitleProvider || "auto";
           let fallbackFrom = "";
           const recordUsage = (usedProvider, results) => {
@@ -2349,11 +2456,28 @@ browser.runtime.onMessage.addListener((msg, sender, sendResponse) => {
           if (!subifyHasTextKey(settings, provider)) {
             const freeVideoId = String(msg.videoId || (await subifyTrialVideoId(msg, sender)) || "");
             try {
-              const results = await subifyFreeAiTranslate(cues, settings, freeVideoId);
+              // r14-fix3: the lines are merged first. Results go back to the original cues, and each finished batch goes
+              // to this tab at once (subify-batch-result). Subify Server lines are not put in the free public cache.
+              const groups = SubifyAiRoute.mergeFragments(cues);
+              const groupsById = new Map(groups.map(g => [String(g.id), g]));
+              const tabId = sender && sender.tab ? sender.tab.id : null;
+              const run = await subifyManagedBatches(groups, settings, freeVideoId, {
+                sourceLang: String(msg.sourceLanguage || "").split(/[-_]/)[0],
+                onBatch: (merged) => {
+                  const expanded = expandMergedResults(merged, groupsById);
+                  if (tabId !== null && expanded.length) {
+                    browser.tabs.sendMessage(tabId, { type: "subify-batch-result", videoId: String(msg.videoId || freeVideoId || ""), results: expanded }).catch(() => {});
+                  }
+                }
+              });
+              const results = expandMergedResults(run.results, groupsById);
+              if (!results.length) throw subifyFreeAiError(run.halt || "empty");
               await subifyFreeAiMark("served", freeVideoId);
               await recordUsage("subify", results);
-              try { await syncSubtitleBatchToCloud({ videoId: msg.videoId, trackKey: msg.trackKey, targetLanguage: msg.targetLanguage, cues, results }); } catch (e) { await log("Cloud cache sync failed: " + (e.message || e), "warn"); }
-              sendResponse({ ok: true, provider: "subify", results });
+              // A run that stopped early keeps the cues it translated; the overlay stops its queue on balance_empty.
+              sendResponse(run.halt
+                ? { ok: true, provider: "subify", results, freeAi: true, code: run.halt, error: SUBIFY_FREE_AI_TEXT[run.halt] }
+                : { ok: true, provider: "subify", results });
             } catch (e) {
               const code = subifyFreeAiCode(e.code);
               await log("Free Subify AI batch not translated: " + code, "warn");
@@ -2588,15 +2712,24 @@ browser.runtime.onMessage.addListener((msg, sender, sendResponse) => {
           const words=(Array.isArray(msg.words)?msg.words:[]).map(w=>String(w==null?"":w).trim()).filter(Boolean).slice(0,L.WORD_BATCH_MAX);
           if(!words.length) throw new Error("No words");
           const lang=String(msg.lang||"auto").split("-")[0]||"auto";
-          const reply=parseJsonLoose(await callTextLLM(settings,L.wordListPrompt(words,lang),{fast:true,maxTokens:4000}));
-          const entries=L.matchWordEntries(words,reply);
+          // One call for the batch. Words the reply left out get one re-ask, for those words only; a failed re-ask keeps the first cards.
+          const first=parseJsonLoose(await callTextLLM(settings,L.wordListPrompt(words,lang),{fast:true,maxTokens:4000}));
+          const entries=L.matchWordEntries(words,first);
+          const omitted=L.omittedWords(words,first);
+          if(omitted.length){
+            try{
+              const again=parseJsonLoose(await callTextLLM(settings,L.wordListPrompt(omitted,lang),{fast:true,maxTokens:4000}));
+              const extra=L.matchWordEntries(omitted,again);
+              words.forEach((w,i)=>{ if(!entries[i]&&omitted.includes(w)) entries[i]=extra[omitted.indexOf(w)]||null; });
+            }catch(e){ /* a failed re-ask keeps the cards of the first reply */ }
+          }
           const cards=[], missing=[];
           for(let i=0;i<words.length;i++){
             const entry=entries[i];
             if(!entry){ missing.push(words[i]); continue; }
             const code=String(entry.langCode||"").trim().toLowerCase();
             const cardLang=/^[a-z]{2,3}$/.test(code)?code:lang;
-            const key=`${cardLang}:${words[i].toLowerCase()}`;
+            const key=L.wordKey(cardLang,words[i]);
             const old=await vocabGet(key);
             const card={...(old||{}),word:words[i],lang:cardLang,sentence:old?.sentence||"",translation:old?.translation||"",box:old?.box||1,nextDueAt:old?.nextDueAt||Date.now(),history:old?.history||[],...L.entryCardFields(entry),enriched:true,updatedAt:Date.now()};
             await vocabPut(key,card);
@@ -2636,6 +2769,7 @@ browser.runtime.onMessage.addListener((msg, sender, sendResponse) => {
         } catch (e) { sendResponse({ ok: false, error: String((e && e.message) || e) }); }
         break;
       }
+      case "subify-word-lookup": { try { const word=String(msg.word||"").trim(); if(!word) throw new Error("Word is empty"); const card=await fetchDictionaryFallback(word,String(msg.lang||"auto").split("-")[0],""); sendResponse({ok:true,card}); } catch(e){sendResponse({ok:false,error:String(e.message||e)});} break; }
       case "subify-vocab-list": { try { const rows=await vocabList(); sendResponse({ok:true,rows:rows.map(x=>x.value)}); } catch(e){sendResponse({ok:false,error:String(e.message||e)});} break; }
       case "subify-roleplay-save": {
         // Words from a roleplay lesson: new cards in the practice language, with the practice as their source. No AI call,
@@ -2898,7 +3032,7 @@ browser.runtime.onMessage.addListener((msg, sender, sendResponse) => {
     }
   })();
   // Keep the channel open for request/response messages only.
-  const requestTypes = new Set(["subify-tickets-reply", "subify-tickets-create", "subify-tickets-get", "subify-tickets-list", "subify-capture-shot", "subify-auth-status", "subify-auth-logout", "subify-auth-open", "subify-vocab-sync", 
+  const requestTypes = new Set(["subify-tickets-reply", "subify-tickets-create", "subify-tickets-get", "subify-tickets-list", "subify-capture-shot", "subify-auth-status", "subify-auth-logout", "subify-api", "subify-auth-open", "subify-vocab-sync", 
     "subify-stat", "subify-cloud-cache-get", "subify-cloud-cache-put", "subify-cloud-cache-correct",
     "subify-translate", "subify-free-video-done", "subify-clear-all-data", "subify-discover-models",
     "subify-test-key", "subify-test-openai", "subify-test-openrouter",
