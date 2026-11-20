@@ -182,7 +182,7 @@
 
 ### 📥 دانلود نسخهٔ ۲.۹.۴۱
 
-فایل‌های نصب دستی برای Chrome و Firefox در [صفحهٔ ریلیز](https://github.com/mobinbiback/Subify/releases#release-v2.9.41) هستند.
+فایل‌های نصب دستی برای Chrome و Firefox در [صفحهٔ ریلیز](https://github.com/mobinbiback/Subify/releases#release-v2.11.0) هستند.
 
 ---
 

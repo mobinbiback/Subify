@@ -1,3 +1,26 @@
+# v2.11.0، حالت یادگیری دوزبانه، لغت با یک کلیک و ترجمهٔ سریع‌تر
+
+### قابلیت‌های جدید
+- **نمایش دوزبانه**: زیرنویس اصلی و ترجمه را هم‌زمان روی ویدیو ببین. از پنل زیرنویس «نمایش دوزبانه» را روشن کن.
+- **کلمه را بزن، معنی را بخوان**: روی هر کلمهٔ زیرنویس اصلی که بزنی، ویدیو مکث می‌کند و معنی فوراً نشان داده می‌شود. با یک کلیک «افزودن به لغت‌های من» و بستن کارت ویدیو را ادامه می‌دهد.
+
+### بهبود
+- **ترجمهٔ سریع‌تر**: تا سه دستهٔ ۸۰ خطی هم‌زمان ترجمه می‌شوند و هر دسته به‌محض آماده شدن روی ویدیو می‌نشیند.
+- **ادغام قطعه‌های کپشن خودکار یوتیوب**: زیرنویس‌های کوتاه و پراکنده به جمله‌های کامل تبدیل می‌شوند.
+- **نقطهٔ پایانی فارسی**: نقطهٔ آخر جمله‌های فارسی در زیرنویس حذف می‌شود؛ ؟ ! و ... حفظ می‌شوند.
+- **کش مشترک با سرور**: جمله‌هایی که قبلاً ترجمه شده‌اند از کش سرور و با همان مدل انتخابی برمی‌گردند.
+- **تازه‌ها (What's New)**: صفحهٔ تازه‌ها بخش ۲.۱۱.۰ را دارد.
+
+### یادداشت
+- این نسخه تغییرات بعد از ۲.۹.۴۱ را هم شامل می‌شود.
+
+### English summary
+- **Bilingual view**: original and translated subtitles together on the video.
+- **Tap a word**: the video pauses, the meaning appears at once, and one click saves the word to My Vocabulary.
+- **Faster translation**: up to three parallel batches of 80 lines, each shown as soon as it is ready.
+- **YouTube auto-caption fragments** are merged into full sentences; Persian final full stops are removed (? ! and ... kept).
+- **Shared server cache** for repeated sentences, with the chosen model.
+
 # v2.9.41، یکدست‌سازی رابط و پنل تازه‌ها
 
 ### تغییرات

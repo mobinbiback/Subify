@@ -581,8 +581,8 @@ var browser = globalThis.browser || globalThis.chrome; // Chrome has no browser 
     return '<div style="display:flex;justify-content:space-between;gap:10px;font-size:12.5px;margin-top:8px"><span>' + inl(fa, en) + '</span><b dir="ltr">' + esc(used + ' / ' + limit) + '</b></div>' + aiMeter(used, limit);
   }
   function loadAiUsage(host) {
-    fetch(SITE + '/auth/ai.php?action=state', { credentials: 'include', cache: 'no-store' })
-      .then(function (r) { return r.json(); })
+    ask('subify-api', { path: '/auth/ai.php?action=state' })
+      .then(function (r) { return r && r.json; })
       .then(function (s) {
         if (!host || !s || s.ok === false) return;
         var now = Date.now(), n = new Date(now);
@@ -764,7 +764,8 @@ var browser = globalThis.browser || globalThis.chrome; // Chrome has no browser 
     lastUser = state.user || null;
     // no-sign-in trial: while the first 10 videos are free, the wall stays down for this video
     var trialOpen = !!(state.trial && state.trial.allowed);
-    if (state.required && !state.user && !trialOpen) {
+    // Switch on: no wall. A guest signs in when a Subify Server request asks for it; own-key use is never walled.
+    if (state.required && !state.user && !trialOpen && !state.subscription) {
       if (IS_OPTIONS) clearAccountHost();
       if (bar) { bar.remove(); bar = null; }
       var accBtn = document.getElementById('subify-account-btn'); if (accBtn) accBtn.remove();
@@ -779,6 +780,8 @@ var browser = globalThis.browser || globalThis.chrome; // Chrome has no browser 
       document.dispatchEvent(new CustomEvent('subify-auth-state', { detail: state }));
     } else if (state.user) {
       popupBar(state.user);
+    } else if (state.required && state.subscription && !state.user) {
+      popupAccountButton(gT('ورود لازم است برای Subify Server', 'Sign in for Subify Server'));
     } else if (state.required && state.trial) {
       popupGuestButton(state.trial);
     }
@@ -801,5 +804,5 @@ var browser = globalThis.browser || globalThis.chrome; // Chrome has no browser 
 
   document.addEventListener('visibilitychange', function () { if (!document.hidden) refresh(true); });
   window.addEventListener('focus', function () { refresh(true); });
-  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', function () { refresh(false); }); else refresh(false);
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', function () { refresh(true); }); else refresh(true);
 })();
