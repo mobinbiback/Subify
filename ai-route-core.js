@@ -61,6 +61,14 @@
     return base.filter((name) => hasKey(name, settings));
   }
 
+  // Upgrade rule: no engine chosen (or "auto") and no personal key saved means Subify Server.
+  function needsSubifyEngine(pd) {
+    const s = pd || {};
+    if (s.subtitleProvider && s.subtitleProvider !== 'auto') return false;
+    const hasKey = !!(s.apiKey || s.openRouterKey || s.openaiKey || (s.customProviders && s.customProviders.length));
+    return !hasKey;
+  }
+
   // Error text for a request that failed, by HTTP status (non-Gemini providers).
   function failureFor(status) {
     const s = Number(status) || 0;
@@ -435,7 +443,7 @@
 
   const api = {
     ORDER, FREE_FEATURES, FEATURE_FA, BODY_BUDGET, TEXT, FREE_TEXT,
-    hasKey, orderFor, failureFor, freeFailure, byteLength, messagesOf, fitTo, prepare, route,
+    hasKey, orderFor, needsSubifyEngine, failureFor, freeFailure, byteLength, messagesOf, fitTo, prepare, route,
     MICRO_PER_TOMAN, LOW_TOMAN, SAMPLE_LINES, SAMPLE_CHARS, FORMULA_FA,
     formatToman, numOrDefault: numOr, tomanPrices, jobToman, jobMicro, estimateTokens, minuteToman, priceLabel, balanceMicro, pickRow,
     engineView, groupCues, planNextBatch, mergeFragments, splitTranslation,

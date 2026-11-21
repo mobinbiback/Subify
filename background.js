@@ -36,7 +36,7 @@ const DEFAULT_SETTINGS = {
   apiKey: "",
   openRouterKey: "",
   openaiKey: "",
-  subtitleProvider: "auto", // "auto" prefers OpenRouter, then OpenAI, then Gemini when keys exist
+  subtitleProvider: "subify", // Subify Server by default; "auto" tries the saved keys (OpenRouter, OpenAI, Gemini, Custom)
   targetLanguage: "fa",     // subtitle + dubbing output language — see LANGUAGE_NAMES below
   openRouterModel: "openrouter/free",
   openaiModel: "gpt-5.6-luna",
@@ -373,6 +373,11 @@ async function log(msg, level = "info") {
 async function getSettings() {
   const { pd_settings, subify_settings } = await browser.storage.local.get(["pd_settings", "subify_settings"]);
   const s = { ...DEFAULT_SETTINGS, ...(pd_settings || {}) };
+  // Upgrade: a user with no engine chosen and no personal key moves to Subify Server once (the stored value is written).
+  if (pd_settings && SubifyAiRoute.needsSubifyEngine(pd_settings)) {
+    s.subtitleProvider = "subify";
+    try { await browser.storage.local.set({ pd_settings: { ...pd_settings, subtitleProvider: "subify" } }); } catch (e) { /* kept for this run */ }
+  }
   // targetLanguage is edited from the popup's language selectors and the
   // in-player panel, both of which write to subify_settings (the subtitle
   // style/behavior bucket), not pd_settings (the API-key/model bucket this
@@ -1692,6 +1697,11 @@ async function translatePageTexts(texts, targetLanguage) {
 
 // One provider call for the lines that are not cached yet.
 async function translatePageCuesFresh(cues, pageSettings) {
+  // No usable own key: Subify Server (the wallet) translates the page lines, the same as subtitles.
+  if (!subifyHasTextKey(pageSettings, pageSettings.subtitleProvider || "auto")) {
+    try { return await subifyFreeAiTranslate(cues, pageSettings, "", "", null, true); }
+    catch (e) { throw new Error(SUBIFY_FREE_AI_TEXT[subifyFreeAiCode(e.code)] || SUBIFY_FREE_AI_TEXT.failed); }
+  }
   const provider = pageSettings.subtitleProvider === "subify" ? "auto" : (pageSettings.subtitleProvider || "auto");
   let results;
   if (provider === "openrouter") results = await translateSubtitleCuesOpenRouter(cues, pageSettings);
@@ -1832,8 +1842,8 @@ const SUBIFY_FREE_AI_TEXT = {
   trial_budget: "بودجه‌ی امروز ترجمه‌ی آزمایشی تمام شده؛ فردا دوباره امتحان کن یا کلید AI خودت را ذخیره کن",
   trial_unavailable: "ترجمه‌ی آزمایشی الان در دسترس نیست؛ کمی بعد دوباره امتحان کن",
   auth: "برای ترجمه‌ی رایگان Subify وارد حساب شو، یا کلید AI خودت را ذخیره کن",
-  disabled: "ترجمه‌ی رایگان Subify فعلاً خاموش است؛ کلید AI خودت را ذخیره کن",
-  quota: "سهمیه‌ی رایگان ماهانه‌ات تمام شده؛ کلید AI خودت را ذخیره کن، دوستانت را دعوت کن یا اشتراک بگیر",
+  disabled: "ترجمه با Subify Server فعلاً خاموش است؛ کلید AI خودت را ذخیره کن",
+  quota: "اعتبار کیف پول Subify تمام شده؛ کیف پول را شارژ کن، سپس دوباره امتحان کن",
   capacity: "ظرفیت ترجمه‌ی رایگان الان پر است؛ کمی بعد دوباره امتحان کن",
   network: "اتصال به سرور Subify برقرار نشد؛ اینترنت را بررسی کن و دوباره امتحان کن",
   upstream: "سرویس هوش مصنوعی Subify پاسخ نداد؛ چند دقیقه دیگر دوباره امتحان کن",
@@ -1869,8 +1879,9 @@ function subifyHasTextKey(settings, provider) {
 }
 
 // One subtitle batch through the owner's key on the server. Throws an Error whose .code is a key of SUBIFY_FREE_AI_TEXT.
-async function subifyFreeAiTranslate(cues, settings, videoId, model = "", cacheCtx = null) {
-  if (!videoId) throw subifyFreeAiError("failed");
+// page: a full-page translation (no video), so its request carries no source.
+async function subifyFreeAiTranslate(cues, settings, videoId, model = "", cacheCtx = null, page = false) {
+  if (!videoId && !page) throw subifyFreeAiError("failed");
   if (Date.now() < subifyFreeAiHold.until) throw subifyFreeAiError(subifyFreeAiHold.code);
   // A refusal or a lost connection pauses this fallback for a minute, so the overlay's one-second pump does not call the server every time.
   const refuse = (code) => {
@@ -1889,7 +1900,7 @@ async function subifyFreeAiTranslate(cues, settings, videoId, model = "", cacheC
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         install: await telemetryInstallId(),
-        source: "yt:" + videoId,
+        source: page ? "" : "yt:" + videoId,
         kind: "translate",
         target_lang: LANGUAGE_NAMES[targetLangCode(settings)] || "",
         model: String(model || ""),
