@@ -1,3 +1,15 @@
+# v2.11.1، Subify Server موتور پیش‌فرض
+
+### تغییرات
+- **Subify Server موتور پیش‌فرض است**: اگر کلید شخصی ذخیره نکرده باشی، ترجمه با Subify Server و اعتبار کیف پول انجام می‌شود. کاربرانی که قبلاً موتور «خودکار» داشتند و کلید نداشتند، خودکار به Subify Server منتقل می‌شوند.
+- **ترجمهٔ کل صفحه بدون کلید**: با Subify Server انجام می‌شود، مثل زیرنویس.
+- **پیام‌های اعتبار**: متن‌های «سهمیهٔ رایگان» به اعتبار کیف پول تغییر کرد. وضعیت Subify Server و موجودی کیف پول در تنظیمات کلیدها نشان داده می‌شود.
+
+### English summary
+- **Subify Server is the default engine**: without a saved personal key, translation runs on Subify Server and your wallet balance. Users who had "auto" and no keys are moved to Subify Server automatically.
+- **Full-page translation without a key** goes through Subify Server, like subtitles.
+- **Balance messages** now refer to your wallet credit instead of the free allowance. Subify Server status and wallet balance show in the API keys settings.
+
 # v2.11.0، حالت یادگیری دوزبانه، لغت با یک کلیک و ترجمهٔ سریع‌تر
 
 ### قابلیت‌های جدید
