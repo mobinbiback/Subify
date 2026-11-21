@@ -2,7 +2,7 @@
   "manifest_version": 2,
   "name": "Subify lite",
   "short_name": "Subify lite",
-  "version": "2.11.0",
+  "version": "2.11.1",
   "description": "ترجمه مستقیم زیرنویس زمان‌بندی‌شده YouTube با Cache ابری پایدار، ترجمه پیش‌دستانه و خروجی SRT، VTT و TXT.",
   "options_page": "options.html",
   "background": {

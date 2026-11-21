@@ -601,7 +601,8 @@ function providerLabelOf(p) { return p === "github" ? "GitHub" : p === "google" 
 
 function subtitleRouteLabel(s) {
   const p = s.subtitleProvider;
-  if (!p || p === "auto") return "خودکار";
+  if (p === "auto") return "خودکار";
+  if (!p) return "Subify Server";
   if (p === "subify") return "Subify Server";
   if (p === "custom") {
     const list = Array.isArray(s.customProviders) ? s.customProviders : [];
@@ -685,24 +686,30 @@ makeSectionsFoldable();
 showPanel();
 void renderOverview();
 
-// The free AI note under the API keys: on or off, and whether the key the user saved takes over.
+// The Subify Server note under the API keys: the saved-key case, else the server state and the wallet balance.
 async function loadFreeAiNote() {
   const note = $("freeAiNote");
   if (!note) return;
   try {
-    const r = await browser.runtime.sendMessage({ type: "subify-api", path: "/auth/ai.php?action=state" });
-    const s = r && r.json;
-    if (!s || s.ok === false || !s.enabled) {
-      note.textContent = "هوش مصنوعی رایگان الان خاموش است یا وارد حساب نشده‌ای. کلید خودت را ذخیره کن، یا وارد حساب شو.";
+    const { pd_settings = {} } = await browser.storage.local.get("pd_settings");
+    if (String(pd_settings.apiKey || "").trim()) {
+      note.textContent = "کلید خودت ذخیره شده؛ درخواست‌ها با کلید تو می‌روند و از کیف پول Subify کم نمی‌شوند.";
       return;
     }
-    const { pd_settings = {} } = await browser.storage.local.get("pd_settings");
-    const usingKey = !!String(pd_settings.apiKey || "").trim();
-    note.textContent = usingKey
-      ? "کلید خودت ذخیره شده؛ درخواست‌ها با کلید تو می‌روند و سهمیه‌ی رایگان مصرف نمی‌شود."
-      : `هوش مصنوعی رایگان فعال است و بدون کلید هم کار می‌کند. منابع این ماه: ${s.used || 0} از ${s.limit || 0}.`;
+    const [s, w] = await Promise.all([
+      browser.runtime.sendMessage({ type: "subify-api", path: "/auth/ai.php?action=state" }).catch(() => null),
+      browser.runtime.sendMessage({ type: "subify-api", path: "/auth/wallet.php" }).catch(() => null)
+    ]);
+    const st = s && s.json;
+    if (!st || st.ok === false || !st.enabled) {
+      note.textContent = "Subify Server الان در دسترس نیست یا وارد حساب نشده‌ای. برای ترجمه وارد حساب Subify شو، یا کلید خودت را ذخیره کن.";
+      return;
+    }
+    const wallet = w && w.json && w.json.wallet ? w.json.wallet : null;
+    const toman = wallet && typeof wallet.balance_toman === "number" ? wallet.balance_toman : (wallet && typeof wallet.balance_micro === "number" ? wallet.balance_micro / 1e6 : null);
+    note.textContent = "ترجمه با Subify Server و اعتبار کیف پول انجام می‌شود؛ کلید شخصی لازم نیست." + (toman !== null ? " موجودی: " + Math.round(toman).toLocaleString("fa-IR") + " تومان." : "");
   } catch (_) {
-    note.textContent = "هوش مصنوعی رایگان: وضعیت در دسترس نیست. اتصال به sub-ify.site را بررسی کن.";
+    note.textContent = "Subify Server: وضعیت در دسترس نیست. اتصال به sub-ify.site را بررسی کن.";
   }
 }
 void loadFreeAiNote();
