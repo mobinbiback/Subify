@@ -66,6 +66,8 @@ function setSafeHTML(el, html) {
     translationQueueRunning: false,
     translationChain: Promise.resolve(),
     translationEpoch: 0,
+    cueMisses: new Map(),
+    translationFailed: new Set(),
     settings: { ...DEFAULTS },
     session: 0,
     trackKey: "",
@@ -489,6 +491,8 @@ function setSafeHTML(el, html) {
     state.generatedCues = [];
     state.translations.clear();
     state.translating.clear();
+    state.cueMisses.clear();
+    state.translationFailed.clear();
     state.translationQueueRunning = false;
     state.trackKey = "";
     state.trackUrl = "";
@@ -2480,9 +2484,50 @@ function setSafeHTML(el, html) {
   }
   let watchTracksCache = null; // { videoId, tracks, at } from the last successful watch-page lookup
 
+  // Asks the MAIN-world page-hook for the player's own caption tracks. The hook answers inside
+  // dispatchEvent, so the reply is read synchronously. Empty while an ad plays or when the hook is absent.
+  function readPlayerCaptionTracks(videoId) {
+    let reply = null;
+    const onReply = (e) => { try { reply = JSON.parse(String(e.detail || "")); } catch (_) {} };
+    window.addEventListener("subify-youtube-player-response", onReply);
+    try { window.dispatchEvent(new CustomEvent("subify-youtube-get-player-response")); }
+    finally { window.removeEventListener("subify-youtube-player-response", onReply); }
+    if (!reply) { ensurePageHook(); return []; }
+    if (videoId && reply.videoId && reply.videoId !== videoId) return [];
+    return captionTracksFromResponse({ captions: { playerCaptionsTracklistRenderer: { captionTracks: reply.tracks || [] } } });
+  }
+
+  // Chrome fallback: when the static MAIN-world entry did not run, the background injects page-hook.js
+  // into the MAIN world with chrome.scripting. Throttled; a no-op once the marker is present.
+  function ensurePageHook() {
+    if (document.documentElement?.hasAttribute("data-subify-hook")) return;
+    const now = Date.now();
+    if (now - (state.pageHookAskedAt || 0) < 3000) return;
+    state.pageHookAskedAt = now;
+    try { browser.runtime.sendMessage({ type: "subify-inject-page-hook" }).catch(() => {}); } catch (_) {}
+  }
+
+  // After an ad ends, the main video's tracks can reach the player response a moment later.
+  // Poll every 400 ms for up to 5 s, never while an ad plays, and stop once a track is set.
+  function scheduleTrackRetry() {
+    clearInterval(state.trackRetryTimer);
+    const started = Date.now();
+    state.trackRetryTimer = setInterval(() => {
+      if (Date.now() - started > 5000 || state.trackKey) { clearInterval(state.trackRetryTimer); return; }
+      if (isAdPlaying()) return;
+      if (readPlayerCaptionTracks(state.videoId || getVideoIdFromUrl()).length) {
+        clearInterval(state.trackRetryTimer);
+        void refreshTrack();
+      }
+    }, 400);
+  }
+
   async function getCaptionTracks() {
+    // The ad owns the player until it ends: never read or translate its captions.
+    if (isAdPlaying()) return [];
     const videoId = state.videoId || getVideoIdFromUrl();
-    const direct = captionTracksFromResponse(extractPlayerResponseForVideo(videoId));
+    let direct = readPlayerCaptionTracks(videoId);
+    if (!direct.length) direct = captionTracksFromResponse(extractPlayerResponseForVideo(videoId));
     if (direct.length) return direct;
 
     const native = getNativeTextTrackCues();
@@ -2779,6 +2824,16 @@ function setSafeHTML(el, html) {
     }
   }
 
+  // A cue still untranslated after three passes is shown as failed, not as loading forever.
+  function noteCueMisses(list) {
+    for (const c of list) {
+      const id = String(c.id);
+      const n = (state.cueMisses.get(id) || 0) + 1;
+      state.cueMisses.set(id, n);
+      if (n >= 3) state.translationFailed.add(id);
+    }
+  }
+
   async function _translateBatchNow(cues, session, epoch = state.translationEpoch) {
     const fresh = cues
       .filter(c => c?.text && !state.translations.has(c.id) && !state.translating.has(c.id))
@@ -2810,6 +2865,7 @@ function setSafeHTML(el, html) {
       // The Subify balance ran out: the cues translated so far stay, and no more batches are sent on this page.
       // shortcut: the halt lasts until the page reloads; upgrade: clear it when the balance changes.
       if (response?.code === "balance_empty") subifyBalanceHalt = true;
+      if (session === state.session && epoch === state.translationEpoch && !response?.ok && response?.code !== "balance_empty") noteCueMisses(fresh);
       if (session !== state.session || epoch !== state.translationEpoch || !response?.ok) {
         log("subtitle translation batch failed: " + (response?.code || "no-answer") + (response?.error ? " - " + response.error : ""));
         return false;
@@ -2821,6 +2877,7 @@ function setSafeHTML(el, html) {
         if (result?.id && fa) {
           const id = String(result.id);
           state.translations.set(id, fa);
+          state.translationFailed.delete(id);
           returned.add(id);
           added++;
         }
@@ -2831,6 +2888,7 @@ function setSafeHTML(el, html) {
       // Do not fire extra one-cue requests when a provider omits an item.
       // The missing cues remain eligible for the next queued window pass.
       const missing = fresh.filter(c => !returned.has(String(c.id)));
+      noteCueMisses(missing);
       if (missing.length) log(`translation batch returned ${returned.size}/${fresh.length}; ${missing.length} cue(s) will be retried on the next queue pass`, "warn");
       // Every cue of this video is translated: the background reports the video as finished. It sends action=done once per
       // video, and only when the owner's key translated part of it. A partial run never reaches this check.
@@ -3662,6 +3720,7 @@ function setSafeHTML(el, html) {
         state.videoSettingsLoaded = false;
         requestNativeCaptionReload(true);
         void refreshTrack();
+        scheduleTrackRetry();
       }
     }
     state.wasAdShowing = adShowing;
@@ -3678,6 +3737,7 @@ function setSafeHTML(el, html) {
       state.ignoreCapturedUntil = 0;
       resetTrack();
       flushPendingBatches();
+      scheduleTrackRetry();
     }
 
     if (location.href !== state.lastUrl) {
@@ -4118,7 +4178,7 @@ function setSafeHTML(el, html) {
       } else {
         const faLine = document.createElement("div");
         faLine.className = "subify-transcript-fa";
-        faLine.textContent = fa || "در حال ترجمه…";
+        faLine.textContent = fa || (state.translationFailed.has(String(cue.id)) ? "ترجمه نشد" : "در حال ترجمه…");
         textWrap.appendChild(faLine);
         if (fa) {
           const editBtn = document.createElement("button");

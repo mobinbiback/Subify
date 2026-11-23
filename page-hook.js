@@ -2,6 +2,8 @@
   'use strict';
   if (window.__subifyTimedTextHookInstalled) return;
   window.__subifyTimedTextHookInstalled = true;
+  // Lets the isolated-world overlay see that this MAIN-world hook is running (the two worlds share no JS globals).
+  document.documentElement?.setAttribute('data-subify-hook', '1');
 
   const seen = new Set();
 
@@ -200,6 +202,27 @@
     setTimeout(scanResourceTiming, 0);
     setTimeout(scanResourceTiming, 500);
   }, true);
+
+  // Answers the overlay's request for the player's own caption tracks. Runs in the MAIN world,
+  // so movie_player.getPlayerResponse() is reachable. Replies inside dispatchEvent, so the caller
+  // reads the answer synchronously. Ad responses are never returned.
+  window.addEventListener('subify-youtube-get-player-response', () => {
+    let reply = { videoId: '', tracks: [] };
+    try {
+      const player = document.getElementById('movie_player') || document.querySelector('.html5-video-player');
+      if (player && !player.classList?.contains('ad-showing') && typeof player.getPlayerResponse === 'function') {
+        const resp = player.getPlayerResponse() || null;
+        const tracks = resp?.captions?.playerCaptionsTracklistRenderer?.captionTracks;
+        reply = {
+          videoId: resp?.videoDetails?.videoId || '',
+          tracks: Array.isArray(tracks) ? tracks.filter(t => t && t.baseUrl).map(t => ({
+            baseUrl: t.baseUrl, languageCode: t.languageCode || '', kind: t.kind || '', name: t.name || null, vssId: t.vssId || ''
+          })) : []
+        };
+      }
+    } catch (_) {}
+    window.dispatchEvent(new CustomEvent('subify-youtube-player-response', { detail: JSON.stringify(reply) }));
+  });
 
   installResourceObserver();
   scanResourceTiming();

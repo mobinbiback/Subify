@@ -1982,7 +1982,7 @@ async function subifyStateRead() {
     return r && r.ok && r.json && r.json.ok !== false ? r.json : null;
   } catch (e) { return null; }
 }
-// r14-fix3: the Subify Server batches. With the balance known and enough for the whole run: 80-line batches, three at a
+// r14-fix3: the Subify Server batches. With the balance known and enough for the whole run: 8-line batches, six at a
 // time, each finished batch reported as it arrives (opts.onBatch). With the balance low: one batch after another, sized to
 // the balance (as before). A batch is served from the shared cache where it can be (billed at the standard rate); only the
 // lines it lacks go to the AI. Capacity and upstream trouble retry the batch with a longer wait each time.
@@ -2021,12 +2021,13 @@ function expandMergedResults(results, groupsById) {
 // Live progress for the popup bar and the video overlay pill: cues translated so far, written to storage.local.
 // Readers ignore a value older than 20 s while it is running, and hide a finished one after a few seconds.
 const subifyProgressState = { videoId: "", done: 0, total: 0 };
-function subifyProgressWrite(finished) {
-  try { browser.storage.local.set({ subifyProgress: { ...subifyProgressState, finished, at: Date.now() } }).catch(() => {}); } catch (e) { /* no storage: no bar */ }
+function subifyProgressWrite(finished, failed = false) {
+  try { browser.storage.local.set({ subifyProgress: { ...subifyProgressState, finished, failed, at: Date.now() } }).catch(() => {}); } catch (e) { /* no storage: no bar */ }
 }
 function subifyProgressStart(videoId, total) { Object.assign(subifyProgressState, { videoId: String(videoId || ""), done: 0, total }); subifyProgressWrite(false); }
 function subifyProgressAdd(n) { subifyProgressState.done = Math.min(subifyProgressState.total, subifyProgressState.done + n); subifyProgressWrite(false); }
 function subifyProgressDone() { subifyProgressState.done = subifyProgressState.total; subifyProgressWrite(true); }
+function subifyProgressFail() { subifyProgressWrite(true, true); }
 async function subifyManagedBatches(cues, settings, videoId, opts = {}) {
   const st0 = await subifyStateRead();
   const row = SubifyAiRoute.pickRow(st0, settings.subifyModel || "");
@@ -2063,11 +2064,25 @@ async function subifyManagedBatches(cues, settings, videoId, opts = {}) {
       }
     }
   };
+  // A batch that comes back short (a line missing, or a reply that could not be read) gets one retry in parts of 4 lines.
+  // Lines still missing after that are left for the overlay, which marks them failed after three passes.
+  const runFull = async (batch) => {
+    let got = [];
+    try { got = await runBatch(batch); }
+    catch (e) { if (!SUBIFY_SKIP_CODES.includes(e.code)) throw e; }
+    const done = new Set(got.map(r => String(r.id)));
+    const left = batch.filter(c => !done.has(String(c.id)));
+    for (let i = 0; i < left.length; i += 4) {
+      try { got = got.concat(await translateBatch(left.slice(i, i + 4))); }
+      catch (e) { if (!SUBIFY_SKIP_CODES.includes(e.code)) throw e; }
+    }
+    return got;
+  };
   const haltOf = (e) => (e.code === "no_credits" ? "balance_empty" : subifyFreeAiCode(e.code));
   const results = [];
   let failed = 0;
   // The whole run fits the balance (or the balance is unknown and the server decides per request): the pool.
-  const all = SubifyAiRoute.groupCues(cues, Infinity, 80);
+  const all = SubifyAiRoute.groupCues(cues, Infinity, 8);
   const total = avail === null ? 0 : all.reduce((n, b) => n + costOf(b), 0);
   // The pool only when the balance is not low (low balance keeps the shrinking batches below).
   const notLow = avail === null || avail >= SubifyAiRoute.LOW_TOMAN * SubifyAiRoute.MICRO_PER_TOMAN;
@@ -2077,7 +2092,7 @@ async function subifyManagedBatches(cues, settings, videoId, opts = {}) {
     const lane = async () => {
       while (!halt && next < all.length) {
         const batch = all[next++];
-        try { results.push(...await runBatch(batch)); }
+        try { results.push(...await runFull(batch)); }
         catch (e) {
           if (SUBIFY_SKIP_CODES.includes(e.code)) { failed++; subtitleTrace("batch_skipped", { lines: batch.length, reason: e.code || e.reason || "" }); continue; }
           halt = haltOf(e);
@@ -2092,7 +2107,7 @@ async function subifyManagedBatches(cues, settings, videoId, opts = {}) {
   while (remaining.length) {
     const plan = SubifyAiRoute.planNextBatch(remaining, avail, costOf);
     if (plan.halt) return { results, halt: "balance_empty", failed };
-    try { results.push(...await runBatch(plan.batch)); }
+    try { results.push(...await runFull(plan.batch)); }
     catch (e) {
       if (!SUBIFY_SKIP_CODES.includes(e.code)) return { results, halt: haltOf(e), failed };
       failed++; subtitleTrace("batch_skipped", { lines: plan.batch.length, reason: e.code || e.reason || "" });
@@ -2538,7 +2553,7 @@ browser.runtime.onMessage.addListener((msg, sender, sendResponse) => {
                 }
               });
               const results = expandMergedResults(run.results, groupsById);
-              subifyProgressDone();
+              if (results.length) subifyProgressDone(); else subifyProgressFail();
               if (!results.length) throw subifyFreeAiError(run.halt || (run.failed ? "upstream" : "empty"));
               await subifyFreeAiMark("served", freeVideoId);
               await recordUsage("subify", results);

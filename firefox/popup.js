@@ -921,7 +921,7 @@ window.SubifyUI?.register({en:{'راهنما':'Guide','شرایط استفاده
     last=p;
     clearTimeout(hideTimer);
     const fresh=p&&p.total>0&&Date.now()-p.at<(p.finished?4000:20000);
-    if(!fresh){box.hidden=true;txt.hidden=true;return;}
+    if(!fresh||p.failed){box.hidden=true;txt.hidden=true;return;}
     const pct=Math.max(0,Math.min(100,Math.round(p.done*100/p.total)));
     box.hidden=false;
     txt.hidden=false;
