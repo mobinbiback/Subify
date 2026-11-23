@@ -278,8 +278,7 @@ $("captureShot")?.addEventListener("click",async()=>{const tab=await activeTab()
     tabs.forEach(x=>x.classList.toggle('active',x===t));
     panels.forEach(p=>p.classList.toggle('active',p.dataset.panel===name));
     if(name==='style') loadPopupStyle();
-    if(name==='translate') loadPopupTranslate();
-    if(name==='services') loadPopupServices();
+    if(name==='account'){ loadPopupTranslate(); loadPopupServices(); }
   }));
   $('openFullSettings')?.addEventListener('click',()=>browser.runtime.openOptionsPage());
   $('openStyleFull')?.addEventListener('click',()=>browser.runtime.openOptionsPage());
@@ -886,3 +885,52 @@ if(window.SubifyWallet){
 
 // Footer legal links (six languages); Persian is the key.
 window.SubifyUI?.register({en:{'راهنما':'Guide','شرایط استفاده':'Terms','حریم خصوصی':'Privacy'},ar:{'راهنما':'الدليل','شرایط استفاده':'الشروط','حریم خصوصی':'الخصوصية'},es:{'راهنما':'Guía','شرایط استفاده':'Términos','حریم خصوصی':'Privacidad'},tr:{'راهنما':'Rehber','شرایط استفاده':'Koşullar','حریم خصوصی':'Gizlilik'},fr:{'راهنما':'Guide','شرایط استفاده':'Conditions','حریم خصوصی':'Confidentialité'},de:{'راهنما':'Anleitung','شرایط استفاده':'Nutzungsbedingungen','حریم خصوصی':'Datenschutz'}});
+
+// v2.12.0: live wallet capsule in the header. Signed in: the available balance and a top-up button. Signed out: the sign-in CTA.
+(function initWalletCapsule(){
+  const inEl=document.getElementById('walletIn'), outEl=document.getElementById('walletOut'), amountEl=document.getElementById('walletAmount');
+  if(!inEl||!outEl||!amountEl)return;
+  const fmt=(n)=>Math.round(n).toLocaleString(document.documentElement.lang==='en'?'en-US':'fa-IR');
+  const show=(signedIn)=>{inEl.hidden=!signedIn;outEl.hidden=signedIn;};
+  async function refresh(){
+    try{
+      const r=await browser.runtime.sendMessage({type:'subify-api',path:'/auth/wallet.php'});
+      if(!r||!r.ok||!r.json||r.json.ok===false){show(false);return;}
+      const w=r.json.wallet||{};
+      const toman=typeof w.available_toman==='number'?w.available_toman:(typeof w.available_micro==='number'?w.available_micro/1e6:null);
+      if(toman===null){show(false);return;}
+      amountEl.textContent=fmt(toman);
+      show(true);
+    }catch(e){show(false);}
+  }
+  refresh();
+  window.addEventListener('focus',refresh);
+  setInterval(()=>{if(!document.hidden)refresh();},60000);
+  window.SubifyWalletCapsule={refresh};
+})();
+
+/* ---- live translation progress: the lines done so far, from storage (background.js subifyProgress) ---- */
+(function subifyLiveProgress(){
+  const box=document.getElementById('liveProg'), txt=document.getElementById('liveProgText'), fill=document.getElementById('liveProgFill');
+  if(!box||!txt||!fill||typeof browser==='undefined') return;
+  let hideTimer=0;
+  const T=(s)=>(window.SubifyUI&&typeof SubifyUI.t==='function'?SubifyUI.t(s):s);
+  const D=(n)=>(window.SubifyUI&&typeof SubifyUI.digits==='function'?SubifyUI.digits(n):String(n));
+  let last=null;
+  function render(p){
+    last=p;
+    clearTimeout(hideTimer);
+    const fresh=p&&p.total>0&&Date.now()-p.at<(p.finished?4000:20000);
+    if(!fresh){box.hidden=true;txt.hidden=true;return;}
+    const pct=Math.max(0,Math.min(100,Math.round(p.done*100/p.total)));
+    box.hidden=false;
+    txt.hidden=false;
+    box.classList.toggle('done',pct>=100);
+    txt.textContent=pct>=100?T('ترجمه کامل شد'):T('در حال ترجمه: {p}٪ ({d} از {t} خط)').replace('{p}',D(pct)).replace('{d}',D(p.done)).replace('{t}',D(p.total));
+    fill.style.width=pct+'%';
+    if(p.finished) hideTimer=setTimeout(()=>{box.hidden=true;txt.hidden=true;},4000);
+  }
+  browser.storage.local.get('subifyProgress').then(v=>render(v.subifyProgress)).catch(()=>{});
+  browser.storage.onChanged.addListener((ch,area)=>{ if(area==='local'&&ch.subifyProgress) render(ch.subifyProgress.newValue); });
+  new MutationObserver(()=>{ if(last) render(last); }).observe(document.documentElement,{attributes:true,attributeFilter:['data-ui-language']});
+})();

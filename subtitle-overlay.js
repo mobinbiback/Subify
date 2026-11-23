@@ -447,6 +447,11 @@ var browser = globalThis.browser || globalThis.chrome; // Chrome has no browser 
     }, Math.max(0, delay));
   }
 
+  // True while YouTube plays an ad: the player class, or the ad badge in the page (the player element can be replaced).
+  function isAdPlaying() {
+    return !!(state.player?.classList?.contains("ad-showing") || document.querySelector(".html5-video-player.ad-showing"));
+  }
+
   function resetTrack() {
     state.cues = [];
     state.generatedCues = [];
@@ -742,7 +747,7 @@ var browser = globalThis.browser || globalThis.chrome; // Chrome has no browser 
     if (!detail || state.settings.subtitleEnabled === false) return;
     // Ignore ad timedtext requests entirely. Keep the already-discovered main-video
     // track alive so skipping the ad cannot erase the real transcript.
-    if (state.player?.classList?.contains("ad-showing")) return;
+    if (isAdPlaying()) return;
     try {
       const data = typeof detail === 'string' ? JSON.parse(detail) : detail;
       const url = String(data?.url || '');
@@ -2816,7 +2821,7 @@ var browser = globalThis.browser || globalThis.chrome; // Chrome has no browser 
   // ready before the playhead reaches it.
   async function translateWindow(cues, session, now = 0, aheadSeconds = 60, maxCues = 40) {
     // Subtitle translation follows the subtitles switch (extraction does not translate on its own).
-    if (!Array.isArray(cues) || !cues.length || session !== state.session || state.aheadBusy || state.settings.subtitleEnabled === false) return;
+    if (!Array.isArray(cues) || !cues.length || session !== state.session || state.aheadBusy || state.settings.subtitleEnabled === false || isAdPlaying()) return;
     const end = now + aheadSeconds;
     const pending = (c) => c?.text && !state.translations.has(c.id) && !state.translating.has(c.id);
     // Nearest the playhead first. When that stretch is done (or the video resumed far in), the earliest untranslated
@@ -3422,7 +3427,7 @@ var browser = globalThis.browser || globalThis.chrome; // Chrome has no browser 
     // The ad and the main video may therefore share the same videoId. Reset the
     // subtitle track when the player enters/leaves an ad so ad cues/translations
     // can never leak into the main video.
-    const adShowing = !!state.player?.classList?.contains("ad-showing");
+    const adShowing = isAdPlaying();
     if (state.wasAdShowing !== null && state.wasAdShowing !== adShowing) {
       // Invalidate any translation request that belonged to the ad phase.
       // YouTube can reuse the same video id for the ad and the main video, so
@@ -3443,17 +3448,11 @@ var browser = globalThis.browser || globalThis.chrome; // Chrome has no browser 
       if (!adShowing) {
         // If the main track was not discovered before the ad, rebuild it now.
         // If it already exists, leave it intact and only re-check native CC.
-        setTimeout(() => {
-          if (!state.wasAdShowing && state.settings.subtitleEnabled) {
-            if (!state.cues.length) {
-              requestNativeCaptionReload(true);
-              void refreshTrack();
-            } else {
-              renderAtCurrentTime();
-              void translateWindow(state.cues, state.session, Number(state.video?.currentTime || 0), 180, 80);
-            }
-          }
-        }, 350);
+        // The main video started after an ad: clear the track (cues, translations, the queue lock) and fetch its captions now.
+        resetTrack();
+        state.videoSettingsLoaded = false;
+        requestNativeCaptionReload(true);
+        void refreshTrack();
       }
     }
     state.wasAdShowing = adShowing;
@@ -3469,6 +3468,7 @@ var browser = globalThis.browser || globalThis.chrome; // Chrome has no browser 
       state.shortVideoSkipped = false;
       state.ignoreCapturedUntil = 0;
       resetTrack();
+      flushPendingBatches();
     }
 
     if (location.href !== state.lastUrl) {
@@ -3480,6 +3480,7 @@ var browser = globalThis.browser || globalThis.chrome; // Chrome has no browser 
         state.shortVideoSkipped = false;
         state.ignoreCapturedUntil = 0;
         resetTrack();
+        flushPendingBatches();
       }
     }
 
@@ -3566,6 +3567,7 @@ var browser = globalThis.browser || globalThis.chrome; // Chrome has no browser 
   // essential after refresh: captions may arrive before settings, while the
   // translation provider/key lives in those settings.
   state.videoId = getVideoIdFromUrl();
+  flushPendingBatches();
   getVideo();
   void (async () => {
     await ensureSettingsLoaded();
@@ -4136,11 +4138,95 @@ var browser = globalThis.browser || globalThis.chrome; // Chrome has no browser 
     sendResponse({ total: cues.length, done });
   });
   // r14-fix3: finished Subify Server batches arrive while the request is still running; they are shown at once.
-browser.runtime.onMessage.addListener((msg)=>{if(msg?.type!=="subify-batch-result")return false;if(msg.videoId && String(msg.videoId)!==String(state.videoId||""))return false;let added=0;for(const r of Array.isArray(msg.results)?msg.results:[]){const fa=clean(r?.fa||r?.translation||r?.text||"");if(r?.id&&fa){state.translations.set(String(r.id),fa);added++;}}if(added){schedulePersistentCacheWrite();void publishSubtitleCues();}return false;});
+// r14-fix3 / v2.12.0: finished Subify Server batches. A batch for a video the overlay has not switched to yet (YouTube SPA
+// navigation) waits in state.pendingBatches and is applied when that video becomes current; it is not dropped.
+function subifyOverlayTrace(stage, data) {
+  try { browser.runtime.sendMessage({ type: "subify-trace", stage, data: data || {} }).catch(() => {}); } catch (_) {}
+}
+function pendingBatchFor(vid) {
+  if (!state.pendingBatches) state.pendingBatches = new Map();
+  if (!state.pendingBatches.has(vid)) state.pendingBatches.set(vid, []);
+  return state.pendingBatches.get(vid);
+}
+function applySubtitleBatch(results) {
+  let added = 0;
+  for (const r of Array.isArray(results) ? results : []) {
+    const fa = clean(r?.fa || r?.translation || r?.text || "");
+    if (r?.id && fa) { state.translations.set(String(r.id), fa); added++; }
+  }
+  if (added) { schedulePersistentCacheWrite(); void publishSubtitleCues(); }
+  subifyOverlayTrace("overlay_rendered", { applied: added, videoId: String(state.videoId || ""), total: state.translations.size });
+}
+function flushPendingBatches() {
+  const map = state.pendingBatches;
+  if (!map || !state.videoId) return;
+  const list = map.get(String(state.videoId));
+  map.clear();
+  if (list && list.length) applySubtitleBatch(list);
+}
+browser.runtime.onMessage.addListener((msg)=>{
+  if (msg?.type !== "subify-batch-result") return false;
+  const vid = String(msg.videoId || "");
+  if (vid && vid !== String(state.videoId || "")) {
+    const list = Array.isArray(msg.results) ? msg.results : [];
+    pendingBatchFor(vid).push(...list);
+    subifyOverlayTrace("batch_waiting", { videoId: vid, lines: list.length });
+    return false;
+  }
+  applySubtitleBatch(msg.results);
+  return false;
+});
 browser.runtime.onMessage.addListener((msg,sender,sendResponse)=>{if(msg?.type==="subify-get-current-cue"){const now=Number(state.video?.currentTime||0),cue=activeCue(now);sendResponse({ok:true,cue:cue?{id:cue.id,start:cue.start,end:cue.end,text:cue.text,fa:state.translations.get(cue.id)||""}:null,videoId:state.videoId,currentTime:now});return false;}if(msg?.type==="subify-refresh-settings"){state.videoSettingsLoaded=false;void loadSettings();sendResponse({ok:true});return false;}if(msg?.type==="subify-clear-local-cache"){void clearLocalCache().then(()=>sendResponse({ok:true}));return true;}if(msg?.type==="subify-target-language-changed"){(async()=>{state.translations.clear();state.lastShownId="";state.persistentCacheLoaded=false;state.persistentCacheKey="";await loadSettings();if(state.trackKey){const base=state.trackKey.replace(/\|tl:[^|]*$/,"");state.trackKey=withTargetLang(base);}await loadPersistentTranslations();if(state.cues.length)void queueTranslateAll(state.cues,state.session,Number(state.video?.currentTime||0));sendResponse({ok:true});})();return true;}if(msg?.type==="subify-live-capture-started"){liveBeginCapture();state.liveTimeBase=Number(state.video?.currentTime||0);state.liveCue=null;state.liveHoldAt=null;state.liveForcedPause=false;state.lastLiveCueStart=null;return false;}if(msg?.type==="subify-live-hold"){if(!liveHold.userPaused)state.liveHoldAt=state.liveTimeBase+(Number(msg.at)||0);return false;}if(msg?.type==="subify-live-cue"){onLiveCue(msg);return false;}if(msg?.type==="subify-toggle-transcript"){toggleTranscriptPanel();sendResponse({ok:true,open:Boolean(state.transcriptPanelEl)});return false;}if(msg?.type==="subify-generated-subtitle-cue"){addGeneratedCue(msg.start,msg.end,msg.text);return false;}return false;});
+
+  // Progress pill (top corner): the lines translated so far for this video. The labels live here because this content
+  // script has no UI-language layer. The pill fades out a moment after the last line.
+  const PROG_LABELS = {
+    fa: ["ترجمه زیرنویس: {p}٪", "ترجمه زیرنویس کامل شد"],
+    en: ["Subtitles: {p}%", "Subtitles translated"],
+    ar: ["الترجمة: {p}%", "اكتملت الترجمة"],
+    es: ["Subtítulos: {p}%", "Subtítulos traducidos"],
+    tr: ["Altyazı: %{p}", "Altyazı çevirisi tamam"],
+    fr: ["Sous-titres : {p} %", "Sous-titres traduits"],
+    de: ["Untertitel: {p} %", "Untertitel übersetzt"],
+  };
+  let progPill = null, progHide = 0, progLang = "fa";
+  browser.storage.local.get("subify_popup_language").then((v) => { if (v && PROG_LABELS[v.subify_popup_language]) progLang = v.subify_popup_language; }).catch(() => {});
+  function renderProgressPill(p) {
+    clearTimeout(progHide);
+    if (p && p.videoId && state.videoId && p.videoId !== state.videoId) return;
+    const fresh = p && p.total > 0 && Date.now() - p.at < (p.finished ? 2500 : 20000);
+    if (!fresh) { if (progPill) progPill.style.opacity = "0"; return; }
+    if (!progPill) {
+      progPill = document.createElement("div");
+      progPill.id = "subify-progress-pill";
+      progPill.setAttribute("role", "status");
+      progPill.setAttribute("dir", "auto");
+      progPill.style.cssText = "position:fixed;top:14px;inset-inline-end:14px;z-index:2147483000;min-width:132px;box-sizing:border-box;padding:7px 11px 8px;border-radius:10px;background:#0E0D13;border:1px solid rgba(255,255,255,.1);color:#F4F3F8;font:600 11.5px/1.25 system-ui,sans-serif;font-variant-numeric:tabular-nums;pointer-events:none;opacity:0;transition:opacity .15s ease";
+      const txt = document.createElement("span");
+      txt.className = "sp-text";
+      const track = document.createElement("div");
+      track.style.cssText = "margin-top:6px;height:2px;border-radius:2px;background:rgba(255,255,255,.12);overflow:hidden";
+      const bar = document.createElement("i");
+      bar.style.cssText = "display:block;height:100%;width:0;background:#7C5CFF;transition:width .15s ease,background-color .15s ease";
+      track.appendChild(bar);
+      progPill.append(txt, track);
+      document.body.appendChild(progPill);
+    }
+    const pct = Math.max(0, Math.min(100, Math.round(p.done * 100 / p.total)));
+    const L = PROG_LABELS[progLang] || PROG_LABELS.en;
+    const num = progLang === "fa" ? String(pct).replace(/\d/g, (d) => "۰۱۲۳۴۵۶۷۸۹"[d]) : String(pct);
+    const done = pct >= 100;
+    progPill.querySelector(".sp-text").textContent = done ? L[1] : L[0].replace("{p}", num);
+    const bar = progPill.querySelector("i");
+    bar.style.width = pct + "%";
+    bar.style.background = done ? "#10B981" : "#7C5CFF";
+    progPill.style.opacity = "1";
+    if (done || p.finished) progHide = setTimeout(() => { progPill.style.opacity = "0"; }, 2200);
+  }
 
   browser.storage.onChanged.addListener((changes, area) => {
     if (area !== "local") return;
+    if (changes.subifyProgress) renderProgressPill(changes.subifyProgress.newValue);
     if (changes.subify_settings || changes.subify_subtitle_enabled) void loadSettings();
     if (changes.subify_learning) void loadLearningConfig();
     // Dubbing and subtitles are independent features. Turning dubbing off

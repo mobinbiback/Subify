@@ -8,7 +8,7 @@
 
   const SITE = "https://sub-ify.site";
   const COOKIE_NAME = "sfy_sess"; // the site's session cookie: the token itself (64 hex)
-  const COOKIE_URLS = ["https://sub-ify.site", "https://app.sub-ify.site"]; // hosts with a permission in the manifest
+  const COOKIE_URLS = ["https://sub-ify.site", "https://app.sub-ify.site", "https://my.sub-ify.site"]; // hosts with a permission in the manifest
   const ALLOWED_PATHS = ["/auth/me.php", "/auth/wallet.php", "/auth/pay.php", "/auth/ai.php", "/auth/vocab.php"];
   const TIMEOUT_MS = 15000;
   const ME_TTL_MS = 60000;

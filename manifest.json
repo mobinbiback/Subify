@@ -3,7 +3,7 @@
   "default_locale": "en",
   "name": "__MSG_extName__",
   "short_name": "Subify",
-  "version": "2.11.1",
+  "version": "2.12.0",
   "description": "ترجمه مستقیم زیرنویس زمان‌بندی‌شده YouTube با Cache ابری پایدار، ترجمه پیش‌دستانه و خروجی SRT، VTT و TXT.",
   "action": {
     "default_popup": "popup.html",
@@ -36,6 +36,7 @@
     "https://api.openai.com/*",
     "https://sub-ify.site/*",
     "https://app.sub-ify.site/*",
+    "https://my.sub-ify.site/*",
     "https://api.dictionaryapi.dev/*"
   ],
   "optional_host_permissions": [

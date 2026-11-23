@@ -324,21 +324,40 @@
   // Persian and Arabic-Indic digits are read as digits in the id only, so a translation's own numbers are not touched.
   function oneLine(text) { return String(text == null ? '' : text).replace(/\r\n|\r|\n/g, ' ').trim(); }
   function subtitleLines(texts) { return texts.map((t, i) => (i + 1) + '|' + oneLine(t)).join('\n'); }
+  // Lines are read as "id|text". Markdown noise in front of the id (bullets, bold, backticks, brackets, "1." or "1)") and
+  // zero-width marks are stripped first. An id outside the batch, or one repeated, is skipped (counted in dropped), not fatal.
+  // A reply that counts from 0 is read as 1-based when no line uses id n. A reply with no id lines at all is read by position,
+  // but only when it has exactly n non-empty lines. ok is true when at least one cue has text.
+  const ID_LINE = /^\s*[\[(#*`_>\-•]*\s*([0-9۰-۹٠-٩]+)\s*[\])\.:*`_]*\s*\|(.*)$/;
+  function cleanReplyLine(line) {
+    return String(line == null ? '' : line).replace(/[​-‏﻿]/g, '').replace(/ /g, ' ');
+  }
   function parseIdLines(reply, n) {
-    const texts = new Array(n).fill(null);
-    const seen = new Set();
-    for (const line of String(reply || '').split(/\r?\n/)) {
-      const m = /^\s*([0-9۰-۹٠-٩]+)\s*\|(.*)$/.exec(line);
+    const size = Math.max(0, Number(n) || 0);
+    const texts = new Array(size).fill(null);
+    const lines = String(reply || '').split(/\r?\n/).map(cleanReplyLine);
+    const hits = [];
+    for (const line of lines) {
+      const m = ID_LINE.exec(line);
       if (!m) continue;
       // The low nibble of U+06F0 and of U+0660 is 0, so this maps Persian and Arabic-Indic digits to 0-9.
       const id = Number(m[1].replace(/[۰-۹٠-٩]/g, (d) => String(d.charCodeAt(0) & 0xF)));
-      if (!Number.isInteger(id) || id < 1 || id > n) return { ok: false, reason: 'id-out-of-batch', texts: null };
-      if (seen.has(id)) return { ok: false, reason: 'duplicate-id', texts: null };
-      seen.add(id);
-      const t = m[2].trim();
-      if (t) texts[id - 1] = t;
+      if (Number.isInteger(id)) hits.push({ id, text: m[2].trim() });
     }
-    return { ok: true, reason: '', texts };
+    let dropped = 0;
+    if (hits.length) {
+      const zeroBased = hits.some(h => h.id === 0) && !hits.some(h => h.id === size);
+      for (const h of hits) {
+        const id = zeroBased ? h.id + 1 : h.id;
+        if (id < 1 || id > size || (texts[id - 1] && texts[id - 1] !== '')) { dropped++; continue; }
+        if (h.text) texts[id - 1] = h.text;
+      }
+    } else if (size > 0) {
+      const plain = lines.map(l => l.trim().replace(/^[0-9۰-۹٠-٩]+[.)]\s+/, '')).filter(Boolean);
+      if (plain.length === size) plain.forEach((t, i) => { texts[i] = t; });
+    }
+    const usable = texts.some(Boolean);
+    return { ok: usable, reason: usable ? '' : (hits.length ? 'no-usable-ids' : 'no-id-lines'), texts, dropped, matched: hits.length };
   }
   // The timed cues rebuilt from the batch: each keeps its own id, start and end; only the text comes from the reply.
   function attachTexts(items, texts) {

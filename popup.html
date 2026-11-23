@@ -6,7 +6,6 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Subify</title>
 <link rel="stylesheet" href="popup.css"/>
-<link rel="stylesheet" href="starfield.css"/><style id="sfy-sky">body{background:transparent!important;isolation:isolate}body>.sfy-stars{z-index:-1}</style>
 <style id="i18n-dir">
 @font-face{font-family:"InterUI";src:url("fonts/Inter-400.woff2") format("woff2");font-weight:400;font-display:swap}
 @font-face{font-family:"InterUI";src:url("fonts/Inter-700.woff2") format("woff2");font-weight:700 900;font-display:swap}
@@ -14,7 +13,8 @@ html[dir="ltr"] body{direction:ltr;text-align:left}
 html:not([lang="fa"]):not([lang="ar"]) body,html:not([lang="fa"]):not([lang="ar"]) body *{font-family:"InterUI","VazirUI",Tahoma,sans-serif!important}
 </style>
 </head>
-<body><div class="sfy-stars" aria-hidden="true"><i class="l1"></i><i class="l2"></i><i class="l3"></i><i class="l4"></i></div>
+<body>
+
 <div id="onboarding" role="dialog" aria-modal="true">
   <div class="ob-step active" data-step="1">
     <div class="ob-icon"><img src="icons/icon128.png" alt=""></div>
@@ -23,17 +23,17 @@ html:not([lang="fa"]):not([lang="ar"]) body,html:not([lang="fa"]):not([lang="ar"
   </div>
   <div class="ob-step" data-step="2">
     <div class="ob-icon"><img src="icons/icon128.png" alt=""></div>
-    <h2 class="ob-title">از دکمهٔ بزرگ وسط شروع کن</h2>
-    <p class="ob-desc">تو تب «مرکز کنترل» یه دکمهٔ گرد بزرگ هست. روش کلیک کن تا ترجمه روی ویدیو شروع بشه.</p>
+    <h2 class="ob-title">از کلید «آماده» شروع کن</h2>
+    <p class="ob-desc">توی تب «کنترل سریع» کلید آماده رو بزن تا ترجمه روی ویدیو شروع بشه.</p>
   </div>
   <div class="ob-step" data-step="3">
     <div class="ob-icon"><img src="icons/icon128.png" alt=""></div>
-    <h2 class="ob-title">سرویس ترجمه رو از تب «ترجمه» عوض کن</h2>
-    <p class="ob-desc">اگه خواستی، از تب «ترجمه» می‌تونی سرویس هوش مصنوعی (Gemini/OpenRouter/OpenAI) و مدلش رو انتخاب کنی. در حالت پیش‌فرض خودش بهترین گزینه رو انتخاب می‌کنه.</p>
+    <h2 class="ob-title">موتور ترجمه رو از «حساب و تنظیمات» عوض کن</h2>
+    <p class="ob-desc">اگه خواستی، می‌تونی سرویس هوش مصنوعی و مدلش رو انتخاب کنی. در حالت خودکار، Subify بهترین گزینه رو خودش انتخاب می‌کنه.</p>
   </div>
   <div class="ob-step" data-step="4">
     <div class="ob-icon"><img src="icons/icon128.png" alt=""></div>
-    <h2 class="ob-title">ظاهر زیرنویس رو تو تب «استایل» تنظیم کن</h2>
+    <h2 class="ob-title">ظاهر زیرنویس رو توی «ظاهر و صدا» تنظیم کن</h2>
     <p class="ob-desc">رنگ، فونت و اندازهٔ زیرنویس رو دلخواه خودت کن. تغییرات رو همون بالا، توی پیش‌نمایش زنده، فوری می‌بینی.</p>
   </div>
   <div class="ob-step" data-step="5">
@@ -47,104 +47,234 @@ html:not([lang="fa"]):not([lang="ar"]) body,html:not([lang="fa"]):not([lang="ar"
     <p class="ob-desc">یه ویدیوی یوتیوب باز کن و «شروع ترجمه» رو بزن. Subify بقیه مسیر رو انجام می‌ده.</p>
   </div>
   <div class="ob-nav">
-    <button class="ob-skip" id="obSkip">رد شدن</button>
+    <button class="ob-skip" id="obSkip" type="button">رد شدن</button>
     <div class="ob-lang" data-open="false"><button class="lang-trigger" id="obLanguage" type="button" aria-haspopup="menu" aria-expanded="false" aria-controls="obLangMenu" title="زبان راهنما"><span class="lang-trigger-name" data-subify-i18n-ignore>فارسی</span><span class="lang-trigger-chev" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"></path></svg></span></button><div class="lang-menu ob-lang-menu" id="obLangMenu" role="menu" aria-label="زبان راهنما" data-subify-i18n-ignore></div></div>
     <div class="ob-dots" id="obDots"></div>
-    <button class="ob-next" id="obNext">بعدی</button>
+    <button class="ob-next" id="obNext" type="button">بعدی</button>
   </div>
 </div>
 
-<header>
+<div class="shell">
+
+<header class="app-head">
   <div class="brand">
-    <div class="brand-mark"><img src="icons/icon48.png" alt="Subify"></div>
-    <div class="brand-copy"><h1>Subify</h1><p class="brand-sub"><span id="today">v2.11.0</span></p></div>
+    <span class="brand-mark"><img src="icons/icon48.png" alt=""></span>
+    <h1>Subify</h1>
+    <a id="whatsNewLink" class="ver-pill" href="whatsnew.html" target="_blank" rel="noopener" title="ببین در این نسخه چه چیزی تازه شده" aria-label="تازه‌های این نسخه"><span id="today">v2.12.0</span></a>
   </div>
   <div class="header-actions">
-    <button type="button" class="icon-btn sfw-entry-icon" data-sfw="open-wallet" title="کیف پول و تاریخچه" aria-label="کیف پول و تاریخچه"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect x="3" y="6" width="18" height="13" rx="2.5"/><path d="M3 10h18"/><circle cx="16.5" cy="14.5" r="1.2"/></svg></button>
     <span id="sfwStatus" hidden></span>
-    <button id="themeToggle" class="icon-btn" title="روشن یا تیره کردن ظاهر" aria-label="روشن یا تیره کردن ظاهر"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg></button>
-    <a id="whatsNewLink" class="icon-btn" href="whatsnew.html" target="_blank" rel="noopener" title="ببین در این نسخه چه چیزی تازه شده" aria-label="تازه‌های این نسخه"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M12 3l1.8 4.7L18.5 9.5l-4.7 1.8L12 16l-1.8-4.7L5.5 9.5l4.7-1.8z"/><path d="M19 15l.8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8z"/></svg></a>
+    <button id="themeToggle" class="icon-btn" type="button" title="روشن یا تیره کردن ظاهر" aria-label="روشن یا تیره کردن ظاهر"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg></button>
+    <button id="openFullSettings" class="icon-btn" type="button" title="باز کردن تنظیمات کامل" aria-label="باز کردن تنظیمات کامل"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12M20 18h0"/><circle cx="16" cy="6" r="2"/><circle cx="10" cy="12" r="2"/><circle cx="18" cy="18" r="2"/></svg></button>
   </div>
 </header>
-<nav class="tabs" role="tablist">
-  <button class="tab active" data-tab="main" role="tab" aria-selected="true"><span class="tab-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5.5v-6h-5v6H4a1 1 0 0 1-1-1z"/></svg></span>مرکز کنترل</button>
-  <button class="tab" data-tab="translate" role="tab" aria-selected="false"><span class="tab-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="m5 8 6 6"/><path d="m4 14 6-6 2-3"/><path d="M2 5h12"/><path d="M7 2h1"/><path d="m22 22-5-10-5 10"/><path d="M14 18h6"/></svg></span>ترجمه</button>
-  <button class="tab" data-tab="style" role="tab" aria-selected="false"><span class="tab-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z"/><path d="M19 17l.7 2 2 .7-2 .7-.7 2-.7-2-2-.7 2-.7z"/></svg></span>استایل</button>
-  <button class="tab" data-tab="services" role="tab" aria-selected="false"><span class="tab-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="7.5" cy="15.5" r="4.5"/><path d="m10.7 12.3 9.8-9.8"/><path d="m17 6 3 3"/><path d="m14 9 2 2"/></svg></span>سرویس‌ها</button>
-</nav>
-<main>
-  <section class="tab-panel active" data-panel="main">
-    <section class="hero">
-      <div class="screen">
-        <button id="toggle" class="power" title="شروع/توقف ترجمه" aria-label="شروع یا توقف ترجمه"><svg class="power-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M13 3h-2v10h2V3zm4.83 2.17-1.42 1.42C17.99 7.86 19 9.81 19 12c0 3.87-3.13 7-7 7s-7-3.13-7-7c0-2.19 1.01-4.14 2.58-5.42L6.17 5.17C4.23 6.82 3 9.26 3 12c0 4.97 4.03 9 9 9s9-4.03 9-9c0-2.74-1.23-5.18-3.17-6.83z"/></svg><span class="pct" id="progressPct"></span></button>
-        <svg class="progress-ring" id="progressRing" viewBox="0 0 84 84" aria-hidden="true"><circle class="ring-track" cx="42" cy="42" r="38" pathLength="100"/><circle class="ring-fill" id="progressFill" cx="42" cy="42" r="38" pathLength="100"/></svg>
-        <span class="provider-chip" id="providerChip" hidden></span>
-        <span class="screen-lang" id="mainLang" title="زبان ترجمه"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.5 2.7 3.6 5.7 3.6 9s-1.1 6.3-3.6 9c-2.5-2.7-3.6-5.7-3.6-9S9.5 5.7 12 3z"/></svg><b id="mainLangVal"></b></span>
-      </div>
-      <p id="stateLabel" class="state" role="status">برای شروع ترجمه، همین دکمه رو بزن</p>
-      <div id="status" class="status" role="alert" hidden></div>
-    </section>
 
-    <section class="modes" aria-label="زیرنویس و دوبله">
-      <label class="mode">
-        <span class="mode-tile" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" focusable="false"><rect x="3" y="5" width="18" height="14" rx="3"/><path d="M7 11h4M13 11h4M7 15h10"/></svg></span>
-        <span class="mode-copy"><b>زیرنویس</b><small>زیرنویس‌های خود ویدیو را پیدا می‌کند و زمان‌بندی‌شان را نگه می‌دارد</small></span>
+<div class="wallet-row">
+  <div class="wallet-capsule" id="walletIn" hidden>
+    <span class="wc-dot" aria-hidden="true"></span>
+    <span class="wc-text"><span class="wc-label">موجودی:</span> <span id="walletAmount">—</span> <span class="wc-unit">تومان</span></span>
+    <button type="button" class="wc-charge" data-sfw="open-wallet">+ شارژ</button>
+  </div>
+  <a class="wallet-capsule wallet-capsule-out" id="walletOut" data-tip="ورود یا شارژ کیف پول در پنل کاربری" href="https://my.sub-ify.site/?source=extension" target="_blank" rel="noopener">
+    <span class="wc-text">ورود و دریافت اعتبار هدیه</span>
+  </a>
+</div>
+
+<main class="wrap stage">
+
+  <!-- ===== Tab 1: کنترل سریع (fits 380×560 with no scroll) ===== -->
+  <section class="tab-panel active" data-panel="main">
+    <div class="session">
+      <button id="toggle" class="pill-power" type="button" title="شروع یا توقف ترجمه" aria-label="شروع یا توقف ترجمه">
+        <span class="pp-knob" aria-hidden="true">
+          <svg class="progress-ring" id="progressRing" viewBox="0 0 84 84" aria-hidden="true"><circle class="ring-track" cx="42" cy="42" r="38" pathLength="100"/><circle class="ring-fill" id="progressFill" cx="42" cy="42" r="38" pathLength="100"/></svg>
+          <svg class="pp-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M13 3h-2v10h2V3zm4.83 2.17-1.42 1.42C17.99 7.86 19 9.81 19 12c0 3.87-3.13 7-7 7s-7-3.13-7-7c0-2.19 1.01-4.14 2.58-5.42L6.17 5.17C4.23 6.82 3 9.26 3 12c0 4.97 4.03 9 9 9s9-4.03 9-9c0-2.74-1.23-5.18-3.17-6.83z"/></svg>
+        </span>
+        <span class="pp-text"><span class="pp-off">آماده</span><span class="pp-on">فعال</span><span class="pct" id="progressPct"></span></span>
+      </button>
+      <div class="session-lang" id="mainLang">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.5 2.7 3.6 5.7 3.6 9s-1.1 6.3-3.6 9c-2.5-2.7-3.6-5.7-3.6-9S9.5 5.7 12 3z"/></svg>
+        <label class="sr-only" for="tab-target-language">زبان ترجمه</label>
+        <select id="tab-target-language">
+          <option value="fa">فارسی</option><option value="en">English</option><option value="ar">العربية</option><option value="tr">Türkçe</option><option value="es">Español</option><option value="de">Deutsch</option><option value="fr">Français</option><option value="pt">Português</option><option value="ru">Русский</option><option value="hi">हिन्दी</option><option value="zh">中文</option><option value="ja">日本語</option><option value="ko">한국어</option><option value="it">Italiano</option>
+        </select>
+        <b id="mainLangVal" hidden></b>
+      </div>
+      <span class="provider-chip" id="providerChip" hidden></span>
+      <div id="liveProg" class="live-prog" hidden aria-live="polite">
+      <div class="live-prog-bar" role="progressbar" aria-label="پیشرفت ترجمه"><i id="liveProgFill"></i></div>
+    </div>
+    </div>
+    <p id="stateLabel" class="sr-only" role="status">برای شروع ترجمه، همین دکمه رو بزن</p>
+    <div id="status" class="status" role="alert" hidden></div>
+
+    <section class="card features" aria-label="زیرنویس و دوبله">
+      <label class="feature">
+        <span class="f-ico tone-coral" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" focusable="false"><rect x="3" y="5" width="18" height="14" rx="3"/><path d="M7 11h4M13 11h4M7 15h10"/></svg></span>
+        <span class="f-copy"><b>زیرنویس دوزبانه</b><small>متن اصلی و ترجمه کنار هم</small></span>
         <input id="subify-popup-subtitle" class="switch" type="checkbox" checked>
       </label>
-      <label class="mode">
-        <span class="mode-tile tone-mint" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" focusable="false"><path d="M11 5 6 9H2v6h4l5 4z"/><path d="M15.5 8.5a5 5 0 0 1 0 7M19 5a10 10 0 0 1 0 14"/></svg></span>
-        <span class="mode-copy"><b>دوبلهٔ</b><small>صدای ترجمه را روی ویدیو می‌گذارد و صدای اصلی را کم می‌کند</small></span>
+      <label class="feature">
+        <span class="f-ico tone-violet" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" focusable="false"><path d="M11 5 6 9H2v6h4l5 4z"/><path d="M15.5 8.5a5 5 0 0 1 0 7M19 5a10 10 0 0 1 0 14"/></svg></span>
+        <span class="f-copy"><b>دوبله صوتی AI</b><small>صدای ترجمه روی ویدیو</small></span>
+        <span class="eq" aria-hidden="true"><i></i><i></i><i></i><i></i></span>
         <input id="subify-popup-dubbing" class="switch" type="checkbox">
       </label>
     </section>
 
+    <section class="bento" aria-label="میان‌برها">
+      <button class="tile" type="button" data-tool-page="learn.html" data-tip="لغت‌های ذخیره‌شده‌ت رو مرور کن">
+        <span class="t-ico tone-mint" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" focusable="false"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg></span>
+        <b>لغت‌های من</b>
+      </button>
+      <button id="translatePageBtn" class="tile" type="button" data-tip="متن‌های قابل‌مشاهدهٔ این صفحه رو ترجمه کن">
+        <span class="t-ico tone-cyan" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" focusable="false"><path d="m5 8 6 6"/><path d="m4 14 6-6 2-3"/><path d="M2 5h12"/><path d="M7 2h1"/><path d="m22 22-5-10-5 10"/><path d="M14 18h6"/></svg></span>
+        <b>ترجمه صفحه</b>
+      </button>
+      <button id="toggleTranscriptPanel" class="tile" type="button" data-tip="پنل متن کامل ویدیو رو نشون بده یا پنهان کن">
+        <span class="t-ico tone-violet" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" focusable="false"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M8 13h8M8 17h8"/></svg></span>
+        <b>متن کامل</b>
+      </button>
+    </section>
 
-    <button id="allAutoOff" class="shot-row" type="button" title="زیرنویس، دوبله و ترجمه‌ی خودکار صفحه را با هم خاموش می‌کند."><span>خاموش کردن همه‌ی خودکارها</span></button>
     <div id="streakLine" class="note streak-line" hidden><span id="streakText"></span><button id="streakGoal" class="streak-goal" type="button"></button></div>
-    <details class="disclosure adv"><summary>تنظیمات پیشرفته</summary><div class="disclosure-body">
-      <label class="mode">
-        <span class="mode-tile tone-cyan" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" focusable="false"><path d="M4 6h16M4 12h10M4 18h7"/></svg></span>
-        <span class="mode-copy"><b>نمایش خط اصلی</b><small>متن اصلی بالای ترجمه نمایش داده شود</small></span>
-        <input id="subify-tab-original" class="switch" type="checkbox">
-      </label>
-      <label class="mode">
-        <span class="mode-tile" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" focusable="false"><path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z"/><path d="M19 17l.7 2 2 .7-2 .7-.7 2-.7-2-2-.7 2-.7z"/></svg></span>
-        <span class="mode-copy"><b>هایلایت کلمه‌به‌کلمه</b><small>کلمه‌ها هنگام پخش یکی‌یکی روشن می‌شوند</small></span>
-        <input id="subify-tab-karaoke" class="switch" type="checkbox" checked>
-      </label>
-      <div id="dub-quick" class="dub-quick" style="display:none">
-        <label><span>بلندی صدای دوبله <output id="dubQuickGainOut"></output></span><input id="dubQuickGain" type="range" min="0.8" max="2.5" step="0.1" aria-label="بلندی صدای دوبله"></label>
-        <label><span>سرعت دوبله <output id="dubQuickRateOut"></output></span><input id="dubQuickRate" type="range" min="0.9" max="1.3" step="0.05" aria-label="سرعت دوبله"></label>
-        <label><span>صدای اصلی ویدیو <output id="dubQuickDuckOut"></output></span><input id="dubQuickDuck" type="range" min="0" max="1" step="0.05" aria-label="صدای اصلی ویدیو هنگام دوبله"></label>
-      </div>
-      <p class="dub-wallet-note" dir="rtl" style="margin:8px 0;font-size:12px;line-height:1.8;opacity:.85">دوبله با کلید Gemini شخصی شما انجام می‌شود و از کیف پول Subify ۰ تومان کم می‌کند.</p>
-      <div id="dubbing-audio-mode" class="segmented" style="display:none">
-        <div class="segmented-label">وقتی دوبله روشنه:</div>
-        <div class="segmented-options">
-          <button type="button" id="dubbing-mode-full" class="segmented-btn" data-mode="full"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M11 5 6 9H2v6h4l5 4z"/><path d="M15.5 8.5a5 5 0 0 1 0 7M19 5a10 10 0 0 1 0 14"/></svg>صدای دوبله رو هم پخش کن</button>
-          <button type="button" id="dubbing-mode-captions" class="segmented-btn" data-mode="captions"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M7 11h4M13 11h4M7 15h10"/></svg>فقط زیرنویس زنده، بدون صدا</button>
-        </div>
-        <small class="segmented-hint">اگر ویدیو زیرنویس ندارد، این حالت را انتخاب کن: فقط متن ترجمه را می‌بینی و صدای اصلی دست‌نخورده می‌ماند.</small>
-      </div>
-    </div></details>
+    <div class="session-foot">
+      <span id="liveProgText" class="live-prog-text" hidden></span>
+      <button id="allAutoOff" class="link-btn" type="button" title="زیرنویس، دوبله و ترجمه‌ی خودکار صفحه را با هم خاموش می‌کند.">توقف خودکارها</button>
+    </div>
   </section>
 
-  <section class="tab-panel" data-panel="translate">
-    <div class="source-group">
-      <div class="source-row"><label for="tab-source-language">زبان مبدا</label><select id="tab-source-language"><option value="auto">خودکار</option><option value="en">English</option><option value="es">Español</option><option value="de">Deutsch</option><option value="fr">Français</option><option value="tr">Türkçe</option><option value="pt">Português</option><option value="ru">Русский</option><option value="hi">हिन्दी</option><option value="ja">日本語</option><option value="ko">한국어</option><option value="ar">العربية</option></select></div>
-      <div class="source-row"><label for="tab-target-language">زبان ترجمه</label><select id="tab-target-language"><option value="fa">فارسی</option><option value="en">English</option><option value="ar">العربية</option><option value="tr">Türkçe</option><option value="es">Español</option><option value="de">Deutsch</option><option value="fr">Français</option><option value="pt">Português</option><option value="ru">Русский</option><option value="hi">हिन्दी</option><option value="zh">中文</option><option value="ja">日本語</option><option value="ko">한국어</option><option value="it">Italiano</option></select></div>
-      <div class="source-row"><label for="tab-tone">لحن ترجمه</label><select id="tab-tone"><option value="auto">خودکار (لحن خود گوینده)</option><option value="formal">همیشه رسمی</option><option value="friendly">همیشه محاوره‌ای/دوستانه</option><option value="academic">آکادمیک (ارائه به استاد)</option></select></div>
+  <!-- ===== Tab 2: ظاهر و صدا ===== -->
+  <section class="tab-panel" data-panel="style">
+    <div class="style-shell">
+      <div class="sticky-wrap">
+        <div id="styleLivePreview" class="style-live-preview" aria-live="polite">
+          <div class="style-preview-stage">
+            <div class="style-preview-caption">
+              <span id="stylePreviewOrig" class="preview-orig">Even here, they bloom.</span>
+              <span id="stylePreviewFa" class="preview-fa">حتی <span id="stylePreviewHighlight" class="preview-highlight">اینجا</span> هم شکوفا می‌شوند.</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <section class="card group">
+        <h2 class="group-title">پریست‌ها</h2>
+        <div class="preset-grid">
+          <button data-preset="classic">Classic</button><button data-preset="youtube">YouTube</button><button data-preset="pill">Pill</button><button data-preset="snapchat">Snap</button><button data-preset="cinema">Cinema</button><button data-preset="minimal">Minimal</button><button data-preset="sunset">Sunset</button><button data-preset="typewriter">Typewriter</button><button data-preset="blueprint">Blueprint</button>
+        </div>
+      </section>
+
+      <section class="card group">
+        <h2 class="group-title">تایپوگرافی</h2>
+        <div class="row"><label for="style-font">فونت فارسی</label><select id="style-font">
+          <optgroup label="فونت‌های تأییدشده">
+            <option value="Lalezar">Lalezar (لاله‌زار)</option>
+            <option value="Vazirmatn">Vazirmatn (وزیر)</option>
+            <option value="Estedad">Estedad (استعداد)</option>
+          </optgroup>
+          <optgroup label="فونت‌های آپلودشده">
+            <option value="VazirmatnVariable">Vazirmatn Variable</option>
+            <option value="IRANYekanX">IRANYekanX</option>
+            <option value="Peyda">Peyda</option>
+            <option value="Sahel">Sahel</option>
+            <option value="AradFDRegular">AradFD Regular</option>
+            <option value="AradFDMedium">AradFD Medium</option>
+            <option value="AradFDBold">AradFD Bold</option>
+            <option value="AradFDLight">AradFD Light</option>
+            <option value="DigiTitr">Digi Titr Plus Bold Circle</option>
+          </optgroup>
+        </select></div>
+        <div class="row"><label for="style-fontEn">فونت انگلیسی</label><select id="style-fontEn">
+          <option value="Inter">Inter</option>
+          <option value="Poppins">Poppins</option>
+          <option value="Montserrat">Montserrat</option>
+        </select></div>
+        <div class="row"><label for="style-display">نمایش</label><select id="style-display"><option value="translation">فقط ترجمه</option><option value="dual">اصلی + ترجمه</option><option value="original">فقط اصلی</option></select></div>
+        <div class="row stack"><label for="style-fontSize">اندازه <span id="style-fontSizeVal"></span>px</label><input id="style-fontSize" type="range" min="16" max="54" step="1"></div>
+        <div class="row stack"><label for="style-maxWidth">عرض متن <span id="style-maxWidthVal"></span>%</label><input id="style-maxWidth" type="range" min="55" max="96" step="1"></div>
+      </section>
+
+      <section class="card group">
+        <h2 class="group-title">رنگ‌ها</h2>
+        <div class="row"><label for="style-textColor">رنگ متن</label><input id="style-textColor" type="color"></div>
+        <div class="row"><label for="style-bgColor">رنگ پس‌زمینه</label><input id="style-bgColor" type="color"></div>
+        <div class="row"><label for="style-highlightColor">رنگ هایلایت</label><input id="style-highlightColor" type="color"></div>
+        <div class="row stack"><label for="style-bgOpacity">شفافیت پس‌زمینه <span id="style-bgOpacityVal"></span></label><input id="style-bgOpacity" type="range" min="0.15" max="0.95" step="0.05"></div>
+        <div class="row stack"><label for="style-radius">گردی گوشه <span id="style-radiusVal"></span>px</label><input id="style-radius" type="range" min="0" max="999" step="1"></div>
+      </section>
+
+      <section class="card group">
+        <h2 class="group-title">صدا و نمایش</h2>
+        <label class="row switch-row"><span>نمایش خط اصلی</span><input id="subify-tab-original" class="switch" type="checkbox"></label>
+        <label class="row switch-row"><span>هایلایت کلمه‌به‌کلمه</span><input id="subify-tab-karaoke" class="switch" type="checkbox" checked></label>
+        <div id="dub-quick" class="dub-quick" style="display:none">
+          <label class="row stack"><span>بلندی صدای دوبله <output id="dubQuickGainOut"></output></span><input id="dubQuickGain" type="range" min="0.8" max="2.5" step="0.1" aria-label="بلندی صدای دوبله"></label>
+          <label class="row stack"><span>سرعت دوبله <output id="dubQuickRateOut"></output></span><input id="dubQuickRate" type="range" min="0.9" max="1.3" step="0.05" aria-label="سرعت دوبله"></label>
+          <label class="row stack"><span>صدای اصلی ویدیو <output id="dubQuickDuckOut"></output></span><input id="dubQuickDuck" type="range" min="0" max="1" step="0.05" aria-label="صدای اصلی ویدیو هنگام دوبله"></label>
+        </div>
+        <p class="dub-wallet-note" dir="rtl">دوبله با کلید Gemini شخصی شما انجام می‌شود و از کیف پول Subify ۰ تومان کم می‌کند.</p>
+        <div id="dubbing-audio-mode" class="segmented" style="display:none">
+          <div class="segmented-label">وقتی دوبله روشنه:</div>
+          <div class="segmented-options">
+            <button type="button" id="dubbing-mode-full" class="segmented-btn" data-mode="full"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M11 5 6 9H2v6h4l5 4z"/><path d="M15.5 8.5a5 5 0 0 1 0 7M19 5a10 10 0 0 1 0 14"/></svg>صدای دوبله رو هم پخش کن</button>
+            <button type="button" id="dubbing-mode-captions" class="segmented-btn" data-mode="captions"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M7 11h4M13 11h4M7 15h10"/></svg>فقط زیرنویس زنده، بدون صدا</button>
+          </div>
+          <small class="segmented-hint">اگر ویدیو زیرنویس ندارد، این حالت را انتخاب کن: فقط متن ترجمه را می‌بینی و صدای اصلی دست‌نخورده می‌ماند.</small>
+        </div>
+      </section>
+
+      <details class="fold">
+        <summary>موقعیت و جلوه‌ها</summary>
+        <div class="fold-body">
+          <div class="row"><label for="style-positionMode">موقعیت</label><select id="style-positionMode"><option value="bottom">پایین، مثل YouTube</option><option value="middle">وسط ویدیو</option><option value="top">بالا</option><option value="custom">سفارشی / Drag</option></select></div>
+          <div class="row stack"><label for="style-positionY">موقعیت عمودی <span id="style-positionYVal"></span>%</label><input id="style-positionY" type="range" min="3" max="92" step="1"></div>
+          <div class="row stack"><label for="style-outlineWidth">Outline <span id="style-outlineVal"></span>px</label><input id="style-outlineWidth" type="range" min="0" max="8" step="0.5"></div>
+          <div class="row stack"><label for="style-shadowBlur">Shadow <span id="style-shadowVal"></span>px</label><input id="style-shadowBlur" type="range" min="0" max="30" step="1"></div>
+        </div>
+      </details>
+
+      <div class="style-actions">
+        <button id="saveStyle" class="btn-primary" type="button">ذخیره استایل</button>
+        <button id="resetStyle" type="button">بازنشانی</button>
+        <button id="openStyleFull" type="button">تنظیمات کامل</button>
+      </div>
     </div>
-    <details class="disclosure provider-card-disclosure">
-      <summary><span><span class="section-title">موتور ترجمه <span class="hint">برای همین ویدیو</span></span><span id="providerBadge" class="provider-badge">Auto</span></span></summary>
-      <div class="disclosure-body provider-card">
-        <div class="provider-select"><select id="popup-provider"><option value="auto">خودکار</option><option value="subify">Subify Server</option><option value="gemini">Gemini</option><option value="openrouter">OpenRouter</option><option value="openai">OpenAI</option><option value="custom">سرویس سفارشی</option></select></div>
-        <div id="subify-model-panel" class="provider-model-panel" style="display:none"><label class="hint" for="popup-subify-model">مدل (Subify Server)</label><select id="popup-subify-model" class="provider-model-input"></select><div id="popup-subify-cost" class="hint" dir="rtl"></div></div>
-        <div id="providerHint" class="status">در حالت خودکار، سرویس دارای کلید معتبر انتخاب می‌شود.</div>
+  </section>
+
+  <!-- ===== Tab 3: حساب و تنظیمات ===== -->
+  <section class="tab-panel" data-panel="account">
+    <section class="card group">
+      <h2 class="group-title">زبان و لحن</h2>
+      <div class="row"><label for="tab-source-language">زبان مبدا</label><select id="tab-source-language"><option value="auto">خودکار</option><option value="en">English</option><option value="es">Español</option><option value="de">Deutsch</option><option value="fr">Français</option><option value="tr">Türkçe</option><option value="pt">Português</option><option value="ru">Русский</option><option value="hi">हिन्दी</option><option value="ja">日本語</option><option value="ko">한국어</option><option value="ar">العربية</option></select></div>
+      <div class="row"><label for="tab-tone">لحن ترجمه</label><select id="tab-tone"><option value="auto">خودکار (لحن خود گوینده)</option><option value="formal">همیشه رسمی</option><option value="friendly">همیشه محاوره‌ای/دوستانه</option><option value="academic">آکادمیک (ارائه به استاد)</option></select></div>
+    </section>
+
+    <section class="card group">
+      <h2 class="group-title">موتور و مدل</h2>
+      <div class="row"><label for="popup-provider">موتور ترجمه</label><select id="popup-provider"><option value="auto">خودکار</option><option value="subify">Subify Server</option><option value="gemini">Gemini</option><option value="openrouter">OpenRouter</option><option value="openai">OpenAI</option><option value="custom">سرویس سفارشی</option></select></div>
+      <div id="subify-model-panel" class="model-panel" style="display:none">
+        <div class="row"><label for="popup-subify-model">مدل Subify Server</label><select id="popup-subify-model" class="provider-model-input"></select></div>
+        <div id="popup-subify-cost" class="rate" dir="rtl"></div>
+      </div>
+      <div id="providerHint" class="status">در حالت خودکار، سرویس دارای کلید معتبر انتخاب می‌شود.</div>
+    </section>
+
+    <details class="fold byok">
+      <summary><span>کلیدهای شخصی API (BYOK)</span><span id="providerBadge" class="provider-badge">Auto</span></summary>
+      <div class="fold-body">
+        <div class="svc-list" aria-label="وضعیت سرویس‌ها">
+          <div class="service-row" data-service="gemini"><span class="svc-name">Gemini</span><small id="svcGeminiSub">…</small><em class="svc-state" id="svcGeminiState">…</em></div>
+          <div class="service-row" data-service="openrouter"><span class="svc-name">OpenRouter</span><small id="svcOpenrouterSub">…</small><em class="svc-state" id="svcOpenrouterState">…</em></div>
+          <div class="service-row" data-service="openai"><span class="svc-name">OpenAI</span><small id="svcOpenaiSub">…</small><em class="svc-state" id="svcOpenaiState">…</em></div>
+          <div class="service-row" data-service="custom"><span class="svc-name">سرویس اختصاصی</span><small id="svcCustomSub">…</small><em class="svc-state" id="svcCustomState">…</em></div>
+        </div>
+        <small class="service-note" id="svcNote">در حالت «خودکار»، سرویس‌های آماده به ترتیب OpenRouter، OpenAI و Gemini امتحان می‌شن.</small>
+        <button id="svcOpenPanel" class="wide-btn" type="button">کلیدها و API اختصاصی در پنل</button>
         <div class="provider-model-row">
           <label for="popup-provider-model" class="hint">مدل این Provider</label>
           <input id="popup-provider-model" class="provider-model-input" type="text" placeholder="شناسه مدل را وارد کنید" autocomplete="off">
-          <div><select id="popup-gemini-models" class="provider-model-input" style="display:none;flex:1"></select><button id="fetch-gemini-models" class="model-fetch-btn" type="button" style="display:none"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M21 12a9 9 0 1 1-2.6-6.3L21 8"/><path d="M21 3v5h-5"/></svg>دریافت مدل‌ها</button></div>
+          <div class="model-fetch-row"><select id="popup-gemini-models" class="provider-model-input" style="display:none"></select><button id="fetch-gemini-models" class="model-fetch-btn" type="button" style="display:none"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M21 12a9 9 0 1 1-2.6-6.3L21 8"/><path d="M21 3v5h-5"/></svg>دریافت مدل‌ها</button></div>
           <input id="popup-gemini-model-manual" class="provider-model-input" type="text" placeholder="یا Model ID جمنای را دستی وارد کن" autocomplete="off" style="display:none">
           <div id="providerModelHint" class="hint">مدل را دستی انتخاب کن؛ این انتخاب فقط برای ترجمه زیرنویس است.</div>
         </div>
@@ -158,205 +288,86 @@ html:not([lang="fa"]):not([lang="ar"]) body,html:not([lang="fa"]):not([lang="ar"
       </div>
     </details>
 
-    <section class="page-translate-card">
-      <div class="page-translate-head">
-        <div><b id="pageTranslateTitle">ترجمهٔ کامل صفحه</b><small id="pageTranslateHint">متن‌های قابل‌مشاهدهٔ همین صفحه را ترجمه می‌کند.</small></div>
-        <span class="page-translate-badge" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="m5 8 6 6"/><path d="m4 14 6-6 2-3"/><path d="M2 5h12"/><path d="M7 2h1"/><path d="m22 22-5-10-5 10"/><path d="M14 18h6"/></svg></span>
+    <section class="card group" id="learnAcc">
+      <h2 class="group-title">یادگیری</h2>
+      <div class="learn-grid">
+        <button id="openLearn" class="learn-link" type="button" data-tool-page="learn.html" data-tip="لغت‌های ذخیره‌شده را با مرور هوشمند یاد بگیر و خروجی Anki بگیر."><span class="t-ico tone-violet" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" focusable="false"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg></span><b>مرور لغت‌ها</b></button>
+        <button class="learn-link" type="button" data-tool-page="shadow.html" data-tip="جمله را بشنو و همان‌طور تکرار کن."><span class="t-ico tone-cyan" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" focusable="false"><path d="M2 12h2M6 8v8M10 4v16M14 7v10M18 9v6M22 12h0"/></svg></span><b>تمرین تلفظ</b></button>
+        <button class="learn-link" type="button" data-tool-page="summary.html" data-tip="خلاصه و لغت‌های مهم ویدیو را بگیر."><span class="t-ico tone-neutral" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" focusable="false"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M8 13h8M8 17h8M8 9h2"/></svg></span><b>خلاصهٔ ویدیو</b></button>
+        <button class="learn-link" type="button" data-tool-page="chat.html" data-tip="دربارهٔ ویدیو سؤال بپرس و جواب بگیر."><span class="t-ico tone-mint" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" focusable="false"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></span><b>گفت‌وگو با ویدیو</b></button>
       </div>
-      <div class="page-translate-controls">
-        <label><span id="pageTranslateLangLabel">زبان مقصد</span><select id="pageTranslateLanguage"><option value="fa">فارسی</option><option value="en">انگلیسی</option><option value="ar">عربی</option><option value="tr">ترکی</option><option value="es">اسپانیایی</option><option value="de">آلمانی</option><option value="fr">فرانسوی</option><option value="pt">پرتغالی</option><option value="ru">روسی</option><option value="hi">هندی</option><option value="zh">چینی</option><option value="ja">ژاپنی</option><option value="ko">کره‌ای</option><option value="it">ایتالیایی</option></select></label>
+      <div class="learn-more">
+        <button id="openStoryboard" type="button" data-tool-page="storyboard.html" title="صحنه‌های ترجمه‌شدهٔ ویدیو را کنار هم نگه دار.">Storyboard</button>
+        <button type="button" data-tool-page="roleplay.html" title="با یک نقش، گفت‌وگوی واقعی تمرین کن.">نقش‌آفرینی</button>
+        <button type="button" data-tool-page="writer.html" title="از روی ویدیو بنویس و نوشته‌ات را اصلاح بگیر.">نوشتن از ویدیو</button>
       </div>
-      <div class="page-translate-actions"><button id="translatePageBtn" class="btn-primary">ترجمه صفحه</button><button id="restorePageBtn">بازگردانی</button></div>
+    </section>
+
+    <section class="card group page-card">
+      <h2 id="pageTranslateTitle" class="group-title">ترجمهٔ کامل صفحه</h2>
+      <p id="pageTranslateHint" class="hint">متن‌های قابل‌مشاهدهٔ همین صفحه را ترجمه می‌کند. دکمهٔ ترجمه را از کارت «ترجمه صفحه» در کنترل سریع بزن.</p>
+      <div class="row"><label for="pageTranslateLanguage"><span id="pageTranslateLangLabel">زبان مقصد</span></label><select id="pageTranslateLanguage"><option value="fa">فارسی</option><option value="en">انگلیسی</option><option value="ar">عربی</option><option value="tr">ترکی</option><option value="es">اسپانیایی</option><option value="de">آلمانی</option><option value="fr">فرانسوی</option><option value="pt">پرتغالی</option><option value="ru">روسی</option><option value="hi">هندی</option><option value="zh">چینی</option><option value="ja">ژاپنی</option><option value="ko">کره‌ای</option><option value="it">ایتالیایی</option></select></div>
+      <div class="row"><label for="pageTranslateFont"><span id="pageTranslateFontLabel">فونت صفحه</span></label><select id="pageTranslateFont"><option value="Vazirmatn">Vazirmatn</option><option value="Estedad">Estedad</option><option value="Lalezar">Lalezar</option><option value="Sahel">Sahel</option><option value="Arad">Arad</option><option value="Inter">Inter</option><option value="Poppins">Poppins</option><option value="Montserrat">Montserrat</option></select></div>
+      <label class="row switch-row" for="pageTranslateAll"><span><span id="pageTranslateAllLabel">ترجمه همه صفحه‌ها</span><small id="pageTranslateAllHint">هر صفحه‌ای که باز می‌کنی، با همین زبان خودکار ترجمه می‌شه. برای این کار اجازهٔ دسترسی به همهٔ سایت‌ها لازم است.</small></span><input id="pageTranslateAll" class="switch" type="checkbox"></label>
+      <div class="page-actions"><button id="restorePageBtn" type="button">بازگردانی صفحه</button></div>
       <div id="pageTranslateStatus" class="page-translate-status">برای ترجمه، زبان و فونت را انتخاب کن.</div>
     </section>
 
+    <details class="fold" id="recentAcc">
+      <summary><span>ویدیوهای اخیر حساب</span></summary>
+      <div class="fold-body" id="recentVideos"><p class="note">در حال بارگذاری…</p></div>
+    </details>
 
-
-
-    <details class="disclosure adv"><summary>تنظیمات پیشرفته</summary><div class="disclosure-body">
-        <div class="adv-field"><label for="pageTranslateFont"><span id="pageTranslateFontLabel">فونت صفحه</span></label><select id="pageTranslateFont"><option value="Vazirmatn">Vazirmatn</option><option value="Estedad">Estedad</option><option value="Lalezar">Lalezar</option><option value="Sahel">Sahel</option><option value="Arad">Arad</option><option value="Inter">Inter</option><option value="Poppins">Poppins</option><option value="Montserrat">Montserrat</option></select></div>
-      <div class="page-translate-auto">
-        <label class="page-translate-auto-row" for="pageTranslateAll"><span id="pageTranslateAllLabel">ترجمه همه صفحه‌ها</span><input id="pageTranslateAll" class="switch" type="checkbox"></label>
-        <small id="pageTranslateAllHint">هر صفحه‌ای که باز می‌کنی، با همین زبان خودکار ترجمه می‌شه. برای این کار اجازهٔ دسترسی به همهٔ سایت‌ها لازم است.</small>
-      </div>
-    <p class="note">زیرنویس از <strong>Caption واقعی YouTube</strong> خوانده می‌شود و ترجمه بر اساس همان cue و تایم‌کد نمایش داده می‌شود.</p>
-    <button id="toggleTranscriptPanel" class="wide-btn" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M8 13h8M8 17h8"/></svg>نمایش/پنهان‌کردن پنل ترنسکریپت</button>
-    <details class="disclosure">
-      <summary>ترجمهٔ ثابت برای کلمات خاص <span class="hint">اسم‌ها، اصطلاح‌های فنی و...</span></summary>
-      <div class="disclosure-body">
-        <p class="hint">
-          گاهی هوش‌مصنوعی یه کلمه رو هر بار یه‌جور ترجمه می‌کنه. اینجا می‌تونی بگی یه کلمه یا عبارت خاص
-          <b>همیشه</b> دقیقاً به یه شکل ثابت ترجمه بشه، توی همهٔ ویدیوها، نه فقط همین یکی.<br>
-          مثال: <span dir="ltr">Neural Network</span> ← شبکهٔ عصبی
-        </p>
+    <details class="fold">
+      <summary><span>ترجمهٔ ثابت برای کلمات خاص</span></summary>
+      <div class="fold-body">
+        <p class="hint">گاهی هوش‌مصنوعی یه کلمه رو هر بار یه‌جور ترجمه می‌کنه. اینجا می‌تونی بگی یه کلمه یا عبارت خاص <b>همیشه</b> دقیقاً به یه شکل ثابت ترجمه بشه، توی همهٔ ویدیوها، نه فقط همین یکی.<br>مثال: <span dir="ltr">Neural Network</span> ← شبکهٔ عصبی</p>
         <div class="glossary-form">
           <input id="glossary-term" type="text" placeholder="کلمه یا عبارت اصلی (مثلاً Neural Network)">
           <input id="glossary-translation" type="text" placeholder="ترجمهٔ ثابتش (مثلاً شبکهٔ عصبی)">
-          <button id="glossary-add" class="wide-btn" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M12 5v14M5 12h14"/></svg>اضافه کردن</button>
+          <button id="glossary-add" class="wide-btn" type="button">اضافه کردن</button>
         </div>
         <div id="glossary-list"></div>
         <p class="hint" id="glossary-empty">هنوز چیزی اضافه نکردی، لیست خالیه.</p>
       </div>
     </details>
-    <details class="disclosure">
-      <summary>خروجی و دانلود <span class="hint">SRT / VTT / TXT، صوت دوبله</span></summary>
-      <div class="disclosure-body">
+
+    <details class="fold">
+      <summary><span>خروجی و دانلود</span></summary>
+      <div class="fold-body">
         <div class="hint">زیرنویس ترجمه‌شده</div>
-        <div class="export-grid">
-          <button id="dlFaSrt">SRT</button><button id="dlFaVtt">VTT</button><button id="dlFaTxt">TXT</button>
-        </div>
+        <div class="export-grid"><button id="dlFaSrt" type="button">SRT</button><button id="dlFaVtt" type="button">VTT</button><button id="dlFaTxt" type="button">TXT</button></div>
         <div class="hint">زیرنویس اصلی</div>
-        <div class="export-grid">
-          <button id="dlOrigSrt">SRT</button><button id="dlOrigVtt">VTT</button><button id="dlOrigTxt">TXT</button>
-        </div>
+        <div class="export-grid"><button id="dlOrigSrt" type="button">SRT</button><button id="dlOrigVtt" type="button">VTT</button><button id="dlOrigTxt" type="button">TXT</button></div>
         <div class="hint">صوت دوبله</div>
         <div class="export-audio-row">
           <select id="audioExportFormat"><option value="wav">WAV</option><option value="mp3">MP3 (فشرده)</option></select>
-          <button id="dlOrigAudio"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M3 14v-2a9 9 0 0 1 18 0v2"/><rect x="3" y="14" width="4" height="6" rx="1.5"/><rect x="17" y="14" width="4" height="6" rx="1.5"/></svg>صوت اصلی</button>
-          <button id="dlDubAudio"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg>صوت دوبله</button>
+          <button id="dlOrigAudio" type="button">صوت اصلی</button>
+          <button id="dlDubAudio" type="button">صوت دوبله</button>
         </div>
       </div>
     </details>
-    </div></details>
-    <details class="disclosure learn-acc recent-acc" id="recentAcc">
-      <summary><span>ویدیوهای اخیر حساب</span><span class="hint">از همان جایی ادامه بده که ماندی.</span></summary>
-      <div class="disclosure-body learn-acc-body recent-acc-body" id="recentVideos"><p class="note" style="grid-column:1/-1;margin:0">در حال بارگذاری…</p></div>
-    </details>
-    <details class="disclosure learn-acc" id="learnAcc">
-      <summary><span>یادگیری و ابزارها</span><span class="hint">این ابزارها را از همین‌جا باز کن.</span></summary>
-      <div class="disclosure-body learn-acc-body">
-        <button id="openLearn" class="learn-link" type="button" data-tool-page="learn.html" title="لغت‌های ذخیره‌شده را با مرور هوشمند یاد بگیر و خروجی Anki بگیر."><span class="tool-tile tone-violet" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" focusable="false"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg></span><span class="learn-link-copy"><b>یادگیری و مرور لغت</b></span></button>
-        <button id="openStoryboard" class="learn-link" type="button" data-tool-page="storyboard.html" title="صحنه‌های ترجمه‌شدهٔ ویدیو را کنار هم نگه دار."><span class="tool-tile tone-cyan" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" focusable="false"><rect x="2" y="3" width="20" height="18" rx="2"/><path d="M7 3v18M17 3v18M2 9h5M2 15h5M17 9h5M17 15h5"/></svg></span><span class="learn-link-copy"><b>Storyboard</b></span></button>
-        <button class="learn-link" type="button" data-tool-page="roleplay.html" title="با یک نقش، گفت‌وگوی واقعی تمرین کن."><span class="tool-tile tone-mint" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" focusable="false"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.8-3.2 3.2-5 6.5-5s5.7 1.8 6.5 5"/><path d="M16 4.5a3.5 3.5 0 0 1 0 7M18.5 14.5c1.6.6 2.6 2.2 3 4.5"/></svg></span><span class="learn-link-copy"><b>نقش‌آفرینی</b></span></button>
-        <button class="learn-link" type="button" data-tool-page="writer.html" title="از روی ویدیو بنویس و نوشته‌ات را اصلاح بگیر."><span class="tool-tile tone-violet" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" focusable="false"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg></span><span class="learn-link-copy"><b>نوشتن از ویدیو</b></span></button>
-        <button class="learn-link" type="button" data-tool-page="shadow.html" title="جمله را بشنو و همان‌طور تکرار کن."><span class="tool-tile tone-cyan" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" focusable="false"><path d="M2 12h2M6 8v8M10 4v16M14 7v10M18 9v6M22 12h0"/></svg></span><span class="learn-link-copy"><b>تمرین تلفظ</b></span></button>
-        <button class="learn-link" type="button" data-tool-page="chat.html" title="دربارهٔ ویدیو سؤال بپرس و جواب بگیر."><span class="tool-tile tone-mint" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" focusable="false"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></span><span class="learn-link-copy"><b>گفت‌وگو با ویدیو</b></span></button>
-        <button class="learn-link" type="button" data-tool-page="summary.html" title="خلاصه و لغت‌های مهم ویدیو را بگیر."><span class="tool-tile tone-neutral" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" focusable="false"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M8 13h8M8 17h8M8 9h2"/></svg></span><span class="learn-link-copy"><b>خلاصهٔ ویدیو</b></span></button>
-      </div>
-    </details>
-    <button id="captureShot" class="shot-row" type="button"><span class="tool-tile" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" focusable="false"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg></span><span>گرفتن اسکرین‌شات از این تب</span></button>
-  </section>
 
-  <section class="tab-panel" data-panel="style">
-    <div class="style-shell">
-      <div id="styleLivePreview" class="style-live-preview sticky-preview" aria-live="polite">
-        <div class="style-preview-stage">
-          <div class="style-preview-caption">
-            <span id="stylePreviewOrig" class="preview-orig">Even here, they bloom.</span>
-            <span id="stylePreviewFa" class="preview-fa">حتی <span id="stylePreviewHighlight" class="preview-highlight">اینجا</span> هم شکوفا می‌شوند.</span>
-          </div>
-        </div>
-      </div>
-      <div class="style-live-hint">پیش‌نمایش بالا با هر تغییر رنگ، فونت، اندازه، موقعیت و جلوه فوراً به‌روزرسانی می‌شود.</div>
+    <button id="captureShot" class="row-action" type="button">گرفتن اسکرین‌شات از این تب</button>
+    <p class="note">زیرنویس از <strong>Caption واقعی YouTube</strong> خوانده می‌شود و ترجمه بر اساس همان cue و تایم‌کد نمایش داده می‌شود.</p>
 
-      <details class="style-accordion" open>
-        <summary><span class="accordion-copy">پریست‌های آماده<small>یک انتخاب، یک استایل کامل</small></span></summary>
-        <div class="accordion-body">
-          <div class="preset-grid">
-            <button data-preset="classic">Classic</button><button data-preset="youtube">YouTube</button><button data-preset="pill">Pill</button><button data-preset="snapchat">Snap</button><button data-preset="cinema">Cinema</button><button data-preset="minimal">Minimal</button><button data-preset="sunset">Sunset</button><button data-preset="typewriter">Typewriter</button><button data-preset="blueprint">Blueprint</button>
-          </div>
-        </div>
-      </details>
-
-      <details class="style-accordion">
-        <summary><span class="accordion-copy">تایپوگرافی<small>فونت، نوع نمایش، اندازه و عرض متن</small></span></summary>
-        <div class="accordion-body">
-          <div class="style-grid">
-            <div class="style-field"><label>فونت</label><select id="style-font">
-  <optgroup label="فونت‌های تأییدشده">
-    <option value="Lalezar">Lalezar (لاله‌زار)</option>
-    <option value="Vazirmatn">Vazirmatn (وزیر)</option>
-    <option value="Estedad">Estedad (استعداد)</option>
-  </optgroup>
-  <optgroup label="فونت‌های آپلودشده">
-    <option value="VazirmatnVariable">Vazirmatn Variable</option>
-    <option value="IRANYekanX">IRANYekanX</option>
-    <option value="Peyda">Peyda</option>
-    <option value="Sahel">Sahel</option>
-    <option value="AradFDRegular">AradFD Regular</option>
-    <option value="AradFDMedium">AradFD Medium</option>
-    <option value="AradFDBold">AradFD Bold</option>
-    <option value="AradFDLight">AradFD Light</option>
-    <option value="DigiTitr">Digi Titr Plus Bold Circle</option>
-  </optgroup>
-</select></div>
-            <div class="style-field"><label>فونت انگلیسی</label><select id="style-fontEn">
-  <option value="Inter">Inter</option>
-  <option value="Poppins">Poppins</option>
-  <option value="Montserrat">Montserrat</option>
-</select></div>
-            <div class="style-field"><label>نمایش</label><select id="style-display"><option value="translation">فقط ترجمه</option><option value="dual">اصلی + ترجمه</option><option value="original">فقط اصلی</option></select></div>
-            <div class="style-field"><label>اندازه <span id="style-fontSizeVal"></span>px</label><input id="style-fontSize" type="range" min="16" max="54" step="1"></div>
-            <div class="style-field"><label>عرض متن <span id="style-maxWidthVal"></span>%</label><input id="style-maxWidth" type="range" min="55" max="96" step="1"></div>
-          </div>
-        </div>
-      </details>
-
-
-      <details class="style-accordion">
-        <summary><span class="accordion-copy">رنگ و شفافیت<small>رنگ متن، پس‌زمینه و هایلایت</small></span></summary>
-        <div class="accordion-body">
-          <div class="style-grid">
-            <div class="style-field"><label>شفافیت <span id="style-bgOpacityVal"></span></label><input id="style-bgOpacity" type="range" min="0.15" max="0.95" step="0.05"></div>
-            <div class="style-field"><label>گردی گوشه <span id="style-radiusVal"></span>px</label><input id="style-radius" type="range" min="0" max="999" step="1"></div>
-            <div class="style-field"><label>رنگ متن</label><input id="style-textColor" type="color"></div>
-            <div class="style-field"><label>رنگ پس‌زمینه</label><input id="style-bgColor" type="color"></div>
-            <div class="style-field wide"><label>رنگ هایلایت</label><input id="style-highlightColor" type="color"></div>
-          </div>
-        </div>
-      </details>
-
-
-      <details class="disclosure adv"><summary>تنظیمات پیشرفته</summary><div class="disclosure-body">
-      <details class="style-accordion">
-        <summary><span class="accordion-copy">موقعیت<small>محل نمایش زیرنویس روی ویدیو</small></span></summary>
-        <div class="accordion-body">
-          <div class="style-grid">
-            <div class="style-field"><label>موقعیت</label><select id="style-positionMode"><option value="bottom">پایین، مثل YouTube</option><option value="middle">وسط ویدیو</option><option value="top">بالا</option><option value="custom">سفارشی / Drag</option></select></div>
-            <div class="style-field"><label>موقعیت عمودی <span id="style-positionYVal"></span>%</label><input id="style-positionY" type="range" min="3" max="92" step="1"></div>
-          </div>
-        </div>
-      </details>
-      <details class="style-accordion">
-        <summary><span class="accordion-copy">جلوه‌های بیشتر<small>Outline و Shadow برای تنظیم نهایی</small></span></summary>
-        <div class="accordion-body">
-          <div class="style-grid">
-            <div class="style-field"><label>Outline <span id="style-outlineVal"></span>px</label><input id="style-outlineWidth" type="range" min="0" max="8" step="0.5"></div>
-            <div class="style-field"><label>Shadow <span id="style-shadowVal"></span>px</label><input id="style-shadowBlur" type="range" min="0" max="30" step="1"></div>
-          </div>
-        </div>
-      </details>
-      <div class="style-actions"><button id="resetStyle">بازنشانی استایل</button><button id="openStyleFull">تنظیمات کامل</button></div>
-      </div></details>
-      <div class="style-actions"><button id="saveStyle" class="btn-primary">ذخیره استایل</button></div>
+    <div class="footer-links">
+      <a class="support-open" href="https://t.me/subifysupp" target="_blank" rel="noopener">پشتیبانی و تماس</a>
+      <a class="site-back" href="https://my.sub-ify.site/?source=extension" target="_blank" rel="noopener">ورود به وب‌سایت</a>
+      <nav class="legal-links" aria-label="Legal"><a href="https://app.sub-ify.site/legal/guide.html" target="_blank" rel="noopener">راهنما</a><a href="https://app.sub-ify.site/legal/terms.html" target="_blank" rel="noopener">شرایط استفاده</a><a href="https://app.sub-ify.site/legal/privacy.html" target="_blank" rel="noopener">حریم خصوصی</a></nav>
     </div>
-  </section>
-
-  <section class="tab-panel" data-panel="services">
-    <div class="keys-hero">
-      <div class="keys-hero-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z"/><path d="M19 17l.7 2 2 .7-2 .7-.7 2-.7-2-2-.7 2-.7z"/></svg></div>
-      <div>
-        <h2>سرویس‌های ترجمه</h2>
-        <p>وضعیت هر سرویس روی همین دستگاه. کلیدها و API اختصاصی را در پنل مدیریت وارد کن.</p>
-      </div>
-      <span class="secure-pill">محلی و امن</span>
-    </div>
-
-    <section class="modes service-list" aria-label="وضعیت سرویس‌ها">
-      <div class="mode service-row" data-service="gemini"><span class="mode-tile tone-cyan" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" focusable="false"><circle cx="7.5" cy="15.5" r="4.5"/><path d="m10.7 12.3 9.8-9.8"/><path d="m17 6 3 3"/><path d="m14 9 2 2"/></svg></span><span class="mode-copy"><b>Gemini</b><small id="svcGeminiSub">…</small></span><em class="svc-state" id="svcGeminiState">…</em></div>
-      <div class="mode service-row" data-service="openrouter"><span class="mode-tile" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" focusable="false"><circle cx="7.5" cy="15.5" r="4.5"/><path d="m10.7 12.3 9.8-9.8"/><path d="m17 6 3 3"/><path d="m14 9 2 2"/></svg></span><span class="mode-copy"><b>OpenRouter</b><small id="svcOpenrouterSub">…</small></span><em class="svc-state" id="svcOpenrouterState">…</em></div>
-      <div class="mode service-row" data-service="openai"><span class="mode-tile tone-mint" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" focusable="false"><circle cx="7.5" cy="15.5" r="4.5"/><path d="m10.7 12.3 9.8-9.8"/><path d="m17 6 3 3"/><path d="m14 9 2 2"/></svg></span><span class="mode-copy"><b>OpenAI</b><small id="svcOpenaiSub">…</small></span><em class="svc-state" id="svcOpenaiState">…</em></div>
-      <div class="mode service-row" data-service="custom"><span class="mode-tile tone-neutral" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" focusable="false"><circle cx="7.5" cy="15.5" r="4.5"/><path d="m10.7 12.3 9.8-9.8"/><path d="m17 6 3 3"/><path d="m14 9 2 2"/></svg></span><span class="mode-copy"><b>سرویس اختصاصی</b><small id="svcCustomSub">…</small></span><em class="svc-state" id="svcCustomState">…</em></div>
-    </section>
-
-    <small class="service-note" id="svcNote">در حالت «خودکار»، سرویس‌های آماده به ترتیب OpenRouter، OpenAI و Gemini امتحان می‌شن.</small>
-    <button id="svcOpenPanel" class="custom-api-btn" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="7.5" cy="15.5" r="4.5"/><path d="m10.7 12.3 9.8-9.8"/><path d="m17 6 3 3"/><path d="m14 9 2 2"/></svg>کلیدها و API اختصاصی در پنل</button>
-    <a class="support-open" href="https://t.me/subifysupp" target="_blank" rel="noopener">پشتیبانی و تماس · Support &amp; contact</a>
-    <a class="site-back" href="https://sub-ify.site" target="_blank" rel="noopener">بازگشت به سایت · Back to website</a><nav class="legal-links" aria-label="Legal"><a href="https://app.sub-ify.site/legal/guide.html" target="_blank" rel="noopener">راهنما</a><a href="https://app.sub-ify.site/legal/terms.html" target="_blank" rel="noopener">شرایط استفاده</a><a href="https://app.sub-ify.site/legal/privacy.html" target="_blank" rel="noopener">حریم خصوصی</a></nav>
   </section>
 </main>
 
+<nav class="tabs" role="tablist" aria-label="بخش‌های Subify">
+  <button class="tab active" data-tab="main" role="tab" aria-selected="true"><span class="tab-ico" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" focusable="false"><path d="M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5.5v-6h-5v6H4a1 1 0 0 1-1-1z"/></svg></span><span class="tab-label">کنترل سریع</span></button>
+  <button class="tab" data-tab="style" role="tab" aria-selected="false"><span class="tab-ico" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" focusable="false"><path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z"/><path d="M19 17l.7 2 2 .7-2 .7-.7 2-.7-2-2-.7 2-.7z"/></svg></span><span class="tab-label">ظاهر و صدا</span></button>
+  <button class="tab" data-tab="account" role="tab" aria-selected="false"><span class="tab-ico" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" focusable="false"><circle cx="7.5" cy="15.5" r="4.5"/><path d="m10.7 12.3 9.8-9.8"/><path d="m17 6 3 3"/><path d="m14 9 2 2"/></svg></span><span class="tab-label">حساب و تنظیمات</span></button>
+</nav>
+
+</div>
+
 <div id="toast" class="toast" role="status" aria-live="polite"></div>
-<div id="sfwScreen" class="sfw-screen" hidden></div><script src="ui-language.js"></script><script src="select-menu.js"></script><script src="account-gate.js"></script><script src="ai-route-core.js"></script><script src="subify-wallet.js"></script><script src="popup.js"></script>
+<div id="sfwScreen" class="sfw-screen" hidden></div><script src="ui-language.js"></script><script src="ui-i18n-extra.js"></script><script src="select-menu.js"></script><script src="account-gate.js"></script><script src="ai-route-core.js"></script><script src="subify-wallet.js"></script><script src="popup.js"></script><script src="popup-fx.js"></script>
 </body>
 </html>

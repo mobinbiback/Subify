@@ -963,24 +963,36 @@ function stripTrailingPeriod(text) {
   return t.endsWith(".") && !t.endsWith("..") ? t.slice(0, -1) : t;
 }
 
-// The reply, read strictly. An "id|text" reply is read line by line; a reply that starts with { or [ (or has no id line)
-// is read as the old JSON shape. Nothing is assigned to a cue unless its id is in the batch.
+// The reply, read strictly. Markdown fences on their own lines are dropped; an "id|text" reply is read line by line; a reply
+// that starts with { or [ (or has no id line) is read as the old JSON shape. Nothing is assigned to a cue unless its id is in
+// the batch. A reply with no usable line throws an Error whose code is "parse_error" (the raw reply is in .raw).
+function subtitleParseError(provider, reason, raw, detail = "") {
+  const e = new Error(`${provider} subtitle reply could not be read (${reason})`);
+  e.code = "parse_error";
+  e.reason = reason;
+  e.raw = String(raw || "").slice(0, 400);
+  e.detail = String(detail || "");
+  return e;
+}
 function parseSubtitleResults(text, provider, lang = "fa", items = []) {
-  const reply = String(text || "").replace(/```json|```/g, "").trim();
-  if (!reply) throw new Error(`${provider} returned no subtitle translation text`);
+  const raw = String(text || "");
+  const reply = raw.replace(/^[ \t]*```[A-Za-z0-9_-]*[ \t]*$/gm, "").replace(/```/g, "").trim();
+  if (!reply) throw subtitleParseError(provider, "empty", raw);
   let texts = null;
-  if (!/^[\[{]/.test(reply)) {
+  if (!/^\s*[\[{]\s*["{\[\]}]/.test(reply)) {
     const r = SubifyAiRoute.parseIdLines(reply, items.length);
-    if (!r.ok) throw new Error(`${provider} subtitle reply ids do not match the batch (${r.reason})`);
     if (r.texts.some(Boolean)) texts = r.texts;
   }
-  if (!texts) texts = jsonReplyTexts(reply, provider, lang, items);
+  if (!texts) {
+    try { texts = jsonReplyTexts(reply, provider, lang, items); }
+    catch (e) { throw subtitleParseError(provider, "no-usable-lines", raw, e.message); }
+  }
   const out = SubifyAiRoute.attachTexts(items, texts).map(x => {
     const t = stripTrailingPeriod(lang === "fa" ? applyPersianPunctuation(x.text) : x.text);
     // Keep `fa` as a compatibility alias because older UI/export code reads it.
     return { id: x.id, start: x.start, end: x.end, text: t, fa: t, translation: t };
   }).filter(x => x.id && x.text);
-  if (!out.length) throw new Error(`${provider} returned an empty subtitle translation`);
+  if (!out.length) throw subtitleParseError(provider, "no-usable-lines", raw);
   return out;
 }
 
@@ -1730,6 +1742,7 @@ browser.tabs.onUpdated.addListener(async (tabId, info, tab) => {
 // The session cookie lives on sub-ify.site (HttpOnly). The extension never sees a token: it only asks
 // https://sub-ify.site/auth/me.php "who is signed in?" is asked through the bridge (subify-api-core.js), kept for one minute.
 const SUBIFY_SITE = "https://sub-ify.site";
+const SUBIFY_MY_SITE = "https://my.sub-ify.site"; // member panel: sign-in and top-up open here
 const SUBIFY_GATED = new Set(["subify-translate", "subify-page-translate", "subify-vocab-enrich", "subify-vocab-batch", "subify-grammar", "subify-vocab-grammar", "popup-start", "popup-test-live", "subify-cloud-cache-get", "subify-cloud-cache-put", "subify-cache-status", "subify-set-dubbing", "subify-set-dubbing-audio"]);
 
 async function subifyAuthState(force) {
@@ -1838,6 +1851,7 @@ const SUBIFY_FREE_AI_TEXT = {
   upstream: "سرویس هوش مصنوعی Subify پاسخ نداد؛ چند دقیقه دیگر دوباره امتحان کن",
   empty: "هوش مصنوعی جواب خالی داد؛ در پنل مدیریت «تست اتصال» را بزن و مدل دیگری انتخاب کن",
   failed: "ترجمه‌ی رایگان انجام نشد؛ دوباره امتحان کن",
+  parse_error: "پاسخ هوش مصنوعی خوانده نشد؛ همین بخش دوباره ترجمه می‌شود",
   balance_empty: "اعتبار Subify تمام شد و ترجمه‌ی بقیه‌ی زیرنویس متوقف شد. کیف پول را شارژ کن، سپس دوباره امتحان کن",
   model_not_allowed: "این مدل برای حساب تو فعال نیست؛ در تنظیمات مدل دیگری انتخاب کن"
 };
@@ -1856,6 +1870,19 @@ function subifyFreeAiError(code) {
   e.code = code;
   return e;
 }
+// SubifyDebug: one line per step of a subtitle batch in the extension log (pd_log, shown in the popup's log).
+// Stages: request_sent, server_status, parsed_cues, batch_sent, parse_error, batch_skipped, and the overlay's
+// batch_waiting and overlay_rendered (they arrive as subify-trace messages).
+function subtitleTrace(stage, data = {}) {
+  const level = /error|skipped/.test(stage) ? "warn" : "info";
+  let payload = "";
+  try { payload = JSON.stringify(data); } catch (_) { payload = "{}"; }
+  log(`[SubifyDebug] ${stage} ${payload}`.slice(0, 300), level).catch(() => {});
+}
+browser.runtime.onMessage.addListener((msg) => {
+  if (msg && msg.type === "subify-trace") subtitleTrace(String(msg.stage || "trace"), msg.data || {});
+  return false;
+});
 
 // True when the chosen provider has a saved key this translation can use (the same rules as the branches in subify-translate).
 function subifyHasTextKey(settings, provider) {
@@ -1876,15 +1903,22 @@ async function subifyFreeAiTranslate(cues, settings, videoId, model = "", cacheC
   const refuse = (code) => {
     const c = subifyFreeAiCode(code);
     // A slow or failed server call pauses only briefly; a refusal (quota, capacity, sign-in) pauses for a minute.
-    const ms = c === "upstream" || c === "network" || c === "empty" ? 6000 : SUBIFY_FREE_AI_HOLD_MS;
-    subifyFreeAiHold = { until: Date.now() + ms, code: c };
+    // A reply that could not be read holds nothing: the retry goes straight out.
+    if (c !== "parse_error") {
+      const ms = c === "upstream" || c === "network" || c === "empty" ? 6000 : SUBIFY_FREE_AI_HOLD_MS;
+      subifyFreeAiHold = { until: Date.now() + ms, code: c };
+    }
     return subifyFreeAiError(c);
   };
   const { prompt, lang, items } = subtitleItemsAndPrompt(cues, settings);
+  subtitleTrace("request_sent", { videoId: String(videoId || ""), page: !!page, lines: cues.length, model: String(model || "") });
   let res;
+  const ctl = new AbortController();
+  const killTimer = setTimeout(() => ctl.abort(), SUBIFY_CALL_TIMEOUT_MS);
   try {
     res = await fetch(SUBIFY_SITE + "/auth/ai.php?action=chat", {
       method: "POST",
+      signal: ctl.signal,
       credentials: "include",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -1900,9 +1934,12 @@ async function subifyFreeAiTranslate(cues, settings, videoId, model = "", cacheC
       })
     });
   } catch (e) {
-    throw refuse("network");
+    clearTimeout(killTimer);
+    throw refuse("upstream");
   }
   const data = await res.json().catch(() => ({}));
+  clearTimeout(killTimer);
+  subtitleTrace("server_status", { status: res.status, error: String(data.error || ""), model: String(data.model || "") });
   if (!res.ok) {
     // The server's reason goes to the extension log, so a failure can be traced without the server logs.
     await log(`Free Subify AI: HTTP ${res.status} ${data.error || ""}`.trim(), "warn");
@@ -1910,9 +1947,17 @@ async function subifyFreeAiTranslate(cues, settings, videoId, model = "", cacheC
   }
   await subifyRecordJob(data, model);
   let results = [];
-  try { results = parseSubtitleResults(String(data.choices?.[0]?.message?.content || ""), "Subify", lang, items); } catch (e) { results = []; }
+  try {
+    results = parseSubtitleResults(String(data.choices?.[0]?.message?.content || ""), "Subify", lang, items);
+  } catch (e) {
+    // The server settles only replies it could read (ai.php), so this is rare. The raw reply goes to the log.
+    await log(`Free Subify AI: reply not readable (${e.reason || "unknown"}) raw="${e.raw || ""}"`, "warn");
+    subtitleTrace("parse_error", { reason: e.reason || "", lines: items.length });
+    throw refuse("parse_error");
+  }
   // An empty or unreadable answer is said on the page, not left as a line stuck on "در حال ترجمه".
   if (!Array.isArray(results) || !results.length) { await log("Free Subify AI: reply had no subtitle lines", "warn"); throw refuse("empty"); }
+  subtitleTrace("parsed_cues", { count: results.length, of: items.length });
   return results;
 }
 
@@ -1941,9 +1986,11 @@ async function subifyStateRead() {
 // time, each finished batch reported as it arrives (opts.onBatch). With the balance low: one batch after another, sized to
 // the balance (as before). A batch is served from the shared cache where it can be (billed at the standard rate); only the
 // lines it lacks go to the AI. Capacity and upstream trouble retry the batch with a longer wait each time.
-const SUBIFY_POOL_LANES = 3;
+const SUBIFY_POOL_LANES = 6; // maxConcurrency: batches in flight at once on the pool path
+const SUBIFY_SKIP_CODES = ["capacity", "upstream", "parse_error", "empty", "network"]; // these skip one batch; the run goes on
+const SUBIFY_CALL_TIMEOUT_MS = 90000; // the server answers within 70 s; past this the call is cut and the batch skipped
 const SUBIFY_RETRY_MAX = 3;
-const SUBIFY_RETRY_CODES = ["capacity", "upstream"];
+const SUBIFY_RETRY_CODES = ["capacity", "upstream", "parse_error"];
 async function subifyCacheLookup(batch, settings, videoId, model, src) {
   try {
     const r = await subifyApi.call({
@@ -1971,6 +2018,15 @@ function expandMergedResults(results, groupsById) {
   }
   return out;
 }
+// Live progress for the popup bar and the video overlay pill: cues translated so far, written to storage.local.
+// Readers ignore a value older than 20 s while it is running, and hide a finished one after a few seconds.
+const subifyProgressState = { videoId: "", done: 0, total: 0 };
+function subifyProgressWrite(finished) {
+  try { browser.storage.local.set({ subifyProgress: { ...subifyProgressState, finished, at: Date.now() } }).catch(() => {}); } catch (e) { /* no storage: no bar */ }
+}
+function subifyProgressStart(videoId, total) { Object.assign(subifyProgressState, { videoId: String(videoId || ""), done: 0, total }); subifyProgressWrite(false); }
+function subifyProgressAdd(n) { subifyProgressState.done = Math.min(subifyProgressState.total, subifyProgressState.done + n); subifyProgressWrite(false); }
+function subifyProgressDone() { subifyProgressState.done = subifyProgressState.total; subifyProgressWrite(true); }
 async function subifyManagedBatches(cues, settings, videoId, opts = {}) {
   const st0 = await subifyStateRead();
   const row = SubifyAiRoute.pickRow(st0, settings.subifyModel || "");
@@ -2009,6 +2065,7 @@ async function subifyManagedBatches(cues, settings, videoId, opts = {}) {
   };
   const haltOf = (e) => (e.code === "no_credits" ? "balance_empty" : subifyFreeAiCode(e.code));
   const results = [];
+  let failed = 0;
   // The whole run fits the balance (or the balance is unknown and the server decides per request): the pool.
   const all = SubifyAiRoute.groupCues(cues, Infinity, 80);
   const total = avail === null ? 0 : all.reduce((n, b) => n + costOf(b), 0);
@@ -2021,23 +2078,29 @@ async function subifyManagedBatches(cues, settings, videoId, opts = {}) {
       while (!halt && next < all.length) {
         const batch = all[next++];
         try { results.push(...await runBatch(batch)); }
-        catch (e) { halt = haltOf(e); }
+        catch (e) {
+          if (SUBIFY_SKIP_CODES.includes(e.code)) { failed++; subtitleTrace("batch_skipped", { lines: batch.length, reason: e.code || e.reason || "" }); continue; }
+          halt = haltOf(e);
+        }
       }
     };
     await Promise.all(Array.from({ length: Math.min(SUBIFY_POOL_LANES, all.length) }, lane));
-    return { results, halt };
+    return { results, halt, failed };
   }
   // The balance is low: one batch after another, each sized to what the balance can pay for.
   let remaining = cues.slice();
   while (remaining.length) {
     const plan = SubifyAiRoute.planNextBatch(remaining, avail, costOf);
-    if (plan.halt) return { results, halt: "balance_empty" };
+    if (plan.halt) return { results, halt: "balance_empty", failed };
     try { results.push(...await runBatch(plan.batch)); }
-    catch (e) { return { results, halt: haltOf(e) }; }
+    catch (e) {
+      if (!SUBIFY_SKIP_CODES.includes(e.code)) return { results, halt: haltOf(e), failed };
+      failed++; subtitleTrace("batch_skipped", { lines: plan.batch.length, reason: e.code || e.reason || "" });
+    }
     remaining = remaining.slice(plan.batch.length);
     if (plan.low && remaining.length) { const next = SubifyAiRoute.balanceMicro(await subifyStateRead()); if (next !== null) avail = next; }
   }
-  return { results, halt: "" };
+  return { results, halt: "", failed };
 }
 
 // Per browser session (storage.session): the videos the owner's key translated part of ("served"), and the ones reported finished ("done").
@@ -2081,7 +2144,7 @@ async function subifyLogout() {
 // ---------- sign-in result: a failed sign-in returns to sub-ify.site with ?sfy_auth=<code>; keep the code for the gate ----------
 browser.tabs.onUpdated.addListener((tabId, info, tab) => {
   const url = (info && info.url) || (tab && tab.url) || "";
-  if (!url.startsWith(SUBIFY_SITE + "/")) return;
+  if (!url.startsWith(SUBIFY_SITE + "/") && !url.startsWith(SUBIFY_MY_SITE + "/")) return;
   const m = /[?&]sfy_auth=([a-z]+)/.exec(url);
   if (!m) return;
   try { Promise.resolve(browser.storage.local.set({ subifyAuthNotice: { code: m[1], at: Date.now() } })).catch(() => {}); } catch (e) {}
@@ -2343,7 +2406,7 @@ browser.runtime.onMessage.addListener((msg, sender, sendResponse) => {
     switch (msg.type) {
       case "subify-auth-open": {
         const p = msg.provider === "github" ? "github" : "google";
-        try { await browser.tabs.create({ url: SUBIFY_SITE + "/auth/login.php?provider=" + p + "&return=" + encodeURIComponent(SUBIFY_SITE + "/?ext=1") }); sendResponse({ ok: true }); } catch (e) { sendResponse({ ok: false }); }
+        try { await browser.tabs.create({ url: SUBIFY_MY_SITE + "/?source=extension&provider=" + p }); sendResponse({ ok: true }); } catch (e) { sendResponse({ ok: false }); }
         break;
       }
       case "subify-tickets-list": { sendResponse(await subifyTicketCall("GET", null)); break; }
@@ -2461,17 +2524,22 @@ browser.runtime.onMessage.addListener((msg, sender, sendResponse) => {
               const groups = SubifyAiRoute.mergeFragments(cues);
               const groupsById = new Map(groups.map(g => [String(g.id), g]));
               const tabId = sender && sender.tab ? sender.tab.id : null;
+              const frameId = sender && typeof sender.frameId === "number" ? sender.frameId : 0;
+              subifyProgressStart(freeVideoId, cues.length);
               const run = await subifyManagedBatches(groups, settings, freeVideoId, {
                 sourceLang: String(msg.sourceLanguage || "").split(/[-_]/)[0],
                 onBatch: (merged) => {
                   const expanded = expandMergedResults(merged, groupsById);
+                  subifyProgressAdd(expanded.length);
                   if (tabId !== null && expanded.length) {
-                    browser.tabs.sendMessage(tabId, { type: "subify-batch-result", videoId: String(msg.videoId || freeVideoId || ""), results: expanded }).catch(() => {});
+                    subtitleTrace("batch_sent", { tabId, frameId, lines: expanded.length });
+                    browser.tabs.sendMessage(tabId, { type: "subify-batch-result", videoId: String(msg.videoId || freeVideoId || ""), results: expanded }, { frameId }).catch(() => {});
                   }
                 }
               });
               const results = expandMergedResults(run.results, groupsById);
-              if (!results.length) throw subifyFreeAiError(run.halt || "empty");
+              subifyProgressDone();
+              if (!results.length) throw subifyFreeAiError(run.halt || (run.failed ? "upstream" : "empty"));
               await subifyFreeAiMark("served", freeVideoId);
               await recordUsage("subify", results);
               // A run that stopped early keeps the cues it translated; the overlay stops its queue on balance_empty.

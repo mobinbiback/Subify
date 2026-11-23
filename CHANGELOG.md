@@ -1,3 +1,29 @@
+# v2.12.0، پایداری ترجمهٔ Subify Server و بازطراحی ۲۰۲۶
+
+### ظاهر تازه
+- **کپسول کیف پول در سربرگ پاپ‌آپ**: موجودی تومانی با نقطهٔ وضعیت و دکمهٔ «+ شارژ». وقتی وارد نشده‌ای، دکمهٔ «ورود و دریافت اعتبار هدیه» جایش را می‌گیرد.
+- **سه تب پاپ‌آپ**: کنترل سریع، ظاهر و صدا، و حساب و تنظیمات (ترجمه و سرویس‌ها به همین تب رفته‌اند). عرض پاپ‌آپ ۳۸۰ پیکسل است.
+- **کارت کیف پول در خانهٔ تنظیمات**: موجودی و وضعیت قابل‌استفاده یا در حال پردازش، دکمهٔ شارژ، و هزینهٔ هر دقیقهٔ مدل‌هایی که برای حسابت باز است.
+- متن‌های تازه در هر هفت زبان رابط ترجمه شده‌اند.
+
+
+- **اعتبار کسر می‌شد ولی زیرنویس نمی‌آمد**: پاسخ‌هایی که خوانده نمی‌شدند (مثلاً خط‌های شماره‌دار با علامت‌گذاری مارک‌داون، یا شماره‌های اشتباه) دیگر کل دسته را دور نمی‌ریزند. خط‌های خوانا ذخیره می‌شوند، و سرور پاسخی را که هیچ خط قابل‌استفاده‌ای ندارد برمی‌گرداند و اعتبار آن را آزاد می‌کند.
+- **پاسخ خوانده‌نشده دوباره ترجمه می‌شود**: آن دسته یک‌بار دیگر فرستاده می‌شود و بقیهٔ زیرنویس ادامه پیدا می‌کند.
+- **زیرنویسی که زود می‌رسید گم نمی‌شد**: اگر ترجمهٔ ویدیوی بعدی قبل از جابه‌جایی صفحه (ناوبری یوتیوب) برسد، نگه داشته می‌شود و بعد از رسیدن به همان ویدیو نشان داده می‌شود.
+- **ارسال به فریم درست**: ترجمهٔ هر دسته فقط به فریمی می‌رسد که درخواست را فرستاده، نه به همهٔ فریم‌های تب.
+
+### عیب‌یابی
+- **ردیابی SubifyDebug**: هر مرحلهٔ دسته در گزارش افزونه (pd_log) ثبت می‌شود: request_sent، server_status، parsed_cues، batch_sent، overlay_rendered. پاسخ‌های خوانده‌نشده با متن خام ثبت می‌شوند.
+
+### English summary
+- **Popup**: wallet capsule in the header (balance and top-up, or a sign-in pill when signed out); three tabs: Quick control, Look and sound, Account and settings; 380px wide.
+- **Settings home**: a wallet card with balance, pending status, a top-up button and the per-minute cost of each model you can use.
+- **Credits no longer lost without subtitles**: replies that could not be read (markdown-decorated id lines, numbering noise) no longer throw away the whole batch. Readable lines are kept, and the server returns an unreadable reply as an error that releases the wallet hold instead of charging it.
+- **Unreadable batches are retried** once more; the rest of the run continues.
+- **Early results are kept**: a batch for the next YouTube video that arrives before the page switches is held and shown when that video becomes current.
+- **Results go to the requesting frame** only.
+- **SubifyDebug trace** in the extension log (pd_log): request_sent, server_status, parsed_cues, batch_sent, overlay_rendered; unreadable replies are logged with their raw text.
+
 # v2.11.1، Subify Server موتور پیش‌فرض
 
 ### تغییرات

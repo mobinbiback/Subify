@@ -688,28 +688,45 @@ void renderOverview();
 
 // The Subify Server note under the API keys: the saved-key case, else the server state and the wallet balance.
 async function loadFreeAiNote() {
+  const tNote = (s) => (window.SubifyUI && typeof SubifyUI.t === "function" ? SubifyUI.t(s) : s);
   const note = $("freeAiNote");
   if (!note) return;
   try {
     const { pd_settings = {} } = await browser.storage.local.get("pd_settings");
     if (String(pd_settings.apiKey || "").trim()) {
-      note.textContent = "کلید خودت ذخیره شده؛ درخواست‌ها با کلید تو می‌روند و از کیف پول Subify کم نمی‌شوند.";
+      note.textContent = tNote("کلید خودت ذخیره شده؛ درخواست‌ها با کلید تو می‌روند و از کیف پول Subify کم نمی‌شوند.");
       return;
     }
     const [s, w] = await Promise.all([
       browser.runtime.sendMessage({ type: "subify-api", path: "/auth/ai.php?action=state" }).catch(() => null),
       browser.runtime.sendMessage({ type: "subify-api", path: "/auth/wallet.php" }).catch(() => null)
     ]);
-    const st = s && s.json;
-    if (!st || st.ok === false || !st.enabled) {
-      note.textContent = "Subify Server الان در دسترس نیست یا وارد حساب نشده‌ای. برای ترجمه وارد حساب Subify شو، یا کلید خودت را ذخیره کن.";
+    const st = s && s.json && s.json.ok !== false ? s.json : null;
+    const wallet = w && w.json && w.json.ok !== false && w.json.wallet ? w.json.wallet : null;
+    // Signed out: wallet.php answers 401. Any other failure is the server, not the account.
+    if (!wallet && (!w || w.status === 401 || (w.json && w.json.error === "sign_in"))) {
+      note.textContent = tNote("برای ترجمه با Subify Server وارد حساب Subify شو، یا کلید خودت را ذخیره کن.");
       return;
     }
-    const wallet = w && w.json && w.json.wallet ? w.json.wallet : null;
-    const toman = wallet && typeof wallet.balance_toman === "number" ? wallet.balance_toman : (wallet && typeof wallet.balance_micro === "number" ? wallet.balance_micro / 1e6 : null);
-    note.textContent = "ترجمه با Subify Server و اعتبار کیف پول انجام می‌شود؛ کلید شخصی لازم نیست." + (toman !== null ? " موجودی: " + Math.round(toman).toLocaleString("fa-IR") + " تومان." : "");
+    if (!st || !wallet) {
+      note.textContent = tNote("Subify Server الان در دسترس نیست. اتصال به sub-ify.site را بررسی کن، یا کلید خودت را ذخیره کن.");
+      return;
+    }
+    // The spendable balance (available = balance minus holds) decides, as the server decides. The free-allowance switch
+    // (st.enabled) is a different thing: a member on the credits path translates with the wallet whatever it says.
+    const avail = typeof wallet.available_toman === "number" ? wallet.available_toman : null;
+    const credits = st.path === "credits";
+    if (!credits && !st.enabled) {
+      note.textContent = tNote("موجودی قابل استفاده کیف پول صفر است. کیف پول را شارژ کن، یا کلید خودت را ذخیره کن.");
+      return;
+    }
+    if (credits && avail !== null && avail <= 0) {
+      note.textContent = tNote("موجودی قابل استفاده‌ات صفر است؛ بخشی از اعتبار در حال پردازش است. کیف پول را شارژ کن، یا کلید خودت را ذخیره کن.");
+      return;
+    }
+    note.textContent = tNote("ترجمه با Subify Server و اعتبار کیف پول انجام می‌شود؛ کلید شخصی لازم نیست.") + (avail !== null ? tNote("موجودی قابل استفاده: {n} تومان.").replace("{n}", window.SubifyUI && SubifyUI.digits ? SubifyUI.digits(Math.round(avail).toLocaleString("en-US")) : Math.round(avail).toLocaleString("fa-IR")) : "");
   } catch (_) {
-    note.textContent = "Subify Server: وضعیت در دسترس نیست. اتصال به sub-ify.site را بررسی کن.";
+    note.textContent = tNote("Subify Server: وضعیت در دسترس نیست. اتصال به sub-ify.site را بررسی کن.");
   }
 }
 void loadFreeAiNote();
@@ -748,3 +765,51 @@ window.SubifyUI?.register({"en": {"پنل مدیریت افزونه · حساب�
   box.addEventListener('click', function (e) { if (e.target === box) close(); });
   if (ver && seen !== ver) box.hidden = false;
 })();
+
+// v2.12.0: member and wallet hero on the home panel. Balance and pending top-ups from wallet.php; the per-minute price of each
+// model the member can use from ai.php?action=state (toman_per_minute, the same figure the wallet shows).
+(function initMemberHero(){
+  const hero=document.getElementById('memberHero');
+  if(!hero)return;
+  const $=(id)=>document.getElementById(id);
+  const locale=()=>document.documentElement.lang==='en'?'en-US':'fa-IR';
+  const fmt=(n)=>Math.round(n).toLocaleString(locale());
+  const send=(path)=>browser.runtime.sendMessage({type:'subify-api',path}).catch(()=>({ok:false}));
+  const tomanOf=(o,name)=>{if(!o)return null;if(typeof o[name+'_toman']==='number')return o[name+'_toman'];if(typeof o[name+'_micro']==='number')return o[name+'_micro']/1e6;return null;};
+  function renderPrices(st){
+    const host=$('mhPriceRows');
+    host.textContent='';
+    const rows=st&&st.pick&&Array.isArray(st.pick.models)?st.pick.models.filter(r=>r&&r.allowed&&typeof r.toman_per_minute==='number'):[];
+    if(!rows.length){const n=document.createElement('small');n.className='hint';n.textContent='قیمت‌ها در دسترس نیست.';host.appendChild(n);return;}
+    rows.forEach(r=>{
+      const line=document.createElement('div');line.className='mh-price-row';
+      const name=document.createElement('span');name.textContent=r.model;
+      const price=document.createElement('b');price.textContent=fmt(r.toman_per_minute);
+      const unit=document.createElement('span');unit.className='mh-unit';unit.textContent='تومان';
+      const cell=document.createElement('span');cell.append(price,' ',unit);
+      line.append(name,cell);host.appendChild(line);
+    });
+  }
+  async function load(){
+    const [w,st]=await Promise.all([send('/auth/wallet.php'),send('/auth/ai.php?action=state')]);
+    const signedIn=!!(w&&w.ok&&w.json&&w.json.ok!==false);
+    const state=st&&st.ok&&st.json&&st.json.ok!==false?st.json:null;
+    const status=$('mhStatus');
+    status.textContent=signedIn?'حساب فعال':'وارد نشده';
+    status.classList.toggle('on',signedIn);
+    $('mhTopup').textContent=signedIn?'شارژ کیف پول':'ورود و دریافت اعتبار هدیه';
+    hero.querySelector('.mh-balance').hidden=!signedIn;
+    $('mhBalanceState').hidden=!signedIn;
+    if(!signedIn){renderPrices(state);return;}
+    const wallet=w.json.wallet||{};
+    const available=tomanOf(wallet,'available');
+    const pending=tomanOf(wallet,'pending');
+    $('mhBalance').textContent=available===null?'—':fmt(available);
+    $('mhBalanceState').textContent=pending&&pending>0?'در حال پردازش':'قابل استفاده';
+    renderPrices(state);
+  }
+  load();
+  window.addEventListener('focus',load);
+  window.SubifyMemberHero={refresh:load};
+})();
+

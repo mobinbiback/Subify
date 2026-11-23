@@ -9,6 +9,7 @@ var browser = globalThis.browser || globalThis.chrome; // Chrome has no browser 
   var api = (typeof browser !== 'undefined' && browser.runtime) ? browser : (typeof chrome !== 'undefined' ? chrome : null);
   if (!api || !api.runtime || !api.runtime.sendMessage) return;
   var SITE = 'https://sub-ify.site';
+  var MY = 'https://my.sub-ify.site';
   var IS_OPTIONS = !!document.querySelector('main.wrap');
   var wallEl = null, timer = null, panel = null, bar = null, lastUser = null, view = { name: 'home' }, busy = false;
 
@@ -161,7 +162,7 @@ var browser = globalThis.browser || globalThis.chrome; // Chrome has no browser 
     });
   }
   function openLogin(provider) {
-    var url = SITE + '/auth/login.php?provider=' + provider + '&return=' + encodeURIComponent(SITE + '/?ext=1');
+    var url = MY + '/?source=extension&provider=' + encodeURIComponent(provider);
     if (api.tabs && api.tabs.create) api.tabs.create({ url: url }); else window.open(url, '_blank', 'noopener');
   }
   function btnCss(primary) {
