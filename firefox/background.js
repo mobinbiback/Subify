@@ -2066,15 +2066,16 @@ async function subifyManagedBatches(cues, settings, videoId, opts = {}) {
   };
   // A batch that comes back short (a line missing, or a reply that could not be read) gets one retry in parts of 4 lines.
   // Lines still missing after that are left for the overlay, which marks them failed after three passes.
+  let lastCode = ""; // the real reason of the last batch that was skipped (v2.12.2: it used to be lost, and the page always said "empty reply")
   const runFull = async (batch) => {
     let got = [];
     try { got = await runBatch(batch); }
-    catch (e) { if (!SUBIFY_SKIP_CODES.includes(e.code)) throw e; }
+    catch (e) { if (!SUBIFY_SKIP_CODES.includes(e.code)) throw e; lastCode = e.code; }
     const done = new Set(got.map(r => String(r.id)));
     const left = batch.filter(c => !done.has(String(c.id)));
     for (let i = 0; i < left.length; i += 4) {
       try { got = got.concat(await translateBatch(left.slice(i, i + 4))); }
-      catch (e) { if (!SUBIFY_SKIP_CODES.includes(e.code)) throw e; }
+      catch (e) { if (!SUBIFY_SKIP_CODES.includes(e.code)) throw e; lastCode = e.code; }
     }
     return got;
   };
@@ -2092,30 +2093,38 @@ async function subifyManagedBatches(cues, settings, videoId, opts = {}) {
     const lane = async () => {
       while (!halt && next < all.length) {
         const batch = all[next++];
-        try { results.push(...await runFull(batch)); }
+        try {
+          const got = await runFull(batch);
+          if (!got.length) { failed++; subtitleTrace("batch_skipped", { lines: batch.length, reason: lastCode || "empty" }); }
+          results.push(...got);
+        }
         catch (e) {
-          if (SUBIFY_SKIP_CODES.includes(e.code)) { failed++; subtitleTrace("batch_skipped", { lines: batch.length, reason: e.code || e.reason || "" }); continue; }
+          if (SUBIFY_SKIP_CODES.includes(e.code)) { failed++; lastCode = e.code; subtitleTrace("batch_skipped", { lines: batch.length, reason: e.code || e.reason || "" }); continue; }
           halt = haltOf(e);
         }
       }
     };
     await Promise.all(Array.from({ length: Math.min(SUBIFY_POOL_LANES, all.length) }, lane));
-    return { results, halt, failed };
+    return { results, halt, failed, lastCode };
   }
   // The balance is low: one batch after another, each sized to what the balance can pay for.
   let remaining = cues.slice();
   while (remaining.length) {
     const plan = SubifyAiRoute.planNextBatch(remaining, avail, costOf);
-    if (plan.halt) return { results, halt: "balance_empty", failed };
-    try { results.push(...await runFull(plan.batch)); }
+    if (plan.halt) return { results, halt: "balance_empty", failed, lastCode };
+    try {
+      const got = await runFull(plan.batch);
+      if (!got.length) { failed++; subtitleTrace("batch_skipped", { lines: plan.batch.length, reason: lastCode || "empty" }); }
+      results.push(...got);
+    }
     catch (e) {
-      if (!SUBIFY_SKIP_CODES.includes(e.code)) return { results, halt: haltOf(e), failed };
-      failed++; subtitleTrace("batch_skipped", { lines: plan.batch.length, reason: e.code || e.reason || "" });
+      if (!SUBIFY_SKIP_CODES.includes(e.code)) return { results, halt: haltOf(e), failed, lastCode };
+      failed++; lastCode = e.code; subtitleTrace("batch_skipped", { lines: plan.batch.length, reason: e.code || e.reason || "" });
     }
     remaining = remaining.slice(plan.batch.length);
     if (plan.low && remaining.length) { const next = SubifyAiRoute.balanceMicro(await subifyStateRead()); if (next !== null) avail = next; }
   }
-  return { results, halt: "", failed };
+  return { results, halt: "", failed, lastCode };
 }
 
 // Per browser session (storage.session): the videos the owner's key translated part of ("served"), and the ones reported finished ("done").
@@ -2554,7 +2563,7 @@ browser.runtime.onMessage.addListener((msg, sender, sendResponse) => {
               });
               const results = expandMergedResults(run.results, groupsById);
               if (results.length) subifyProgressDone(); else subifyProgressFail();
-              if (!results.length) throw subifyFreeAiError(run.halt || (run.failed ? "upstream" : "empty"));
+              if (!results.length) throw subifyFreeAiError(run.halt || (run.failed ? (run.lastCode || "upstream") : "empty"));
               await subifyFreeAiMark("served", freeVideoId);
               await recordUsage("subify", results);
               // A run that stopped early keeps the cues it translated; the overlay stops its queue on balance_empty.
