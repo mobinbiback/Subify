@@ -74,7 +74,7 @@ var browser = globalThis.browser || globalThis.chrome; // Chrome has no browser 
     "نقش‌آفرینی": {"ar": "لعب الأدوار", "es": "Juego de roles", "tr": "Rol yapma", "fr": "Jeu de rôle", "de": "Rollenspiel"},
     "تمرین تلفظ": {"ar": "تدريب النطق", "es": "Práctica de pronunciación", "tr": "Telaffuz alıştırması", "fr": "Entraînement à la prononciation", "de": "Aussprachetraining"},
     "ترجمه‌ی لغت و کارهای دیگر": {"ar": "ترجمة الكلمات والمزيد", "es": "Traducción de palabras y más", "tr": "Kelime çevirisi ve diğerleri", "fr": "Traduction de mots et plus", "de": "Wortübersetzung und mehr"},
-    "هوش مصنوعی رایگان": {"ar": "الذكاء الاصطناعي المجاني", "es": "IA gratuita", "tr": "Ücretsiz yapay zeka", "fr": "IA gratuite", "de": "Kostenlose KI"},
+    "اعتبار کیف پول": {"ar": "رصيد المحفظة", "es": "Crédito de la cartera", "tr": "Cüzdan kredisi", "fr": "Crédit du portefeuille", "de": "Wallet-Guthaben"},
     "فعال": {"ar": "مفعّل", "es": "Activo", "tr": "Aktif", "fr": "Actif", "de": "Aktiv"},
     "خاموش": {"ar": "متوقف", "es": "Desactivado", "tr": "Kapalı", "fr": "Désactivé", "de": "Aus"},
     "منابع این ماه": {"ar": "المصادر هذا الشهر", "es": "Recursos de este mes", "tr": "Bu ayki kaynaklar", "fr": "Ressources de ce mois", "de": "Quellen in diesem Monat"},
@@ -559,7 +559,7 @@ var browser = globalThis.browser || globalThis.chrome; // Chrome has no browser 
   // Days left on the Pro plan (0 when there is no active Pro plan). `until` is a unix time in seconds.
   function proDaysLeft(until) { var s = Number(until) || 0; if (!s) return 0; var left = s * 1000 - Date.now(); return left > 0 ? Math.ceil(left / 86400000) : 0; }
   var PRO_DOT = '<i aria-hidden="true" style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#22c55e;box-shadow:0 0 0 3px rgba(34,197,94,.22);margin-inline-end:7px;vertical-align:middle"></i>';
-  // Free AI allowance: the same numbers as the web app's account page, read from sub-ify.site.
+  // Wallet credit and daily allowance: the same numbers as the web app's account page, read from sub-ify.site.
   function aiUsageRows(s) {
     var L = s.limits || {}, F = s.features || {};
     var rows = [
@@ -591,7 +591,7 @@ var browser = globalThis.browser || globalThis.chrome; // Chrome has no browser 
         var monthReset = Date.UTC(n.getUTCFullYear(), n.getUTCMonth() + 1, 1);
         var left = Math.max(0, Math.floor((dayReset - now) / 60000));
         var clock = new Date(dayReset).toLocaleTimeString(gLoc(), { hour: '2-digit', minute: '2-digit' });
-        var html = '<div style="display:flex;justify-content:space-between;align-items:center"><b style="font-size:14px">' + bi('هوش مصنوعی رایگان', 'Free AI', false) + '</b>' +
+        var html = '<div style="display:flex;justify-content:space-between;align-items:center"><b style="font-size:14px">' + bi('اعتبار کیف پول', 'Wallet credit', false) + '</b>' +
           '<span class="sfy-pill ' + (s.enabled ? 'ok' : '') + '" style="font-size:10px">' + inl(s.enabled ? 'فعال' : 'خاموش', s.enabled ? 'On' : 'Off') + '</span></div>';
         if (s.enabled) {
           html += aiRow('منابع این ماه', 'Sources this month', s.used || 0, s.limit || 0);

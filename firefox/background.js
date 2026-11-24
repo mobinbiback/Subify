@@ -1843,14 +1843,14 @@ const SUBIFY_FREE_AI_TEXT = {
   no_credits: "اعتبار Subify تمام شده؛ کلید AI خودت را ذخیره کن، یا بعداً کیف پول را شارژ کن",
   trial_budget: "بودجه‌ی امروز ترجمه‌ی آزمایشی تمام شده؛ فردا دوباره امتحان کن یا کلید AI خودت را ذخیره کن",
   trial_unavailable: "ترجمه‌ی آزمایشی الان در دسترس نیست؛ کمی بعد دوباره امتحان کن",
-  auth: "برای ترجمه‌ی رایگان Subify وارد حساب شو، یا کلید AI خودت را ذخیره کن",
+  auth: "برای ترجمه با اعتبار کیف پول Subify وارد حساب شو، یا کلید AI خودت را ذخیره کن",
   disabled: "ترجمه با Subify Server فعلاً خاموش است؛ کلید AI خودت را ذخیره کن",
   quota: "اعتبار کیف پول Subify تمام شده؛ کیف پول را شارژ کن، سپس دوباره امتحان کن",
-  capacity: "ظرفیت ترجمه‌ی رایگان الان پر است؛ کمی بعد دوباره امتحان کن",
+  capacity: "ظرفیت Subify Server الان پر است؛ کمی بعد دوباره امتحان کن",
   network: "اتصال به سرور Subify برقرار نشد؛ اینترنت را بررسی کن و دوباره امتحان کن",
   upstream: "سرویس هوش مصنوعی Subify پاسخ نداد؛ چند دقیقه دیگر دوباره امتحان کن",
   empty: "هوش مصنوعی جواب خالی داد؛ در پنل مدیریت «تست اتصال» را بزن و مدل دیگری انتخاب کن",
-  failed: "ترجمه‌ی رایگان انجام نشد؛ دوباره امتحان کن",
+  failed: "ترجمه با Subify Server انجام نشد؛ دوباره امتحان کن",
   parse_error: "پاسخ هوش مصنوعی خوانده نشد؛ همین بخش دوباره ترجمه می‌شود",
   balance_empty: "اعتبار Subify تمام شد و ترجمه‌ی بقیه‌ی زیرنویس متوقف شد. کیف پول را شارژ کن، سپس دوباره امتحان کن",
   model_not_allowed: "این مدل برای حساب تو فعال نیست؛ در تنظیمات مدل دیگری انتخاب کن"
@@ -1986,7 +1986,7 @@ async function subifyStateRead() {
 // time, each finished batch reported as it arrives (opts.onBatch). With the balance low: one batch after another, sized to
 // the balance (as before). A batch is served from the shared cache where it can be (billed at the standard rate); only the
 // lines it lacks go to the AI. Capacity and upstream trouble retry the batch with a longer wait each time.
-const SUBIFY_POOL_LANES = 6; // maxConcurrency: batches in flight at once on the pool path
+const SUBIFY_POOL_LANES = 2; // batches in flight at once on the pool path: 2 lanes of 25 lines keep the server database calm and match Custom API speed
 const SUBIFY_SKIP_CODES = ["capacity", "upstream", "parse_error", "empty", "network"]; // these skip one batch; the run goes on
 const SUBIFY_CALL_TIMEOUT_MS = 90000; // the server answers within 70 s; past this the call is cut and the batch skipped
 const SUBIFY_RETRY_MAX = 3;
@@ -2082,7 +2082,7 @@ async function subifyManagedBatches(cues, settings, videoId, opts = {}) {
   const results = [];
   let failed = 0;
   // The whole run fits the balance (or the balance is unknown and the server decides per request): the pool.
-  const all = SubifyAiRoute.groupCues(cues, Infinity, 8);
+  const all = SubifyAiRoute.groupCues(cues, Infinity, 25);
   const total = avail === null ? 0 : all.reduce((n, b) => n + costOf(b), 0);
   // The pool only when the balance is not low (low balance keeps the shrinking batches below).
   const notLow = avail === null || avail >= SubifyAiRoute.LOW_TOMAN * SubifyAiRoute.MICRO_PER_TOMAN;

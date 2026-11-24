@@ -759,7 +759,7 @@ window.SubifyUI?.register({ en: {
   if(!toggle||!ring||!fill||!pct||!chip||!label) return;
   const FA_DIGITS='۰۱۲۳۴۵۶۷۸۹';
   const toFa=n=>window.SubifyUI?window.SubifyUI.digits(n):String(n).replace(/\d/g,d=>FA_DIGITS[d]);
-  const NAMES={gemini:'Gemini',openrouter:'OpenRouter',openai:'OpenAI',custom:'Custom API',subify:'Free AI'};
+  const NAMES={gemini:'Gemini',openrouter:'OpenRouter',openai:'OpenAI',custom:'Custom API',subify:'Subify Server'};
   const OFF_TEXT='آماده';
   const CACHE_TEXT='آماده از کش؛ همین دکمه رو بزن';
   let cacheVideo='', cacheHit=false;
