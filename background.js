@@ -1774,7 +1774,7 @@ async function subifyAuthState(force) {
   return value;
 }
 
-const SUBIFY_AUTH_ERROR = "ده ویدیوی اول بدون ورود رایگان بود؛ برای ادامه وارد شو (روی آیکون افزونه بزن ← ورود) · The first 10 videos were free without sign-in; sign in to continue (click the extension icon → Sign in)";
+const SUBIFY_AUTH_ERROR = "استفادهٔ آزمایشی بدون ورود تمام شد؛ وارد شو (روی آیکون افزونه بزن ← ورود) و ۵٬۰۰۰ تومان اعتبار هدیهٔ خوش‌آمدگویی بگیر · The sign-in-free trial is used up; sign in (click the extension icon → Sign in) to get 5,000 toman of welcome wallet credit";
 
 // Subify Server with the subscription switch on: sign-in is asked for and guests get no trial. Own-key use never sees this.
 const SUBIFY_SIGNIN_TEXT = "برای استفاده از Subify Server با Google یا GitHub وارد شو · Sign in with Google or GitHub to use Subify Server";

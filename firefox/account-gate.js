@@ -62,7 +62,7 @@
     "تلاش دوباره": {"ar": "حاول مرة أخرى", "es": "Intentar de nuevo", "tr": "Tekrar dene", "fr": "Réessayer", "de": "Erneut versuchen"},
     "برای ادامه وارد شو": {"ar": "سجّل الدخول للمتابعة", "es": "Inicia sesión para continuar", "tr": "Devam etmek için giriş yap", "fr": "Connectez-vous pour continuer", "de": "Zum Fortfahren anmelden"},
     "با یکی از روش‌های زیر وارد شو. اگر حساب نداشته باشی، همان‌جا ساخته می‌شود.": {"ar": "سجّل الدخول بإحدى الطرق التالية. إن لم يكن لديك حساب فسيُنشأ هنا.", "es": "Inicia sesión con uno de los métodos siguientes. Si no tienes cuenta, se crea aquí mismo.", "tr": "Aşağıdaki yöntemlerden biriyle giriş yap. Hesabın yoksa burada oluşturulur.", "fr": "Connectez-vous avec l'une des méthodes ci-dessous. Si vous n'avez pas de compte, il sera créé ici.", "de": "Melde dich mit einer der folgenden Methoden an. Wenn du noch kein Konto hast, wird es hier erstellt."},
-    "ده منبع رایگان بدون ورود استفاده شد.": {"ar": "تم استخدام عشرة مصادر مجانية بدون تسجيل دخول.", "es": "Se usaron diez fuentes gratuitas sin iniciar sesión.", "tr": "Giriş yapmadan on ücretsiz kaynak kullanıldı.", "fr": "Dix sources gratuites ont été utilisées sans connexion.", "de": "Zehn kostenlose Quellen wurden ohne Anmeldung genutzt."},
+    "استفادهٔ آزمایشی بدون ورود تمام شد. وارد شو و ۵٬۰۰۰ تومان اعتبار هدیهٔ خوش‌آمدگویی کیف پول بگیر.": {"ar": "انتهت التجربة بدون تسجيل الدخول. سجّل الدخول واحصل على رصيد ترحيبي في المحفظة بقيمة 5000 تومان.", "es": "Se acabó la prueba sin iniciar sesión. Inicia sesión y recibe 5.000 tomanes de crédito de bienvenida en tu cartera.", "tr": "Girişsiz deneme bitti. Giriş yap ve cüzdanına 5.000 tomanlık karşılama kredisi kazan.", "fr": "L'essai sans connexion est terminé. Connectez-vous pour recevoir 5 000 tomans de crédit de bienvenue dans votre portefeuille.", "de": "Die Probe ohne Anmeldung ist aufgebraucht. Melde dich an und erhalte 5.000 Toman Willkommensguthaben in deiner Wallet."},
     "ورود با Google، GitHub یا LinkedIn در تب جدید باز می‌شود. بعد از پایان، این‌جا «وارد شدم» را بزن.": {"ar": "يُفتح تسجيل الدخول عبر Google أو GitHub أو LinkedIn في تبويب جديد. عند الانتهاء، اضغط «سجّلت الدخول» هنا.", "es": "El inicio con Google, GitHub o LinkedIn se abre en una pestaña nueva. Al terminar, pulsa «Ya inicié sesión» aquí.", "tr": "Google, GitHub veya LinkedIn ile giriş yeni sekmede açılır. Bitince buradan «Giriş yaptım»a bas.", "fr": "La connexion avec Google, GitHub ou LinkedIn s'ouvre dans un nouvel onglet. Une fois terminé, cliquez ici sur « Je me suis connecté ».", "de": "Die Anmeldung mit Google, GitHub oder LinkedIn öffnet sich in einem neuen Tab. Wenn du fertig bist, klicke hier auf „Ich bin angemeldet“."},
     "وارد شدم؛ بررسی کن": {"ar": "سجّلت الدخول؛ تحقّق", "es": "Ya inicié sesión; comprobar", "tr": "Giriş yaptım; kontrol et", "fr": "Je me suis connecté ; vérifier", "de": "Ich bin angemeldet; prüfen"},
     "حساب من / My account": {"ar": "حسابي", "es": "Mi cuenta", "tr": "Hesabım", "fr": "Mon compte", "de": "Mein Konto"},
@@ -134,7 +134,7 @@
     "افزونه": {"ar": "الإضافة", "es": "Extensión", "tr": "Eklenti", "fr": "Extension", "de": "Erweiterung"},
     "پاسخ / Reply": {"ar": "الرد", "es": "Respuesta", "tr": "Yanıt", "fr": "Réponse", "de": "Antwort"},
     "بانتظار تسجيل دخولك…": {"ar": "بانتظار تسجيل دخولك…", "es": "Esperando a que inicies sesión…", "tr": "Girişini bekliyoruz…", "fr": "En attente de votre connexion…", "de": "Warten auf deine Anmeldung…"},
-    " ویدیوی رایگان استفاده شده": {"ar": "فيديو مجاني مستخدم", "es": "videos gratis usados", "tr": "ücretsiz video kullanıldı", "fr": "vidéos gratuites utilisées", "de": "kostenlose Videos genutzt"},
+    " ویدیوی آزمایشی استفاده شده": {"ar": "فيديو تجريبي مستخدم", "es": "videos de prueba usados", "tr": "deneme videosu kullanıldı", "fr": "vidéos d'essai utilisées", "de": "Testvideos genutzt"},
   };
   function gLang() { return document.documentElement.lang || 'fa'; }
   function gDir() { var l = gLang(); return (l === 'fa' || l === 'ar') ? 'rtl' : 'ltr'; }
@@ -481,7 +481,7 @@
       card.innerHTML = logo +
         '<h1 class="sg-title" id="sg-title">' + gbi('برای ادامه وارد شو', 'Sign in to continue') + '</h1>' +
         '<p class="sg-desc">' + gbi('با یکی از روش‌های زیر وارد شو. اگر حساب نداشته باشی، همان‌جا ساخته می‌شود.', 'Choose one of the options below. No account yet? It is created right there.') + '</p>' +
-        (state && state.trial ? '<p class="sg-desc">' + gbi('ده منبع رایگان بدون ورود استفاده شد.', 'The 10 free sources without sign-in are used up.') + '</p>' : '') +
+        (state && state.trial ? '<p class="sg-desc">' + gbi('استفادهٔ آزمایشی بدون ورود تمام شد. وارد شو و ۵٬۰۰۰ تومان اعتبار هدیهٔ خوش‌آمدگویی کیف پول بگیر.', 'The sign-in-free trial is used up. Sign in to get 5,000 toman of welcome wallet credit.') + '</p>' : '') +
         '<div id="sg-notice"></div><div class="sg-actions"></div>' +
         '<div class="sg-status" id="sg-status" role="status" aria-live="polite"></div>' +
         (hasSocial ? '<p class="sg-hint">' + gbi('ورود با Google، GitHub یا LinkedIn در تب جدید باز می‌شود. بعد از پایان، این‌جا «وارد شدم» را بزن.', 'Google, GitHub and LinkedIn sign-in open in a new tab. When you are done, press “I’ve signed in” here.') + '</p>' : '');
@@ -521,7 +521,7 @@
   // Signed out during the trial: the same button, its tooltip says how many free videos are left.
   function popupGuestButton(trial) {
     var used = Number(trial.used) || 0, max = Number(trial.max) || 10;
-    popupAccountButton(gT('ورود اختیاری: ', 'Optional sign-in: ') + used + gT(' از ', ' of ') + max + gT(' ویدیوی رایگان استفاده شده', ' free videos used'));
+    popupAccountButton(gT('ورود اختیاری: ', 'Optional sign-in: ') + used + gT(' از ', ' of ') + max + gT(' ویدیوی آزمایشی استفاده شده', ' trial videos used'));
   }
   function popupAccountButton(title) {
     var existing = document.getElementById('subify-account-btn');
