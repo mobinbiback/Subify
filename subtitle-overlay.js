@@ -3664,6 +3664,156 @@ var browser = globalThis.browser || globalThis.chrome; // Chrome has no browser 
     if (!state.aheadBusy && state.cues.length) void translateWindow(state.cues, state.session, now, 60, 40);
   }
 
+  // ---- Wallet dubbing: the page speaks each translated line with Subify Server's voice (background "subify-dub-speech").
+  // Turned on by background.js (subify-wallet-dub-toggle) when pd_settings.dubWallet is set. Same rules as the Firefox path:
+  // the next 4 lines only, 3 requests at a time, one speed per line from its length, the video kept low under the voice.
+  const walletDub = { on: false, ctx: null, gain: null, sources: new Set(), requested: new Set(), scheduled: new Set(), cache: new Map(), busy: 0, timer: null, origMuted: null, origVolume: null, duck: 0.2, vid: null, lastNow: null };
+  function walletDubStop() {
+    for (const source of walletDub.sources) { try { source.stop(0); } catch (_) {} }
+    walletDub.sources.clear();
+  }
+  function walletDubReset() {
+    walletDubStop();
+    walletDub.scheduled.clear();
+    walletDub.requested.clear();
+    walletDub.cache.clear();
+  }
+  async function walletDubEnsureAudio() {
+    if (!walletDub.ctx) {
+      const Ctx = window.AudioContext || window.webkitAudioContext;
+      if (!Ctx) return null;
+      walletDub.ctx = new Ctx();
+      walletDub.gain = walletDub.ctx.createGain();
+      walletDub.gain.gain.value = Number(state.settings?.dubGain ?? 1.6);
+      walletDub.gain.connect(walletDub.ctx.destination);
+    }
+    if (walletDub.ctx.state === "suspended") { try { await walletDub.ctx.resume(); } catch (_) {} }
+    return walletDub.ctx;
+  }
+  function walletDubB64ToArrayBuffer(b64) {
+    const bin = atob(String(b64 || ""));
+    const bytes = new Uint8Array(bin.length);
+    for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+    return bytes.buffer;
+  }
+  // Persian speech runs about 14 letters a second at normal speed; the speed asked for is that length over the cue's length, 1.0 to 1.45.
+  function walletDubSpeedFor(text, seconds) {
+    const letters = String(text || "").replace(/\s+/g, "").length;
+    const ratio = (letters / 14) / Math.max(0.6, Number(seconds) || 0.6);
+    return Math.round(Math.min(1.45, Math.max(1, ratio)) * 100) / 100;
+  }
+  function walletDubPlay(cue, buffer, session) {
+    if (!walletDub.on || session !== state.session || !state.video || !walletDub.ctx) return;
+    const id = String(cue.id);
+    if (walletDub.scheduled.has(id)) return;
+    const ctx = walletDub.ctx;
+    const now = Number(state.video.currentTime || 0);
+    const late = Math.max(0, now - Number(cue.start));
+    if (late >= buffer.duration) return;
+    walletDub.scheduled.add(id);
+    const source = ctx.createBufferSource();
+    source.buffer = buffer;
+    source.playbackRate.value = Math.max(0.75, Math.min(1.75, Number(state.settings?.playbackRate || 1)));
+    source.connect(walletDub.gain);
+    walletDub.sources.add(source);
+    source.onended = () => walletDub.sources.delete(source);
+    const wait = Math.max(0, Number(cue.start) - now);
+    try { source.start(ctx.currentTime + wait, wait > 0 ? 0 : late); } catch (_) {}
+  }
+  async function walletDubCue(cue, fa, session, key) {
+    while (walletDub.busy >= 3) {
+      await new Promise((r) => setTimeout(r, 150));
+      if (session !== state.session || !walletDub.on) { walletDub.requested.delete(key); return; }
+    }
+    walletDub.busy += 1;
+    try {
+      const dur = Math.max(0.6, Number(cue.end) - Number(cue.start));
+      const response = await browser.runtime.sendMessage({
+        type: "subify-dub-speech", text: String(fa), speed: walletDubSpeedFor(fa, dur), gender: "", title: String(state.videoId || "")
+      });
+      if (!response?.ok) throw new Error(response?.error || "speech failed");
+      if (session !== state.session || !walletDub.on) return;
+      const ctx = await walletDubEnsureAudio();
+      if (!ctx) return;
+      const buffer = await ctx.decodeAudioData(walletDubB64ToArrayBuffer(response.mp3B64));
+      walletDub.cache.set(key, buffer);
+      walletDubPlay(cue, buffer, session);
+    } catch (e) {
+      // A failed line stays silent; its key stays in requested, so it is not asked again.
+      console.debug("Subify wallet dubbing cue failed", e);
+    } finally {
+      walletDub.busy = Math.max(0, walletDub.busy - 1);
+    }
+  }
+  function walletDubPump(now) {
+    if (!walletDub.on) return;
+    if (walletDub.vid !== state.videoId) { walletDubReset(); walletDub.vid = state.videoId; }
+    // A jump in the playhead (a seek) restarts the lines it passed.
+    if (walletDub.lastNow !== null && Math.abs(now - walletDub.lastNow) > 2) { walletDubStop(); walletDub.scheduled.clear(); }
+    walletDub.lastNow = now;
+    const source = state.cues.length ? state.cues : state.generatedCues;
+    if (!source.length) return;
+    const session = state.session;
+    const end = now + 20;
+    const upcoming = new Set(source.filter((c) => c?.text && c.end >= now - 0.25).sort((a, b) => a.start - b.start).slice(0, 4).map((c) => String(c.id)));
+    for (const cue of source) {
+      if (!cue?.text || cue.start > end || cue.end < now - 0.25) continue;
+      const fa = state.translations.get(cue.id);
+      if (!fa) {
+        if (!state.translating.has(cue.id)) void translateBatch([cue], session);
+        continue;
+      }
+      const key = String(cue.id);
+      const cached = walletDub.cache.get(key);
+      if (cached) {
+        if (now <= cue.end + 0.35 && now >= cue.start - 0.15) walletDubPlay(cue, cached, session);
+        continue;
+      }
+      if (!upcoming.has(key) || walletDub.requested.has(key)) continue;
+      walletDub.requested.add(key);
+      void walletDubCue(cue, fa, session, key);
+    }
+  }
+  function walletDubApplyDucking() {
+    const v = state.video || getVideo();
+    if (!v) return;
+    if (walletDub.origMuted === null) walletDub.origMuted = !!v.muted;
+    if (walletDub.origVolume === null) walletDub.origVolume = Number.isFinite(v.volume) ? v.volume : 1;
+    v.muted = false;
+    v.volume = Math.min(walletDub.origVolume, Math.min(1, Math.max(0, Number(walletDub.duck) || 0)));
+  }
+  async function walletDubEnable() {
+    if (walletDub.on) return;
+    const { pd_settings = {} } = await browser.storage.local.get("pd_settings").catch(() => ({}));
+    walletDub.duck = Number.isFinite(Number(pd_settings.duckLevel)) ? Number(pd_settings.duckLevel) : 0.2;
+    walletDub.on = true;
+    walletDub.vid = null;
+    walletDub.lastNow = null;
+    walletDubApplyDucking();
+    void walletDubEnsureAudio();
+    walletDub.timer = setInterval(() => {
+      const v = state.video || getVideo();
+      if (v) walletDubPump(Number(v.currentTime || 0));
+    }, 250);
+  }
+  function walletDubDisable() {
+    walletDub.on = false;
+    clearInterval(walletDub.timer);
+    walletDub.timer = null;
+    walletDubReset();
+    if (state.video) {
+      if (walletDub.origMuted !== null) state.video.muted = walletDub.origMuted;
+      if (walletDub.origVolume !== null) state.video.volume = walletDub.origVolume;
+    }
+    walletDub.origMuted = null;
+    walletDub.origVolume = null;
+  }
+  browser.runtime.onMessage.addListener((msg) => {
+    if (msg?.type !== "subify-wallet-dub-toggle") return false;
+    if (msg.enabled) void walletDubEnable(); else walletDubDisable();
+    return false;
+  });
+
   async function loadSettings(){
     const [{subify_settings},{subify_subtitle_enabled}]=await Promise.all([browser.storage.local.get("subify_settings"),browser.storage.local.get("subify_subtitle_enabled")]);
     const base={...DEFAULTS,...(subify_settings||{})};let per={};const id=state.videoId||getVideoIdFromUrl();if(id){try{const r=await browser.storage.local.get(`subify_video_${id}`);per=r[`subify_video_${id}`]||{};}catch(_){}}

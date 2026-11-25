@@ -66,6 +66,7 @@ const DEFAULT_SETTINGS = {
   exportDubGain: 1.0,
   duckLevel: 0.20,
   dubGain: 1.6,
+  dubWallet: false, // true: the dubbed voice comes from Subify Server (auth/audio.php), not the personal Gemini key; no offscreen engine runs
   playbackRate: 1.0,
   skipPersian: true,
   skipLangs: "",
@@ -733,6 +734,13 @@ async function startDubbing(tabId) {
   try {
     await browser.storage.session.set({ pd_log: [], pd_cues: [] });
     const baseSettings = await getSettings();
+    if (baseSettings.dubWallet) {
+      // Wallet dubbing: the tab's page player speaks the subtitle lines (subtitle-overlay.js). No capture engine runs.
+      await setState({ tabId, error: "", active: true, startedAt: Date.now(), queueDepth: 0, level: 0 });
+      await browser.storage.local.set({ subify_dubbing_enabled: true });
+      await browser.tabs.sendMessage(tabId, { type: "subify-wallet-dub-toggle", enabled: true }).catch(() => {});
+      return;
+    }
     // dubbingAudioEnabled:false = "captions only" — see offscreen.js's playLiveAudio().
     const settings = { ...baseSettings, dubbingEnabled: baseSettings.dubbingAudioEnabled !== false };
     if (!settings.apiKey) {
@@ -791,7 +799,58 @@ async function startDubbing(tabId) {
   }
 }
 
+// Wallet dubbing: one Persian line spoken by Subify Server's voice (auth/audio.php, eleven-v4-turbo). No personal key is used.
+// Returns the MP3 as base64. Errors carry a code of SUBIFY_FREE_AI_TEXT.
+// shortcut: speech is not charged to the wallet yet (audio.php applies only its daily caps); charge it before enabling for members.
+function subifyBytesToB64(buf) {
+  const u = new Uint8Array(buf);
+  let s = "";
+  for (let i = 0; i < u.length; i += 0x8000) s += String.fromCharCode.apply(null, u.subarray(i, i + 0x8000));
+  return btoa(s);
+}
+async function subifyDubSpeech(msg) {
+  const text = String(msg.text || "").trim();
+  if (!text) throw subifyFreeAiError("failed");
+  const speed = Math.min(1.45, Math.max(1, Number(msg.speed) || 1));
+  const ctl = new AbortController();
+  const timer = setTimeout(() => ctl.abort(), 30000);
+  try {
+    const res = await fetch(SUBIFY_SITE + "/auth/audio.php?action=speech", {
+      method: "POST",
+      signal: ctl.signal,
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        text,
+        model: "eleven-v4-turbo",
+        speed: Math.round(speed * 100) / 100,
+        gender: msg.gender === "female" ? "female" : "male",
+        title: String(msg.title || "dub").slice(0, 120)
+      })
+    });
+    if (!res.ok) {
+      let code = SUBIFY_FREE_AI_STATUS_CODES[res.status] || "failed";
+      try {
+        const j = await res.json();
+        if (j && j.error === "member_limit") code = "quota";
+        if (j && j.error === "global_limit") code = "capacity";
+      } catch (_) {}
+      throw subifyFreeAiError(code);
+    }
+    const buf = await res.arrayBuffer();
+    if (!buf.byteLength) throw subifyFreeAiError("empty");
+    return { mp3B64: subifyBytesToB64(buf), model: res.headers.get("X-Sfy-Tts-Model") || "" };
+  } catch (e) {
+    if (e && e.code) throw e;
+    throw subifyFreeAiError("network");
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 async function stopDubbing(reason) {
+  const before = await getState().catch(() => ({}));
+  if (before && before.tabId) browser.tabs.sendMessage(before.tabId, { type: "subify-wallet-dub-toggle", enabled: false }).catch(() => {});
   await browser.storage.local.set({ subify_dubbing_enabled: false });
   await setState({ active: false, queueDepth: 0, level: 0 });
   browser.action.setBadgeText({ text: "" });
@@ -2954,6 +3013,15 @@ browser.runtime.onMessage.addListener((msg, sender, sendResponse) => {
         sendResponse({ ok: true, state });
         break;
       }
+      case "subify-dub-speech": {
+        try {
+          const r = await subifyDubSpeech(msg);
+          sendResponse({ ok: true, mp3B64: r.mp3B64, model: r.model });
+        } catch (e) {
+          sendResponse({ ok: false, error: String(e.code || e.message || e) });
+        }
+        break;
+      }
       case "subify-set-dubbing": {
         // tabId is normally supplied by the popup (which has tabs access);
         // a content script (e.g. the in-player Subify control) can't query
@@ -3162,7 +3230,7 @@ browser.runtime.onMessage.addListener((msg, sender, sendResponse) => {
     "subify-test-key", "subify-test-openai", "subify-test-openrouter",
     "subify-test-custom", "subify-list-custom-models",
     "popup-get-status", "subify-open-options", "popup-test-live", "popup-self-test",
-    "subify-set-dubbing", "subify-set-dubbing-audio",
+    "subify-set-dubbing", "subify-set-dubbing-audio", "subify-dub-speech",
     "subify-vocab-enrich", "subify-vocab-batch", "subify-grammar", "subify-vocab-grammar", "subify-vocab-list", "subify-account-videos", "subify-vocab-grade", "subify-roleplay-save", "subify-page-translate", "subify-ai-generate", "subify-roleplay-memo"
   ]);
   return requestTypes.has(msg?.type);

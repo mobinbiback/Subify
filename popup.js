@@ -102,12 +102,23 @@ async function loadDubQuick(){
   $("dubQuickGain").value=Number(pd_settings.dubGain??1.6);
   $("dubQuickRate").value=Number(pd_settings.playbackRate??1);
   $("dubQuickDuck").value=Number(pd_settings.duckLevel??0.2);
+  $("dubbing-wallet").checked=pd_settings.dubWallet===true;
   paintDubQuick();
 }
 async function saveDubQuick(){
   const {pd_settings={}}=await browser.storage.local.get("pd_settings");
   await browser.storage.local.set({pd_settings:{...pd_settings,dubGain:Number($("dubQuickGain").value),playbackRate:Number($("dubQuickRate").value),duckLevel:Number($("dubQuickDuck").value)}});
 }
+// Wallet dubbing is chosen when dubbing starts: a running dub is restarted so the new mode takes effect.
+$("dubbing-wallet")?.addEventListener("change",async e=>{
+  const {pd_settings={}}=await browser.storage.local.get("pd_settings");
+  await browser.storage.local.set({pd_settings:{...pd_settings,dubWallet:e.target.checked}});
+  if(!$("subify-popup-dubbing").checked)return;
+  const [tab]=await browser.tabs.query({active:true,currentWindow:true}).catch(()=>[]);
+  if(!tab?.id)return;
+  await browser.runtime.sendMessage({type:"subify-set-dubbing",enabled:false,tabId:tab.id}).catch(()=>{});
+  await browser.runtime.sendMessage({type:"subify-set-dubbing",enabled:true,tabId:tab.id}).catch(()=>{});
+});
 $("dubQuickGain")?.addEventListener("input",paintDubQuick);
 $("dubQuickRate")?.addEventListener("input",paintDubQuick);
 $("dubQuickGain")?.addEventListener("change",saveDubQuick);

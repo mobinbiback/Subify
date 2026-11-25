@@ -133,6 +133,8 @@ function setSafeHTML(el, html) {
     karaokeIndex: -1,
     karaokeCueId: "",
     firefoxDubEnabled: false,
+    firefoxDubWallet: false,
+    firefoxDubWalletBusy: 0,
     firefoxDubAudioEnabled: true,
     firefoxDubAudioCtx: null,
     firefoxDubGain: null,
@@ -3298,11 +3300,76 @@ function setSafeHTML(el, html) {
     try { source.start(ctx.currentTime + delay); } catch (_) { return; }
   }
 
+  // Wallet dubbing (pd_settings.dubWallet): a line is asked for from Subify Server, with 3 in flight at most.
+  // A failed line stays silent (its id is kept in firefoxDubRequested, so it is not asked again).
+  async function firefoxDubWalletCue(cue, fa, session, id) {
+    while (state.firefoxDubWalletBusy >= 3) {
+      await new Promise((r) => setTimeout(r, 150));
+      if (session !== state.session || !state.firefoxDubEnabled) return;
+    }
+    state.firefoxDubWalletBusy += 1;
+    try {
+      const dur = Math.max(0.6, Number(cue.end) - Number(cue.start));
+      const response = await browser.runtime.sendMessage({
+        type: "subify-dub-speech",
+        text: String(fa),
+        speed: firefoxDubSpeedFor(fa, dur),
+        gender: "",
+        title: String(state.videoId || "")
+      });
+      if (!response?.ok) throw new Error(response?.error || "speech failed");
+      if (session !== state.session || !state.firefoxDubEnabled) return;
+      const ctx = await firefoxDubEnsureAudio();
+      if (!ctx) return;
+      const buffer = await ctx.decodeAudioData(firefoxDubB64ToArrayBuffer(response.mp3B64));
+      state.firefoxDubCache.set(id, { buffer });
+      firefoxDubPlayBuffer(cue, buffer, session);
+    } catch (e) {
+      console.debug("Subify wallet dubbing cue failed", e);
+    } finally {
+      state.firefoxDubWalletBusy = Math.max(0, state.firefoxDubWalletBusy - 1);
+    }
+  }
+
+  function firefoxDubB64ToArrayBuffer(b64) {
+    const bin = atob(String(b64 || ""));
+    const bytes = new Uint8Array(bin.length);
+    for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+    return bytes.buffer;
+  }
+
+  // Persian speech runs about 14 letters a second at normal speed; the speed asked for is that length over the cue's length, 1.0 to 1.45.
+  function firefoxDubSpeedFor(text, seconds) {
+    const letters = String(text || "").replace(/\s+/g, "").length;
+    const ratio = (letters / 14) / Math.max(0.6, Number(seconds) || 0.6);
+    return Math.round(Math.min(1.45, Math.max(1, ratio)) * 100) / 100;
+  }
+
+  function firefoxDubPlayBuffer(cue, buffer, session = state.session) {
+    if (!state.firefoxDubEnabled || !state.firefoxDubAudioEnabled || session !== state.session || !state.video || !state.firefoxDubAudioCtx) return;
+    const id = String(cue.id);
+    if (state.firefoxDubScheduled.has(id)) return;
+    const ctx = state.firefoxDubAudioCtx;
+    const now = Number(state.video.currentTime || 0);
+    const late = Math.max(0, now - Number(cue.start));
+    if (late >= buffer.duration) return;
+    state.firefoxDubScheduled.add(id);
+    const source = ctx.createBufferSource();
+    source.buffer = buffer;
+    source.playbackRate.value = Math.max(0.75, Math.min(1.75, Number(state.settings?.playbackRate || 1)));
+    source.connect(state.firefoxDubGain);
+    state.firefoxDubSources.add(source);
+    source.onended = () => state.firefoxDubSources.delete(source);
+    const wait = Math.max(0, Number(cue.start) - now);
+    try { source.start(ctx.currentTime + wait, wait > 0 ? 0 : late); } catch (_) {}
+  }
+
   async function firefoxDubRequestCue(cue, fa, session) {
     if (!state.firefoxDubEnabled || !state.firefoxDubAudioEnabled || !cue?.id || !fa || session !== state.session) return;
     const id = String(cue.id);
     if (state.firefoxDubRequested.has(id)) return;
     state.firefoxDubRequested.add(id);
+    if (state.firefoxDubWallet) return firefoxDubWalletCue(cue, fa, session, id);
     try {
       const response = await browser.runtime.sendMessage({
         type: "firefox-caption-dub-tts",
@@ -3325,6 +3392,9 @@ function setSafeHTML(el, html) {
     if (!source.length) return;
     const session = state.session;
     const end = now + 20;
+    const upcoming = new Set(state.firefoxDubWallet
+      ? source.filter((c) => c?.text && c.end >= now - 0.25).sort((a, b) => a.start - b.start).slice(0, 4).map((c) => String(c.id))
+      : []);
     for (const cue of source) {
       if (!cue?.text || cue.start > end || cue.end < now - 0.25) continue;
       const fa = state.translations.get(cue.id);
@@ -3335,9 +3405,12 @@ function setSafeHTML(el, html) {
       const cached = state.firefoxDubCache.get(String(cue.id));
       if (cached) {
         if (now <= cue.end + 0.35 && now >= cue.start - 0.15) {
-          void firefoxDubPlayCue(cue, cached.pcmB64, cached.sampleRate, session);
+          if (cached.buffer) firefoxDubPlayBuffer(cue, cached.buffer, session);
+          else void firefoxDubPlayCue(cue, cached.pcmB64, cached.sampleRate, session);
         }
       } else {
+        // Wallet dubbing: only the next 4 lines are asked for, so the voice is never far ahead of the picture.
+        if (state.firefoxDubWallet && !upcoming.has(String(cue.id))) continue;
         void firefoxDubRequestCue(cue, fa, session);
       }
     }
@@ -3880,6 +3953,7 @@ function setSafeHTML(el, html) {
     if (isFirefoxRuntime()) {
       const { pd_settings = {} } = await browser.storage.local.get("pd_settings");
       state.firefoxDuckLevel = pd_settings.duckLevel;
+      state.firefoxDubWallet = pd_settings.dubWallet === true;
       const { subify_dubbing_enabled } = await browser.storage.local.get("subify_dubbing_enabled");
       if (subify_dubbing_enabled === true) firefoxDubEnable();
     }const el=state.player?.querySelector(`#${OVERLAY_ID}`);if(el){applyOverlayStyle(el);positionOverlay(el);}if(!state.settings.subtitleEnabled)hide();

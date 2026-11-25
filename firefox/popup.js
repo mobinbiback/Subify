@@ -101,12 +101,20 @@ async function loadDubQuick(){
   $("dubQuickGain").value=Number(pd_settings.dubGain??1.6);
   $("dubQuickRate").value=Number(pd_settings.playbackRate??1);
   $("dubQuickDuck").value=Number(pd_settings.duckLevel??0.2);
+  $("dubbing-wallet").checked=pd_settings.dubWallet===true;
   paintDubQuick();
 }
 async function saveDubQuick(){
   const {pd_settings={}}=await browser.storage.local.get("pd_settings");
   await browser.storage.local.set({pd_settings:{...pd_settings,dubGain:Number($("dubQuickGain").value),playbackRate:Number($("dubQuickRate").value),duckLevel:Number($("dubQuickDuck").value)}});
 }
+// Wallet dubbing: saved with the other dubbing settings, then the open tab reloads its settings (it reads them once).
+$("dubbing-wallet")?.addEventListener("change",async e=>{
+  const {pd_settings={}}=await browser.storage.local.get("pd_settings");
+  await browser.storage.local.set({pd_settings:{...pd_settings,dubWallet:e.target.checked}});
+  const [tab]=await browser.tabs.query({active:true,currentWindow:true}).catch(()=>[]);
+  if(tab?.id)await browser.tabs.sendMessage(tab.id,{type:"subify-refresh-settings"}).catch(()=>{});
+});
 $("dubQuickGain")?.addEventListener("input",paintDubQuick);
 $("dubQuickRate")?.addEventListener("input",paintDubQuick);
 $("dubQuickGain")?.addEventListener("change",saveDubQuick);
