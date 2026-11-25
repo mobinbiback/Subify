@@ -1991,7 +1991,7 @@ async function subifyStateRead(force = false) {
 // time, each finished batch reported as it arrives (opts.onBatch). With the balance low: one batch after another, sized to
 // the balance (as before). A batch is served from the shared cache where it can be (billed at the standard rate); only the
 // lines it lacks go to the AI. Capacity and upstream trouble retry the batch with a longer wait each time.
-const SUBIFY_POOL_LANES = 6; // batches in flight at once on the pool path: 6 lanes of 18 lines (v2.12.2; the SQLite write lock makes parallel batches safe). Gisoo allows 8 calls at once for the whole account
+const SUBIFY_POOL_LANES = 5; // batches in flight at once on the pool path: 5 lanes of 18 lines (v2.12.2; the SQLite write lock makes parallel batches safe). Gisoo allows 8 calls at once for the whole account
 const SUBIFY_SKIP_CODES = ["capacity", "upstream", "parse_error", "empty", "network"]; // these skip one batch; the run goes on
 const SUBIFY_CALL_TIMEOUT_MS = 90000; // the server answers within 70 s; past this the call is cut and the batch skipped
 const SUBIFY_RETRY_MAX = 3;
