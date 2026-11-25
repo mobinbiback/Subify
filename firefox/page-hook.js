@@ -124,13 +124,32 @@
     return nativeOpen.call(this, method, url, ...rest);
   };
 
+  // v2.12.2: caption tracks of the player answers (/youtubei/v1/player), kept per video id. An answer is used only when its own
+  // videoDetails.videoId is the video in the address bar, so an ad's answer can never be taken for the main video's.
+  const playerAnswers = new Map();
+  const rememberPlayerAnswer = (j) => {
+    try {
+      const vid = j?.videoDetails?.videoId;
+      const tracks = j?.captions?.playerCaptionsTracklistRenderer?.captionTracks;
+      if (!vid || !Array.isArray(tracks) || !tracks.length) return;
+      playerAnswers.set(vid, tracks);
+      if (playerAnswers.size > 12) playerAnswers.delete(playerAnswers.keys().next().value);
+    } catch (_) {}
+  };
+  const isPlayerCall = (raw) => { try { return /\/youtubei\/v1\/player(?:[?#]|$)/.test(new URL(String(raw), location.href).pathname + '?'); } catch (_) { return false; } };
+
   const nativeFetch = window.fetch;
   window.fetch = function(input, init) {
+    let raw = '';
     try {
-      const raw = typeof input === 'string' || input instanceof URL ? input : input?.url;
+      raw = typeof input === 'string' || input instanceof URL ? input : input?.url;
       emit(raw);
     } catch (_) {}
-    return nativeFetch.call(this, input, init);
+    const p = nativeFetch.call(this, input, init);
+    try {
+      if (isPlayerCall(raw)) p.then((res) => { try { res.clone().json().then(rememberPlayerAnswer).catch(() => {}); } catch (_) {} }, () => {});
+    } catch (_) {}
+    return p;
   };
 
   // Let the isolated-world content script request a caption reload without
@@ -206,19 +225,33 @@
   // Answers the overlay's request for the player's own caption tracks. Runs in the MAIN world,
   // so movie_player.getPlayerResponse() is reachable. Replies inside dispatchEvent, so the caller
   // reads the answer synchronously. Ad responses are never returned.
+  // v2.12.2: a strict chain, each source checked against the video id in the address bar (ad answers are never used):
+  // 1) the /youtubei/v1/player answers seen on the wire, 2) movie_player.getPlayerResponse(), 3) window.ytInitialPlayerResponse
+  // (a hard refresh, when no player request fires). Nothing is returned while an ad owns the player.
+  const adActive = (player) => !!(player && player.classList && (player.classList.contains('ad-showing') || player.classList.contains('ad-interrupting')));
+  const slimTracks = (tracks) => (Array.isArray(tracks) ? tracks.filter(t => t && t.baseUrl).map(t => ({
+    baseUrl: t.baseUrl, languageCode: t.languageCode || '', kind: t.kind || '', name: t.name || null, vssId: t.vssId || ''
+  })) : []);
   window.addEventListener('subify-youtube-get-player-response', () => {
     let reply = { videoId: '', tracks: [] };
     try {
+      const want = currentVideoId();
       const player = document.getElementById('movie_player') || document.querySelector('.html5-video-player');
-      if (player && !player.classList?.contains('ad-showing') && typeof player.getPlayerResponse === 'function') {
-        const resp = player.getPlayerResponse() || null;
-        const tracks = resp?.captions?.playerCaptionsTracklistRenderer?.captionTracks;
-        reply = {
-          videoId: resp?.videoDetails?.videoId || '',
-          tracks: Array.isArray(tracks) ? tracks.filter(t => t && t.baseUrl).map(t => ({
-            baseUrl: t.baseUrl, languageCode: t.languageCode || '', kind: t.kind || '', name: t.name || null, vssId: t.vssId || ''
-          })) : []
-        };
+      if (!adActive(player)) {
+        const sources = [
+          () => (want && playerAnswers.has(want) ? { videoDetails: { videoId: want }, captions: { playerCaptionsTracklistRenderer: { captionTracks: playerAnswers.get(want) } } } : null),
+          () => (player && typeof player.getPlayerResponse === 'function' ? player.getPlayerResponse() : null),
+          () => window.ytInitialPlayerResponse || null
+        ];
+        for (const get of sources) {
+          let resp = null;
+          try { resp = get(); } catch (_) {}
+          const vid = resp?.videoDetails?.videoId || '';
+          if (!vid || (want && vid !== want)) continue;
+          if (!reply.videoId) reply.videoId = vid;
+          const tracks = slimTracks(resp?.captions?.playerCaptionsTracklistRenderer?.captionTracks);
+          if (tracks.length) { reply = { videoId: vid, tracks }; break; }
+        }
       }
     } catch (_) {}
     window.dispatchEvent(new CustomEvent('subify-youtube-player-response', { detail: JSON.stringify(reply) }));

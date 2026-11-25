@@ -420,8 +420,20 @@ function setSafeHTML(el, html) {
         }
       }
       state.player = player;
+      observePlayerAds(player);
     }
     return video;
+  }
+
+  // v2.12.2: the instant the player gains or loses ad-showing / ad-interrupting, scan() runs (it used to wait for its next 450-1200 ms tick).
+  function observePlayerAds(player) {
+    if (state.adObserved === player || typeof MutationObserver !== "function") return;
+    try { state.adObserver?.disconnect(); } catch (_) {}
+    state.adObserved = player;
+    state.adObserver = new MutationObserver(() => {
+      if (state.wasAdShowing !== null && state.wasAdShowing !== isAdPlaying()) scheduleScan(0);
+    });
+    state.adObserver.observe(player, { attributes: true, attributeFilter: ["class"] });
   }
 
   function bindVideoEvents(video) {
@@ -441,6 +453,7 @@ function setSafeHTML(el, html) {
     const onSeek = () => {
       state.lastShownId = "";
       state.karaokeIndex = -1;
+      if (state.cues.length && state.settings?.subtitleEnabled !== false) void translateViewport(state.session, Number(video.currentTime || 0));
       if (isFirefoxRuntime() && state.firefoxDubEnabled) {
         firefoxDubStopSources();
         state.firefoxDubScheduled.clear();
@@ -483,7 +496,7 @@ function setSafeHTML(el, html) {
 
   // True while YouTube plays an ad: the player class, or the ad badge in the page (the player element can be replaced).
   function isAdPlaying() {
-    return !!(state.player?.classList?.contains("ad-showing") || document.querySelector(".html5-video-player.ad-showing"));
+    return !!(state.player?.classList?.contains("ad-showing") || state.player?.classList?.contains("ad-interrupting") || document.querySelector(".html5-video-player.ad-showing, .html5-video-player.ad-interrupting"));
   }
 
   function resetTrack() {
@@ -2513,11 +2526,34 @@ function setSafeHTML(el, html) {
     clearInterval(state.trackRetryTimer);
     const started = Date.now();
     state.trackRetryTimer = setInterval(() => {
-      if (Date.now() - started > 5000 || state.trackKey) { clearInterval(state.trackRetryTimer); return; }
+      if (Date.now() - started > 5000 || state.trackKey) {
+        clearInterval(state.trackRetryTimer);
+        if (!state.trackKey && !isAdPlaying()) forceCaptionCaptureViaCc();
+        return;
+      }
       if (isAdPlaying()) return;
       if (readPlayerCaptionTracks(state.videoId || getVideoIdFromUrl()).length) {
         clearInterval(state.trackRetryTimer);
         void refreshTrack();
+      }
+    }, 400);
+  }
+
+  // v2.12.2: last resort when no track was found after an ad or a refresh. Turn YouTube's CC on, so the player itself asks for timedtext
+  // (the capture path takes its URL), then put the button back as it was. A viewer who touches CC in the meantime keeps their choice.
+  function forceCaptionCaptureViaCc() {
+    if (state.ccCaptureWatch || state.cues.length || state.capturedCaptionUrl) return;
+    const wasOn = nativeSubtitlesOn();
+    if (!wasOn) ensureNativeCaptionsOn(); // sets autoEnabledNativeCC, so revertAutoEnabledNativeCC() puts it back
+    requestNativeCaptionReload(true);
+    log("no caption track after the ad or refresh: asked YouTube for timedtext through the CC button");
+    const started = Date.now();
+    state.ccCaptureWatch = setInterval(() => {
+      const done = state.cues.length > 0;
+      if (done || Date.now() - started > 9000) {
+        clearInterval(state.ccCaptureWatch);
+        state.ccCaptureWatch = null;
+        if (!wasOn) setTimeout(revertAutoEnabledNativeCC, done ? 600 : 0);
       }
     }, 400);
   }
@@ -2931,7 +2967,7 @@ function setSafeHTML(el, html) {
     const pending = (c) => c?.text && !state.translations.has(c.id) && !state.translating.has(c.id);
     // Nearest the playhead first. When that stretch is done (or the video resumed far in), the earliest untranslated
     // lines are translated, so the start of the video is never left untranslated.
-    let targets = cues.filter(c => pending(c) && c.end >= now - 1000 && c.start <= end).slice(0, maxCues);
+    let targets = cues.filter(c => pending(c) && c.end >= now - 5 && c.start <= end).slice(0, maxCues);
     if (!targets.length) targets = cues.filter(pending).slice(0, maxCues);
     if (!targets.length) return;
     state.aheadBusy = true;
@@ -2941,19 +2977,28 @@ function setSafeHTML(el, html) {
       // Small batches, three at a time, nearest cues first. A short request comes back in seconds, so the
       // runway fills before the playhead reaches it, and one slow reply does not hold up the whole window.
       // The first batch is small (4 lines) so the first subtitles appear at once.
-      const PARALLEL = 3;
+      // v2.12.2: six requests at once (the Subify Server pool is six lanes), 18 lines each; the lines around the playhead already went out
+      // on their own request (translateViewport), so this wave only fills the runway behind them. No pause between waves.
+      const PARALLEL = 6;
       const batches = [];
-      for (let at = 0, size = 4; at < targets.length; at += size, size = 8) batches.push(targets.slice(at, at + size));
+      for (let at = 0; at < targets.length; at += 18) batches.push(targets.slice(at, at + 18));
       for (let g = 0; g < batches.length && session === state.session; g += PARALLEL) {
         const epoch = state.translationEpoch;
-        const results = await Promise.all(batches.slice(g, g + PARALLEL).map(b => _translateBatchNow(b, session, epoch)));
-        if (results.some(ok => !ok) && session === state.session) {
-          await new Promise(r => setTimeout(r, 450));
-        }
+        await Promise.all(batches.slice(g, g + PARALLEL).map(b => _translateBatchNow(b, session, epoch)));
       }
     } finally {
       state.aheadBusy = false;
     }
+  }
+
+  // v2.12.2: viewport first. The lines from 5 s before to 45 s after the playhead (at most 10) are sent at once on their own request,
+  // whatever the window run is doing, so the subtitles on screen do not wait for the rest of the runway.
+  async function translateViewport(session, now) {
+    if (state.vpBusy || session !== state.session || state.settings.subtitleEnabled === false || isAdPlaying() || !state.cues.length) return;
+    const vp = state.cues.filter(c => c?.text && !state.translations.has(c.id) && !state.translating.has(c.id) && c.end >= now - 5 && c.start <= now + 45).slice(0, 10);
+    if (!vp.length) return;
+    state.vpBusy = true;
+    try { await _translateBatchNow(vp, session, state.translationEpoch); } finally { state.vpBusy = false; }
   }
 
   function startAheadPump(session) {
@@ -2965,6 +3010,7 @@ function setSafeHTML(el, html) {
       // Once the user has engaged the video, pre-translate while playing or paused.
       // This is especially useful when the user pauses to read.
       if (video.paused && Number(video.currentTime || 0) <= 0.25) return;
+      void translateViewport(session, Number(video.currentTime || 0));
       void translateWindow(state.cues, session, Number(video.currentTime || 0), 180, 80);
     }, 1000);
   }
@@ -2973,6 +3019,7 @@ function setSafeHTML(el, html) {
     if (!Array.isArray(cues) || !cues.length || session !== state.session) return;
     await loadPersistentTranslations();
     startAheadPump(session);
+    void translateViewport(session, now);
     await translateWindow(cues, session, now, 180, 80);
   }
 
@@ -3718,6 +3765,11 @@ function setSafeHTML(el, html) {
         // The main video started after an ad: clear the track (cues, translations, the queue lock) and fetch its captions now.
         resetTrack();
         state.videoSettingsLoaded = false;
+        // v2.12.2: whatever was found (or not found) while the ad played says nothing about the main video.
+        domPlayerCache = { videoId: "", response: null, at: 0 };
+        state.trackDiscoveryFailedAt = 0;
+        state.lastTrackDiscoveryAttempt = 0;
+        if (watchTracksCache && !watchTracksCache.tracks?.length) watchTracksCache = null;
         requestNativeCaptionReload(true);
         void refreshTrack();
         scheduleTrackRetry();

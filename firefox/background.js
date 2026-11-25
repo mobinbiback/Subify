@@ -1976,31 +1976,43 @@ async function subifyRecordJob(data, model) {
 // batches go out one after another. While the balance is low it is read again after each batch, so a shrinking balance
 // shrinks the next batch. A balance that runs out stops the run and the cues already translated are kept. Nothing here
 // reserves or charges: the server does both.
-async function subifyStateRead() {
+// v2.12.2: the state answer is kept 15 s, so a run does not wait for (and the server does not answer) one state call per batch. The low-balance path asks again with force.
+let subifyStateMemo = { at: 0, json: null };
+async function subifyStateRead(force = false) {
+  if (!force && subifyStateMemo.json && Date.now() - subifyStateMemo.at < 15000) return subifyStateMemo.json;
   try {
     const r = await subifyApi.call({ path: "/auth/ai.php?action=state" });
-    return r && r.ok && r.json && r.json.ok !== false ? r.json : null;
+    const json = r && r.ok && r.json && r.json.ok !== false ? r.json : null;
+    if (json) subifyStateMemo = { at: Date.now(), json };
+    return json;
   } catch (e) { return null; }
 }
 // r14-fix3: the Subify Server batches. With the balance known and enough for the whole run: 8-line batches, six at a
 // time, each finished batch reported as it arrives (opts.onBatch). With the balance low: one batch after another, sized to
 // the balance (as before). A batch is served from the shared cache where it can be (billed at the standard rate); only the
 // lines it lacks go to the AI. Capacity and upstream trouble retry the batch with a longer wait each time.
-const SUBIFY_POOL_LANES = 2; // batches in flight at once on the pool path: 2 lanes of 25 lines keep the server database calm and match Custom API speed
+const SUBIFY_POOL_LANES = 6; // batches in flight at once on the pool path: 6 lanes of 18 lines (v2.12.2; the SQLite write lock makes parallel batches safe). Gisoo allows 8 calls at once for the whole account
 const SUBIFY_SKIP_CODES = ["capacity", "upstream", "parse_error", "empty", "network"]; // these skip one batch; the run goes on
 const SUBIFY_CALL_TIMEOUT_MS = 90000; // the server answers within 70 s; past this the call is cut and the batch skipped
 const SUBIFY_RETRY_MAX = 3;
 const SUBIFY_RETRY_CODES = ["capacity", "upstream", "parse_error"];
 async function subifyCacheLookup(batch, settings, videoId, model, src) {
+  // v2.12.2: the server refuses the whole lookup (HTTP 400) for a video id it does not know or one blank line, and the trace showed 92 such calls. Those cost a round trip for nothing.
+  if (!/^[A-Za-z0-9_-]{6,20}$/.test(String(videoId || ""))) return new Map();
+  const idx = [];
+  const lines = [];
+  const enc = new TextEncoder();
+  batch.forEach((c, i) => { const t = cleanSubtitleText(c.text); if (t && enc.encode(t).length <= 2000) { idx.push(i); lines.push(t); } });
+  if (!lines.length) return new Map();
   try {
     const r = await subifyApi.call({
       path: "/auth/ai.php?action=sub_cache_get",
       method: "POST",
-      body: { video_id: String(videoId || ""), src, tgt: targetLangCode(settings), model, lines: batch.map(c => cleanSubtitleText(c.text)) }
+      body: { video_id: String(videoId || ""), src, tgt: targetLangCode(settings), model, lines }
     });
     if (!r || !r.ok || !r.json || r.json.ok === false) return new Map();
     return new Map(Object.entries(r.json.hits || {})
-      .map(([k, v]) => [Number(k), String(v || "")])
+      .map(([k, v]) => [idx[Number(k)], String(v || "")])
       .filter(([k, v]) => Number.isInteger(k) && v));
   } catch (e) { return new Map(); }
 }
@@ -2083,7 +2095,7 @@ async function subifyManagedBatches(cues, settings, videoId, opts = {}) {
   const results = [];
   let failed = 0;
   // The whole run fits the balance (or the balance is unknown and the server decides per request): the pool.
-  const all = SubifyAiRoute.groupCues(cues, Infinity, 25);
+  const all = SubifyAiRoute.groupCues(cues, Infinity, 18);
   const total = avail === null ? 0 : all.reduce((n, b) => n + costOf(b), 0);
   // The pool only when the balance is not low (low balance keeps the shrinking batches below).
   const notLow = avail === null || avail >= SubifyAiRoute.LOW_TOMAN * SubifyAiRoute.MICRO_PER_TOMAN;
@@ -2122,7 +2134,7 @@ async function subifyManagedBatches(cues, settings, videoId, opts = {}) {
       failed++; lastCode = e.code; subtitleTrace("batch_skipped", { lines: plan.batch.length, reason: e.code || e.reason || "" });
     }
     remaining = remaining.slice(plan.batch.length);
-    if (plan.low && remaining.length) { const next = SubifyAiRoute.balanceMicro(await subifyStateRead()); if (next !== null) avail = next; }
+    if (plan.low && remaining.length) { const next = SubifyAiRoute.balanceMicro(await subifyStateRead(true)); if (next !== null) avail = next; }
   }
   return { results, halt: "", failed, lastCode };
 }
