@@ -2997,6 +2997,8 @@ browser.runtime.onMessage.addListener((msg, sender, sendResponse) => {
           const r = await subifyDubSpeech(msg);
           sendResponse({ ok: true, mp3B64: r.mp3B64, model: r.model });
         } catch (e) {
+          // The wallet is empty: wallet dubbing stops and the reason shows in the popup.
+          if (e && e.code === "dub_balance") { await stopFirefoxCaptionDubbing("wallet balance is empty"); await setState({ error: SUBIFY_FREE_AI_TEXT.dub_balance }); }
           sendResponse({ ok: false, error: String(e.code || e.message || e) });
         }
         break;
