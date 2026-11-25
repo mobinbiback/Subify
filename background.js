@@ -734,7 +734,7 @@ async function startDubbing(tabId) {
   try {
     await browser.storage.session.set({ pd_log: [], pd_cues: [] });
     const baseSettings = await getSettings();
-    if (baseSettings.dubWallet) {
+    if (dubWalletMode(baseSettings)) {
       // Wallet dubbing: the tab's page player speaks the subtitle lines (subtitle-overlay.js). No capture engine runs.
       await setState({ tabId, error: "", active: true, startedAt: Date.now(), queueDepth: 0, level: 0 });
       await browser.storage.local.set({ subify_dubbing_enabled: true });
@@ -801,7 +801,6 @@ async function startDubbing(tabId) {
 
 // Wallet dubbing: one Persian line spoken by Subify Server's voice (auth/audio.php, eleven-v4-turbo). No personal key is used.
 // Returns the MP3 as base64. Errors carry a code of SUBIFY_FREE_AI_TEXT.
-// shortcut: speech is not charged to the wallet yet (audio.php applies only its daily caps); charge it before enabling for members.
 function subifyBytesToB64(buf) {
   const u = new Uint8Array(buf);
   let s = "";
@@ -825,7 +824,8 @@ async function subifyDubSpeech(msg) {
         model: "eleven-v4-turbo",
         speed: Math.round(speed * 100) / 100,
         gender: msg.gender === "female" ? "female" : "male",
-        title: String(msg.title || "dub").slice(0, 120)
+        title: String(msg.title || "dub").slice(0, 120),
+        source: String(msg.source || "").slice(0, 120)
       })
     });
     if (!res.ok) {
@@ -834,6 +834,7 @@ async function subifyDubSpeech(msg) {
         const j = await res.json();
         if (j && j.error === "member_limit") code = "quota";
         if (j && j.error === "global_limit") code = "capacity";
+        if (j && j.error === "insufficient_balance") code = "dub_balance";
       } catch (_) {}
       throw subifyFreeAiError(code);
     }
@@ -1923,11 +1924,12 @@ const SUBIFY_FREE_AI_TEXT = {
   failed: "ترجمه با Subify Server انجام نشد؛ دوباره امتحان کن",
   parse_error: "پاسخ هوش مصنوعی خوانده نشد؛ همین بخش دوباره ترجمه می‌شود",
   balance_empty: "اعتبار Subify تمام شد و ترجمه‌ی بقیه‌ی زیرنویس متوقف شد. کیف پول را شارژ کن، سپس دوباره امتحان کن",
-  model_not_allowed: "این مدل برای حساب تو فعال نیست؛ در تنظیمات مدل دیگری انتخاب کن"
+  model_not_allowed: "این مدل برای حساب تو فعال نیست؛ در تنظیمات مدل دیگری انتخاب کن",
+  dub_balance: "اعتبار کیف پول برای دوبله تمام شد؛ کیف پول را شارژ کن، سپس دوباره امتحان کن"
 };
 const SUBIFY_FREE_AI_STATUS_CODES = { 401: "auth", 402: "quota", 403: "disabled", 429: "capacity", 502: "upstream", 503: "capacity", 504: "upstream" };
 const SUBIFY_FREE_AI_HOLD_MS = 60000;
-// Dubbing needs the user's own Gemini key. Without it the dub refuses; it never calls Subify Server, the wallet or auth/ai.php.
+// Personal-key dubbing needs a Gemini key. Wallet dubbing (dubWalletMode) needs none and is billed through auth/audio.php.
 const DUB_KEY_TEXT = "برای دوبله کلید Gemini شخصی لازم است";
 let subifyFreeAiHold = { until: 0, code: "" };
 const subifyFreeAiFinishSeen = new Set();
@@ -1962,6 +1964,10 @@ function subifyHasTextKey(settings, provider) {
   if (provider === "custom") return !!(getCustomProvider(settings) || {}).apiKey;
   if (provider === "gemini") return !!settings.apiKey;
   return !!(settings.openRouterKey || settings.openaiKey || settings.apiKey);
+}
+// Wallet dubbing runs when the Wallet switch is on, or when Subify Server is the AI provider and no personal Gemini key is saved.
+function dubWalletMode(settings) {
+  return !!settings.dubWallet || (!settings.apiKey && !subifyHasTextKey(settings, settings.subtitleProvider || "auto"));
 }
 
 // One subtitle batch through the owner's key on the server. Throws an Error whose .code is a key of SUBIFY_FREE_AI_TEXT.
@@ -2603,11 +2609,13 @@ browser.runtime.onMessage.addListener((msg, sender, sendResponse) => {
         try {
           const settings = await getSettings();
           // r14-fix3: a managed run takes up to 120 lines (merged, batched and run three at a time); the other paths keep 24.
-          const managedRun = !msg.dubbing && !subifyHasTextKey(settings, settings.subtitleProvider || "auto");
+          // Wallet dubbing (dubWalletMode) takes its lines through the managed path below, like any subtitle.
+          const dubPersonal = !!msg.dubbing && !dubWalletMode(settings);
+          const managedRun = !dubPersonal && !subifyHasTextKey(settings, settings.subtitleProvider || "auto");
           const cues = Array.isArray(msg.cues) ? msg.cues.slice(0, managedRun ? 120 : 24) : [];
           if (!cues.length) { sendResponse({ ok: true, results: [] }); break; }
-          if (msg.dubbing) {
-            // Dubbing text: the user's own Gemini key only. Without it the dub refuses, with no call to Subify Server or the wallet.
+          if (dubPersonal) {
+            // Personal-key dubbing text: the user's own Gemini key only. Without it the dub refuses, with no call to Subify Server.
             if (!settings.apiKey) { sendResponse({ ok: false, dubbing: true, code: "dub_key_required", error: DUB_KEY_TEXT }); break; }
             try {
               const chosen = settings.geminiSubtitleModel || settings.sttModel;

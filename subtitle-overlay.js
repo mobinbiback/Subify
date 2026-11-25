@@ -3729,7 +3729,9 @@ var browser = globalThis.browser || globalThis.chrome; // Chrome has no browser 
     try {
       const dur = Math.max(0.6, Number(cue.end) - Number(cue.start));
       const response = await browser.runtime.sendMessage({
-        type: "subify-dub-speech", text: String(fa), speed: walletDubSpeedFor(fa, dur), gender: "", title: String(state.videoId || "")
+        type: "subify-dub-speech", text: String(fa), speed: walletDubSpeedFor(fa, dur), gender: "", title: String(state.videoId || ""),
+        // One line is charged once: the same video and start time is the same source.
+        source: Math.round(Number(cue.start) * 1000) + ":" + String(state.videoId || location.href.split("&")[0])
       });
       if (!response?.ok) throw new Error(response?.error || "speech failed");
       if (session !== state.session || !walletDub.on) return;
@@ -3782,6 +3784,12 @@ var browser = globalThis.browser || globalThis.chrome; // Chrome has no browser 
     v.muted = false;
     v.volume = Math.min(walletDub.origVolume, Math.min(1, Math.max(0, Number(walletDub.duck) || 0)));
   }
+  // Browsers keep page audio suspended until the viewer touches the page: the first click or key press resumes it.
+  function walletDubUnlockOnGesture() {
+    const unlock = () => { void walletDubEnsureAudio(); };
+    document.addEventListener("pointerdown", unlock, { once: true, capture: true });
+    document.addEventListener("keydown", unlock, { once: true, capture: true });
+  }
   async function walletDubEnable() {
     if (walletDub.on) return;
     const { pd_settings = {} } = await browser.storage.local.get("pd_settings").catch(() => ({}));
@@ -3791,6 +3799,7 @@ var browser = globalThis.browser || globalThis.chrome; // Chrome has no browser 
     walletDub.lastNow = null;
     walletDubApplyDucking();
     void walletDubEnsureAudio();
+    walletDubUnlockOnGesture();
     walletDub.timer = setInterval(() => {
       const v = state.video || getVideo();
       if (v) walletDubPump(Number(v.currentTime || 0));

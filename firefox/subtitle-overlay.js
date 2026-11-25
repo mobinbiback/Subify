@@ -3300,6 +3300,18 @@ function setSafeHTML(el, html) {
     try { source.start(ctx.currentTime + delay); } catch (_) { return; }
   }
 
+  // Same rule as background.js dubWalletMode(): the Wallet switch, or no personal key with Subify Server as the provider.
+  function firefoxDubWalletMode(pd) {
+    const provider = pd.subtitleProvider || "subify";
+    const hasKey = provider === "subify" ? false
+      : provider === "openrouter" ? !!pd.openRouterKey
+      : provider === "openai" ? !!pd.openaiKey
+      : provider === "gemini" ? !!pd.apiKey
+      : provider === "custom" ? false
+      : !!(pd.openRouterKey || pd.openaiKey || pd.apiKey);
+    return pd.dubWallet === true || (!pd.apiKey && !hasKey);
+  }
+
   // Wallet dubbing (pd_settings.dubWallet): a line is asked for from Subify Server, with 3 in flight at most.
   // A failed line stays silent (its id is kept in firefoxDubRequested, so it is not asked again).
   async function firefoxDubWalletCue(cue, fa, session, id) {
@@ -3315,7 +3327,9 @@ function setSafeHTML(el, html) {
         text: String(fa),
         speed: firefoxDubSpeedFor(fa, dur),
         gender: "",
-        title: String(state.videoId || "")
+        title: String(state.videoId || ""),
+        // One line is charged once: the same video and start time is the same source.
+        source: Math.round(Number(cue.start) * 1000) + ":" + String(state.videoId || location.href.split("&")[0])
       });
       if (!response?.ok) throw new Error(response?.error || "speech failed");
       if (session !== state.session || !state.firefoxDubEnabled) return;
@@ -3953,7 +3967,7 @@ function setSafeHTML(el, html) {
     if (isFirefoxRuntime()) {
       const { pd_settings = {} } = await browser.storage.local.get("pd_settings");
       state.firefoxDuckLevel = pd_settings.duckLevel;
-      state.firefoxDubWallet = pd_settings.dubWallet === true;
+      state.firefoxDubWallet = firefoxDubWalletMode(pd_settings);
       const { subify_dubbing_enabled } = await browser.storage.local.get("subify_dubbing_enabled");
       if (subify_dubbing_enabled === true) firefoxDubEnable();
     }const el=state.player?.querySelector(`#${OVERLAY_ID}`);if(el){applyOverlayStyle(el);positionOverlay(el);}if(!state.settings.subtitleEnabled)hide();
@@ -4587,7 +4601,7 @@ browser.runtime.onMessage.addListener((msg)=>{
   applySubtitleBatch(msg.results);
   return false;
 });
-  browser.runtime.onMessage.addListener((msg,sender,sendResponse)=>{if(msg?.type==="firefox-dub-toggle"){if(msg.enabled)firefoxDubEnable();else firefoxDubDisable();sendResponse({ok:true});return false;}if(msg?.type==="firefox-dub-audio-toggle"){firefoxDubSetAudioEnabled(msg.enabled);sendResponse({ok:true});return false;}if(msg?.type==="subify-get-current-cue"){const now=Number(state.video?.currentTime||0),cue=activeCue(now);sendResponse({ok:true,cue:cue?{id:cue.id,start:cue.start,end:cue.end,text:cue.text,fa:state.translations.get(cue.id)||""}:null,videoId:state.videoId,currentTime:now});return false;}if(msg?.type==="subify-refresh-settings"){state.videoSettingsLoaded=false;void loadSettings();sendResponse({ok:true});return false;}if(msg?.type==="subify-clear-local-cache"){void clearLocalCache().then(()=>sendResponse({ok:true}));return true;}if(msg?.type==="subify-target-language-changed"){(async()=>{state.translations.clear();state.lastShownId="";state.persistentCacheLoaded=false;state.persistentCacheKey="";await loadSettings();if(state.trackKey){const base=state.trackKey.replace(/\|tl:[^|]*$/,"");state.trackKey=withTargetLang(base);}await loadPersistentTranslations();if(state.cues.length)void queueTranslateAll(state.cues,state.session,Number(state.video?.currentTime||0));sendResponse({ok:true});})();return true;}if(msg?.type==="subify-live-capture-started"){liveBeginCapture();state.liveTimeBase=Number(state.video?.currentTime||0);state.liveCue=null;state.liveHoldAt=null;state.liveForcedPause=false;state.lastLiveCueStart=null;return false;}if(msg?.type==="subify-live-hold"){if(!liveHold.userPaused)state.liveHoldAt=state.liveTimeBase+(Number(msg.at)||0);return false;}if(msg?.type==="subify-live-cue"){onLiveCue(msg);return false;}if(msg?.type==="subify-toggle-transcript"){toggleTranscriptPanel();sendResponse({ok:true,open:Boolean(state.transcriptPanelEl)});return false;}if(msg?.type==="subify-generated-subtitle-cue"){addGeneratedCue(msg.start,msg.end,msg.text);return false;}return false;});
+  browser.runtime.onMessage.addListener((msg,sender,sendResponse)=>{if(msg?.type==="firefox-dub-toggle"){if(typeof msg.wallet==="boolean")state.firefoxDubWallet=msg.wallet;if(msg.enabled)firefoxDubEnable();else firefoxDubDisable();sendResponse({ok:true});return false;}if(msg?.type==="firefox-dub-audio-toggle"){firefoxDubSetAudioEnabled(msg.enabled);sendResponse({ok:true});return false;}if(msg?.type==="subify-get-current-cue"){const now=Number(state.video?.currentTime||0),cue=activeCue(now);sendResponse({ok:true,cue:cue?{id:cue.id,start:cue.start,end:cue.end,text:cue.text,fa:state.translations.get(cue.id)||""}:null,videoId:state.videoId,currentTime:now});return false;}if(msg?.type==="subify-refresh-settings"){state.videoSettingsLoaded=false;void loadSettings();sendResponse({ok:true});return false;}if(msg?.type==="subify-clear-local-cache"){void clearLocalCache().then(()=>sendResponse({ok:true}));return true;}if(msg?.type==="subify-target-language-changed"){(async()=>{state.translations.clear();state.lastShownId="";state.persistentCacheLoaded=false;state.persistentCacheKey="";await loadSettings();if(state.trackKey){const base=state.trackKey.replace(/\|tl:[^|]*$/,"");state.trackKey=withTargetLang(base);}await loadPersistentTranslations();if(state.cues.length)void queueTranslateAll(state.cues,state.session,Number(state.video?.currentTime||0));sendResponse({ok:true});})();return true;}if(msg?.type==="subify-live-capture-started"){liveBeginCapture();state.liveTimeBase=Number(state.video?.currentTime||0);state.liveCue=null;state.liveHoldAt=null;state.liveForcedPause=false;state.lastLiveCueStart=null;return false;}if(msg?.type==="subify-live-hold"){if(!liveHold.userPaused)state.liveHoldAt=state.liveTimeBase+(Number(msg.at)||0);return false;}if(msg?.type==="subify-live-cue"){onLiveCue(msg);return false;}if(msg?.type==="subify-toggle-transcript"){toggleTranscriptPanel();sendResponse({ok:true,open:Boolean(state.transcriptPanelEl)});return false;}if(msg?.type==="subify-generated-subtitle-cue"){addGeneratedCue(msg.start,msg.end,msg.text);return false;}return false;});
 
   // Progress pill (top corner): the lines translated so far for this video. The labels live here because this content
   // script has no UI-language layer. The pill fades out a moment after the last line.
@@ -4644,6 +4658,7 @@ browser.runtime.onMessage.addListener((msg)=>{
     }
     if (area !== "local") return;
     if (changes.pd_settings) {
+      state.firefoxDubWallet = firefoxDubWalletMode(changes.pd_settings.newValue || {});
       const duck = Number(changes.pd_settings.newValue?.duckLevel);
       if (Number.isFinite(duck)) {
         state.firefoxDuckLevel = duck;
