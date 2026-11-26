@@ -69,6 +69,7 @@ async function load() {
     $("skipPersian").checked = s.skipPersian !== false;
     $("skipLangs").value = s.skipLangs || "";
     $("subtitleDomain").value = s.subtitleDomain || "general";
+    paintEngineChoice(pd_settings?.subtitleProvider);
   } catch (error) {
     log(`بارگذاری تنظیمات ناموفق بود: ${error?.message || error}`, "err");
   }
@@ -126,6 +127,38 @@ $("saveBtn").onclick = async () => {
     log(`ذخیره تنظیمات ناموفق بود: ${error?.message || error}`, "err");
   }
 };
+
+// Translation engine cards. They write pd_settings.subtitleProvider, the same key the popup's engine select uses.
+let engineProvider = "subify";
+function paintEngineChoice(provider) {
+  engineProvider = provider || "subify";
+  const personal = engineProvider !== "subify";
+  const deepKeys = location.hash === "#api-keys" || location.hash === "#custom-providers";
+  const fields = $("api-keys");
+  if (fields) fields.hidden = !personal && !deepKeys;
+  for (const [id, on] of [["engineServer", !personal], ["enginePersonal", personal]]) {
+    const card = $(id);
+    if (!card) continue;
+    card.classList.toggle("is-on", on);
+    card.setAttribute("aria-pressed", String(on));
+  }
+}
+async function chooseEngine(kind) {
+  try {
+    const { pd_settings } = await browser.storage.local.get("pd_settings");
+    const current = pd_settings?.subtitleProvider || "subify";
+    const next = kind === "server" ? "subify" : (current === "subify" ? "auto" : current);
+    await browser.storage.local.set({ pd_settings: { ...(pd_settings || {}), subtitleProvider: next } });
+    paintEngineChoice(next);
+  } catch (error) {
+    log(`ذخیره موتور ترجمه ناموفق بود: ${error?.message || error}`, "err");
+  }
+}
+$("engineServer").onclick = () => chooseEngine("server");
+$("enginePersonal").onclick = () => chooseEngine("personal");
+browser.storage.onChanged?.addListener((changes, area) => {
+  if (area === "local" && changes.pd_settings) paintEngineChoice(changes.pd_settings.newValue?.subtitleProvider);
+});
 
 $("testLive").onclick = async () => {
   log("تست اتصال Live شروع شد...");
@@ -531,12 +564,13 @@ void loadLearningStats();
 
 function setTxt(id, value) { const n = $(id); if (n) n.textContent = value; }
 
-const PANEL_IDS = ["dashboard", "translate", "learning", "keys", "account"];
+const PANEL_IDS = ["dashboard", "settings", "learning", "account"];
 
 // Old and popup deep links map onto the merged sections.
-const DEEP_LINKS = { "statistics": "dashboard", "settings": "translate", "extension": "account", "help": "account", "about": "account", "tech-report": "account", "privacy": "account", "custom-providers": "keys", "api-keys": "keys", "vocab-review": "learning", "learning-settings": "learning" };
+const DEEP_LINKS = { "statistics": "dashboard", "settings": "settings", "translate": "settings", "keys": "settings", "extension": "account", "help": "account", "about": "account", "tech-report": "account", "privacy": "account", "custom-providers": "settings", "api-keys": "settings", "vocab-review": "settings", "learning-settings": "learning" };
 
 function showPanel(afterNavigation = false) {
+  paintEngineChoice(engineProvider);
   const hash = (location.hash || "").replace("#", "");
   let name = DEEP_LINKS[hash] || hash;
   if (!PANEL_IDS.includes(name)) name = "dashboard";

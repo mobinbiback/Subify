@@ -1,14 +1,39 @@
 /* Tactile redesign tokens (sub-ify.site): flat #07070A / #0E0D14 in dark, #F6F4F9 / #FFFFFF in light, accent #8167FB,
    1px hairlines, tabular numbers. Loaded after the page's own styles, so it wins at equal specificity. */
-:root{color-scheme:dark;--bg:#07070A;--surface:#0E0D14;--surface2:#13121B;--surface3:#0B0A11;--border:rgba(255,255,255,.08);--ink:#F6F4F9;--muted:#A29EB2;--accent:#8167FB;--accent-ink:#B9ABFF;--accent-soft:rgba(129,103,251,.14);--focus-ring:#8167FB;--shadow:none}
-:root[data-theme="light"]{color-scheme:light;--bg:#F6F4F9;--surface:#FFFFFF;--surface2:#FFFFFF;--surface3:#F1EEF7;--border:rgba(23,20,35,.10);--ink:#17141F;--muted:#5F5A6E;--accent:#8167FB;--accent-ink:#6A4FE8;--accent-soft:rgba(129,103,251,.10);--focus-ring:#6A4FE8;--shadow:none}
+:root{color-scheme:dark;--bg:#07070A;--surface:#0F0C15;--surface2:#161221;--surface3:#0B0A11;--border:rgba(255,255,255,.08);--border-strong:rgba(255,255,255,.14);--ink:#F4F2F8;--muted:#A39EB3;--accent:#8167FB;--accent-ink:#B7A8FF;--accent-soft:rgba(129,103,251,.14);--green:#5EE3AE;--red:#F3A0C1;--focus-ring:#8167FB;--shadow:none}
+:root[data-theme="light"]{color-scheme:light;--bg:#F6F4F9;--surface:#FFFFFF;--surface2:#F1EEF6;--surface3:#F1EEF7;--border:rgba(20,16,28,.09);--border-strong:rgba(20,16,28,.16);--ink:#14111A;--muted:#5E5870;--accent:#7158F0;--accent-ink:#5A3FD6;--accent-soft:rgba(113,88,240,.10);--green:#14A374;--red:#D86A98;--focus-ring:#5A3FD6;--shadow:none}
 html:root,body{background:var(--bg)!important}
 body::before,body::after{display:none!important}
-.card{background:var(--surface)!important;border:1px solid var(--border)!important;border-radius:14px!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.03)!important;backdrop-filter:none!important;-webkit-backdrop-filter:none!important}
+.card{background:var(--surface)!important;border:1px solid var(--border)!important;border-radius:18px!important;box-shadow:none!important;backdrop-filter:none!important;-webkit-backdrop-filter:none!important}
 :root[data-theme="light"] .card{box-shadow:none!important}
 .kv-grid,.kv,#dbToday,input[type="number"]{font-variant-numeric:tabular-nums}
 button.primary,.actions .primary{background:var(--accent)!important;border-color:transparent!important;color:#fff!important;box-shadow:none!important}
 :root[data-theme="light"] button.primary,:root[data-theme="light"] .actions .primary{background:var(--accent-ink)!important}
-button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible,summary:focus-visible,a:focus-visible{outline:2px solid var(--focus-ring);outline-offset:2px}
+button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible,summary:focus-visible,a:focus-visible{outline:1px solid var(--focus-ring);outline-offset:2px}
 @media (prefers-reduced-motion:reduce){*,*::before,*::after{transition:none!important;animation:none!important}}
 :root[data-theme="light"] body{background:var(--bg)!important}
+
+/* Settings Bento: one card per group. Each card is a fold (details), so it opens and closes. */
+.bento{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;margin-top:18px;align-items:start}
+.bento-wide{grid-column:1/-1}
+.bento-card{min-width:0;padding:0!important;border-radius:18px!important}
+.bento-card>summary{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:20px 22px;cursor:pointer;list-style:none;user-select:none;border-radius:18px}
+.bento-card>summary::-webkit-details-marker{display:none}
+.bento-card>summary:focus-visible{outline:1px solid var(--focus-ring);outline-offset:-1px}
+.bento-title{margin:0;min-width:0;font:700 16px/1.4 "EstedadUI","VazirUI",sans-serif;color:var(--ink)}
+.bento-card .fold-body{display:grid;gap:14px;padding:0 22px 22px;animation:none}
+.bento-card .fold-body>.grid{margin:0;gap:14px}
+.bento-card .fold-body .card{background:var(--surface2)!important;box-shadow:none!important}
+.bento-note{margin:0}
+.engine-choice{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.engine-card{display:flex;flex-direction:column;align-items:flex-start;gap:6px;min-width:0;padding:14px;border:1px solid var(--border);border-radius:16px;background:var(--surface2);color:var(--ink);font:inherit;text-align:start;cursor:pointer;transition:border-color .16s,background-color .16s}
+.engine-card:focus-visible{outline:1px solid var(--focus-ring);outline-offset:2px}
+.engine-card.is-on{border-color:var(--accent);background:var(--accent-soft)}
+.engine-card b{font-size:13px;line-height:1.5}
+.engine-card small{font-size:11px;line-height:1.7;color:var(--muted)}
+.bento-pill{display:none;padding:3px 10px;border-radius:999px;border:1px solid color-mix(in srgb,var(--green) 42%,transparent);background:color-mix(in srgb,var(--green) 10%,transparent);color:var(--green);font-size:10.5px;font-weight:700}
+.engine-card.is-on .bento-pill{display:inline-block}
+.engine-personal{display:grid;gap:14px}
+.engine-personal[hidden]{display:none}
+.member-hero,.kpi b,.mh-price-row b{font-variant-numeric:tabular-nums}
+@media (max-width:760px){.bento,.engine-choice{grid-template-columns:minmax(0,1fr)}.bento-card>summary,.bento-card .fold-body{padding-inline:16px}}

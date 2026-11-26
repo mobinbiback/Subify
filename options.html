@@ -330,9 +330,8 @@ html:not([lang="fa"]):not([lang="ar"]) body,html:not([lang="fa"]):not([lang="ar"
 <div class="dash-layout">
   <nav class="dash-nav" aria-label="بخش‌های پنل">
     <a href="#dashboard" data-nav="dashboard"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="2"/><rect x="14" y="3" width="7" height="7" rx="2"/><rect x="3" y="14" width="7" height="7" rx="2"/><rect x="14" y="14" width="7" height="7" rx="2"/></svg><span>خانه</span></a>
-    <a href="#translate" data-nav="translate"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h10M18 7h2M4 17h2M10 17h10"/><circle cx="16" cy="7" r="2"/><circle cx="8" cy="17" r="2"/></svg><span>ترجمه و دوبله</span></a>
+    <a href="#settings" data-nav="settings"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h10M18 7h2M4 17h2M10 17h10"/><circle cx="16" cy="7" r="2"/><circle cx="8" cy="17" r="2"/></svg><span>تنظیمات</span></a>
     <a href="#learning" data-nav="learning"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3"/></svg><span>یادگیری</span></a>
-    <a href="#keys" data-nav="keys"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="8" cy="15" r="4"/><path d="M11 12l9-9M17 6l3 3M14 9l3 3"/></svg><span>کلیدها و سرویس‌ها</span></a>
     <a href="#account" data-nav="account"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6"/></svg><span>حساب و پشتیبانی</span></a>
   </nav>
 
@@ -340,19 +339,6 @@ html:not([lang="fa"]):not([lang="ar"]) body,html:not([lang="fa"]):not([lang="ar"
 
     <section class="dash-panel" data-panel="dashboard" id="dashboard">
       <div class="panel-title"><h2>خانه</h2><p>خلاصهٔ حساب، وضعیت افزونه و مصرف تو در یک نگاه. همهٔ اعداد از داده‌های ذخیره‌شدهٔ همین دستگاه خوانده می‌شن.</p></div>
-      <div class="card member-hero" id="memberHero">
-        <div class="mh-wallet">
-          <span class="mh-status" id="mhStatus">…</span>
-          <span class="mh-label">موجودی کیف پول</span>
-          <b class="mh-balance"><span id="mhBalance">…</span> <span class="mh-unit">تومان</span></b>
-          <small class="mh-state" id="mhBalanceState"></small>
-        </div>
-        <a class="mh-cta" id="mhTopup" href="https://my.sub-ify.site/?source=extension" target="_blank" rel="noopener">شارژ کیف پول</a>
-        <div class="mh-prices">
-          <div class="mh-prices-head"><span>مدل</span><span>هزینه هر دقیقه</span></div>
-          <div id="mhPriceRows"><small class="hint">در حال خواندن…</small></div>
-        </div>
-      </div>
       <div class="kpi-grid">
         <div class="card kpi"><span class="kpi-label">حساب</span><b id="dbAccount">…</b><small id="dbAccountSub"></small></div>
         <div class="card kpi"><span class="kpi-label">موتور دوبله</span><b id="dbEngine">…</b><small id="dbEngineSub"></small></div>
@@ -379,98 +365,32 @@ html:not([lang="fa"]):not([lang="ar"]) body,html:not([lang="fa"]):not([lang="ar"
         <div class="field wide"><label>پلتفرم‌های پرکاربرد (ثانیه‌های پردازش‌شدهٔ صدا)</label><div id="lrnPlatforms">…</div></div>
       </div></div>
     </section>
-    <section class="dash-panel" data-panel="translate" id="translate">
-      <div class="panel-title"><h2>ترجمه و دوبله</h2><p>موتور ترجمه، زبان‌ها و صدای دوبله. تنظیمات پیشرفته را فقط وقتی لازم است باز کن.</p></div>
-      <div class="section"><h2>دوبله هوشمند</h2><div class="card grid">
-        <div class="field"><label for="engine">موتور دوبله</label><select id="engine"><option value="live">Live Translate</option><option value="chunked">Chunked fallback</option></select></div>
-        <details class="field wide adv-box"><summary>تنظیمات پیشرفته: مدل‌ها و زمان ضبط</summary><div class="grid">
-        <div class="field"><label for="liveModel">مدل Live</label><select id="liveModel"><option value="gemini-3.5-live-translate-preview">gemini-3.5-live-translate-preview</option></select></div>
-        <div class="field"><label for="liveVoice">صدای Live</label><select id="liveVoice"><option value="auto">Auto، هماهنگ با گوینده</option><option value="Charon">Charon</option><option value="Puck">Puck</option><option value="Fenrir">Fenrir</option><option value="Orus">Orus</option><option value="Leda">Leda</option><option value="Kore">Kore</option><option value="Aoede">Aoede</option><option value="Zephyr">Zephyr</option></select></div>
-        <div class="field"><label for="sttModel">مدل تشخیص (STT)</label><select id="sttModel"><option value="gemini-3.5-flash">gemini-3.5-flash (پیش‌فرض)</option><option value="gemini-3-flash">gemini-3-flash</option><option value="gemini-3.1-flash-lite">gemini-3.1-flash-lite</option></select><div class="hint">پیش‌فرض روی gemini-3.5-flash قرار دارد.</div></div>
-        <div class="field"><label for="ttsModel">مدل صدا (TTS)</label><select id="ttsModel"><option value="gemini-3.1-flash-tts-preview">gemini-3.1-flash-tts-preview (پیش‌فرض)</option><option value="gemini-2.5-flash-preview-tts">gemini-2.5-flash-preview-tts</option></select><div class="hint">پیش‌فرض روی gemini-3.1-flash-tts-preview قرار دارد.</div></div>
-        <div class="field"><label for="recordMaxSeconds">حداکثر ضبط، دقیقه</label><input id="recordMaxSeconds" type="number" min="5" max="240" step="5"></div>
-        </div></details>
-        <div class="field check"><input id="autoFallback" type="checkbox"><label for="autoFallback">اگر Live در دسترس نبود، خودکار به Chunked برود</label></div>
-        <div class="field check"><input id="recordSession" type="checkbox"><label for="recordSession">جلسهٔ دوبله برای خروجی ذخیره شود</label></div>
-        <div class="field check wide"><input id="skipPersian" type="checkbox"><label for="skipPersian">اگر منبع فارسی است، دوبله انجام نشود</label></div>
-        <div class="field wide"><label for="skipLangs">زبان‌هایی که بلدی (کد، جدا با ویرگول، مثلاً en, es). دوبله نمی‌شوند.</label><input id="skipLangs" type="text" dir="ltr" placeholder="en, es"></div>
-        <div class="field"><label for="subtitleDomain">حوزه‌ی ویدیو برای ترجمه</label><select id="subtitleDomain"><option value="general">عمومی</option><option value="software">مهندسی نرم‌افزار</option><option value="medicine">پزشکی</option><option value="law">حقوق</option><option value="slang">عامیانه و اسلنگ</option></select></div>
-        <div class="actions wide dash-actions-row"><button id="saveBtn" class="primary" type="button">ذخیره تنظیمات</button><span id="saved" class="saved">ذخیره شد</span></div>
-      </div></div>
-    </section>
-    <section class="dash-panel" data-panel="learning" id="learning">
-      <div class="panel-title"><h2>یادگیری</h2><p>مرور لغت‌های ذخیره‌شده و تنظیمات یادگیری. دکمهٔ «یادگیری» توی پاپ‌آپ افزونه مستقیم صفحهٔ مرور لغت‌ها رو باز می‌کنه.</p></div>
-      <div class="section" id="learn-tools">
-        <h2>یادگیری و ابزارها</h2>
-        <div class="card">
-          <p class="hint">این ابزارها را از همین‌جا باز کن.</p>
-          <p class="learn-tools-lang"><span>زبان یادگیری فعلی</span> <b id="toolsLangView">…</b></p>
-          <div class="quick-links">
-            <a href="learn.html" target="_blank" rel="noopener"><span>یادگیری و مرور لغت</span><small>لغت‌های ذخیره‌شده را با مرور هوشمند یاد بگیر و خروجی Anki بگیر.</small></a>
-            <a href="storyboard.html" target="_blank" rel="noopener"><span>Storyboard</span><small>صحنه‌های ترجمه‌شدهٔ ویدیو را کنار هم نگه دار.</small></a>
-            <a href="roleplay.html" target="_blank" rel="noopener"><span>نقش‌آفرینی</span><small>با یک نقش، گفت‌وگوی واقعی تمرین کن.</small></a>
-            <a href="writer.html" target="_blank" rel="noopener"><span>نوشتن از ویدیو</span><small>از روی ویدیو بنویس و نوشته‌ات را اصلاح بگیر.</small></a>
-            <a href="shadow.html" target="_blank" rel="noopener"><span>تمرین تلفظ</span><small>جمله را بشنو و همان‌طور تکرار کن.</small></a>
-            <a href="chat.html" target="_blank" rel="noopener"><span>گفت‌وگو با ویدیو</span><small>دربارهٔ ویدیو سؤال بپرس و جواب بگیر.</small></a>
-            <a href="summary.html" target="_blank" rel="noopener"><span>خلاصهٔ ویدیو</span><small>خلاصه و لغت‌های مهم ویدیو را بگیر.</small></a>
-          </div>
+    <section class="dash-panel" data-panel="settings" id="settings">
+      <div class="panel-title"><h2>تنظیمات</h2><p>حساب، موتور ترجمه، دوبله و واژه‌نامه. هر بخش یک کارت جداست و با کلیک روی عنوانش باز یا بسته می‌شود.</p></div>
+      <div class="bento">
+        <details class="card bento-card fold bento-wide" open><summary><h3 class="bento-title">حساب کاربری و کیف پول</h3><span class="fold-chev" aria-hidden="true"></span></summary><div class="fold-body">
+      <div class="card member-hero" id="memberHero">
+        <div class="mh-wallet">
+          <span class="mh-status" id="mhStatus">…</span>
+          <span class="mh-label">موجودی کیف پول</span>
+          <b class="mh-balance"><span id="mhBalance">…</span> <span class="mh-unit">تومان</span></b>
+          <small class="mh-state" id="mhBalanceState"></small>
+        </div>
+        <a class="mh-cta" id="mhTopup" href="https://my.sub-ify.site/?source=extension" target="_blank" rel="noopener">شارژ کیف پول</a>
+        <div class="mh-prices">
+          <div class="mh-prices-head"><span>مدل</span><span>هزینه هر دقیقه</span></div>
+          <div id="mhPriceRows"><small class="hint">در حال خواندن…</small></div>
         </div>
       </div>
-      <div class="section"><div class="quick-links"><a href="learn.html" target="_blank" rel="noopener"><span>مرور لغت‌ها</span><small>صفحهٔ کامل لغت‌ها و مرور</small></a></div></div>
-
-      <div class="section" id="vocab-review"><h2>مرور لغت</h2><div class="card">
-        <div class="notice">همهٔ اعداد زیر از داده‌های ذخیره‌شدهٔ همین دستگاه خوانده می‌شن و چیزی تخمین زده نمی‌شه. زمان تماشای ویدیو اندازه‌گیری نمی‌شه، پس نشان داده نمی‌شه.</div>
-        <div id="lrnStats" class="grid" style="margin-top:12px"></div>
-        <div class="divider"></div>
-        <div class="grid">
-          <div class="field"><label>زبان‌های لغت‌ها</label><div id="lrnLangs">…</div></div>
-        </div>
-        <div class="divider"></div>
-        <div class="field"><label>آخرین لغت‌های ذخیره‌شده</label><div id="lrnRecent">…</div></div>
-      </div></div>
-
-      <div class="section" id="learning-settings"><h2>تنظیمات یادگیری</h2><div class="card">
-        <div class="notice">این تنظیمات روی زیرنویس سایت‌های پشتیبانی‌شده اعمال می‌شن. لغت‌های ذخیره‌شده طبق وضعیت مرورشان هایلایت می‌شن؛ «تازه» یعنی هنوز یک‌بار هم مرور نشده.</div>
-        <div class="field wide" style="margin-bottom:12px" id="presets"><span class="hint">پیش‌تنظیم‌ها: یک بار بزن و حالت یادگیری، سطح، حوزهٔ ویدیو و صدای اصلی دوبله با هم تنظیم می‌شن و همان لحظه ذخیره می‌شن.</span><div class="actions"><button type="button" data-preset="student">دانشجو</button><button type="button" data-preset="beginner">تازه‌کار</button><button type="button" data-preset="series">سریال و فیلم</button></div></div><div class="grid" style="margin-top:12px">
-          <div class="field"><label for="lrnSmart">حالت تماشا (Smart Watching)</label>
-            <select id="lrnSmart">
-              <option value="relaxed">آرام (تماشای عادی)</option>
-              <option value="learning">یادگیری (هایلایت + پخش دوباره)</option>
-              <option value="active">فعال، یادگیری + توقف بعد از هر جمله</option>
-              <option value="study">مطالعه، یادگیری + توقف روی جمله‌ای که لغت مرور دارد</option>
-            </select><div class="hint" id="lrnSmartNote">حالت فعال روی پخش زنده کار می‌کند. با مکث، زیرنویس‌ها متوقف می‌شوند و اگر ویدیو قابل مکث باشد، پخش هم مکث می‌شود.</div></div>
-          <div class="field"><label for="lrnHighlight">هایلایت لغت‌های ذخیره‌شده</label>
-            <select id="lrnHighlight">
-              <option value="off">بدون هایلایت</option>
-              <option value="saved">همهٔ لغت‌های ذخیره‌شده</option>
-              <option value="new">تازه‌ها (هنوز مرور نشده)</option>
-              <option value="learning">در حال یادگیری</option>
-              <option value="mastered">یادگرفته‌شده</option>
-              <option value="spotlight">نوبت مرور</option>
-            </select><div class="hint"><span class="kw">نوبت مرور</span>: لغت‌هایی که امروز وقت مرورشون رسیده.</div></div>
-          <div class="field"><label for="lrnSpeed">سرعت پخش دوبارهٔ جمله</label>
-            <select id="lrnSpeed"><option value="0.75">۰٫۷۵×</option><option value="0.85">۰٫۸۵×</option><option value="1">۱×</option></select></div>
-          <div class="field"><label class="check-row" for="lrnReplay"><input type="checkbox" id="lrnReplay"><span>دکمهٔ «پخش دوباره» کنار هر جمله</span></label></div>
-          <div class="field wide"><label class="check-row" for="lrnPause"><input type="checkbox" id="lrnPause"><span>فقط در حالت فعال: بعد از هر جمله متوقف شو</span></label></div>
-          <div class="field"><label for="lrnNative">زبان بومی من</label>
-            <select id="lrnNative"><option value="fa">فارسی</option><option value="en">انگلیسی</option><option value="ar">عربی</option><option value="tr">ترکی</option><option value="es">اسپانیایی</option><option value="fr">فرانسوی</option><option value="de">آلمانی</option><option value="it">ایتالیایی</option><option value="pt">پرتغالی</option><option value="ru">روسی</option><option value="ja">ژاپنی</option><option value="ko">کره‌ای</option><option value="zh">چینی</option><option value="hi">هندی</option></select>
-            <div class="hint">زیرنویس، دوبله و توضیح گرامر به این زبان ترجمه می‌شن.</div></div>
-          <div class="field"><label for="lrnTarget">زبان ویدیو (زبانی که یاد می‌گیری)</label>
-            <select id="lrnTarget"><option value="">یکی را انتخاب کن</option><option value="fa">فارسی</option><option value="en">انگلیسی</option><option value="ar">عربی</option><option value="tr">ترکی</option><option value="es">اسپانیایی</option><option value="fr">فرانسوی</option><option value="de">آلمانی</option><option value="it">ایتالیایی</option><option value="pt">پرتغالی</option><option value="ru">روسی</option><option value="ja">ژاپنی</option><option value="ko">کره‌ای</option><option value="zh">چینی</option><option value="hi">هندی</option></select>
-            <div class="hint">هایلایت لغت‌ها و دکمهٔ گرامر فقط روی زیرنویس این زبان فعال می‌شن.</div></div>
-          <div class="field"><label for="lrnCefr">سطح CEFR</label>
-            <select id="lrnCefr"><option value="A1">A1</option><option value="A2">A2</option><option value="B1">B1</option><option value="B2">B2</option><option value="C1">C1</option><option value="C2">C2</option></select></div>
-          <div class="field"><label for="lrnExplain">زبان توضیح گرامر</label>
-            <select id="lrnExplain"><option value="fa">فارسی</option><option value="en">انگلیسی</option><option value="ar">عربی</option><option value="tr">ترکی</option><option value="es">اسپانیایی</option><option value="fr">فرانسوی</option><option value="de">آلمانی</option><option value="it">ایتالیایی</option><option value="pt">پرتغالی</option><option value="ru">روسی</option><option value="ja">ژاپنی</option><option value="ko">کره‌ای</option><option value="zh">چینی</option><option value="hi">هندی</option></select></div>
-        </div>
-        <div class="hint" id="lrnSaved" style="margin-top:8px"></div>
-      </div></div>
-    </section>
-    <section class="dash-panel" data-panel="keys" id="keys">
-      <div class="panel-title"><h2>کلیدها و سرویس‌ها</h2><p>کلید هر سرویس را اینجا بگذار. راهنمای قدم‌به‌قدم هر سرویس در همان کادر است.</p></div>
-      <div class="section" id="api-keys"><h2>کلیدهای API و سرویس‌ها</h2><div class="card">
+        <div id="sfy-account-host"><div class="card"><span class="hint">در حال بررسی حساب…</span></div></div>
+        <div class="card" style="margin-top:12px"><div id="sfy-ext-status" class="sfy-status-list"><span class="hint">در حال بررسی…</span></div></div>
+        </div></details>
+        <details class="card bento-card fold bento-wide" open id="keys"><summary><h3 class="bento-title">موتور ترجمه</h3><span class="fold-chev" aria-hidden="true"></span></summary><div class="fold-body">
+          <div class="engine-choice">
+            <button type="button" class="engine-card" id="engineServer" aria-pressed="false"><b>Subify Server (پیشنهادی)</b><small>بدون نیاز به کلید. هزینه از کیف پول Subify کم می‌شود.</small><span class="bento-pill">در حال استفاده</span></button>
+            <button type="button" class="engine-card" id="enginePersonal" aria-pressed="false"><b>کلید API شخصی</b><small>با کلید خودت ترجمه می‌شود (Gemini، OpenRouter، OpenAI یا سرویس سفارشی). از کیف پول چیزی کم نمی‌شود.</small><span class="bento-pill">در حال استفاده</span></button>
+          </div>
         <p id="freeAiNote" class="notice" role="note">Subify Server: در حال بررسی…</p>
-        <div class="notice">کلیدها فقط روی همین دستگاه (Storage محلی مرورگر) ذخیره می‌شن و جز به همان سرویسی که انتخاب کردی ارسال نمی‌شن. مدل هر سرویس از تب «ترجمه» در پاپ‌آپ انتخاب می‌شه.</div>
         <div class="key-guide">
           <h4>کلید Gemini رو بگیر (رایگان، حدود ۳ دقیقه)</h4>
           <ol>
@@ -482,6 +402,8 @@ html:not([lang="fa"]):not([lang="ar"]) body,html:not([lang="fa"]):not([lang="ar"
           <p class="key-guide-note">کلید Gemini برای همه‌چیز لازمه: زیرنویس، دوبله، واژه‌نامه و ترجمهٔ زنده. پلن رایگان سقف درخواست داره؛ اگه خطای quota دیدی، یه دقیقه صبر کن.</p>
           <p class="key-guide-note">OpenRouter و OpenAI اختیاری‌ان. اگه کلید داری، همون کادرها رو پر کن.</p>
         </div>
+          <div class="engine-personal" id="api-keys" hidden>
+        <div class="notice">کلیدها فقط روی همین دستگاه (Storage محلی مرورگر) ذخیره می‌شن و جز به همان سرویسی که انتخاب کردی ارسال نمی‌شن. مدل هر سرویس از تب «ترجمه» در پاپ‌آپ انتخاب می‌شه.</div>
         <div class="grid" style="margin-top:12px">
           <div class="field wide"><label for="pk-gemini">Gemini API Key</label><input id="pk-gemini" type="password" placeholder="کلید Gemini" autocomplete="off"><div class="hint">نکته مهم: برای استفاده از Gemini، IP شما باید بدون نشتی (IP Leak) باشد.</div></div>
           <div class="field wide"><label for="pk-openrouter">OpenRouter API Key</label><input id="pk-openrouter" type="password" placeholder="کلید OpenRouter" autocomplete="off"></div>
@@ -494,8 +416,6 @@ html:not([lang="fa"]):not([lang="ar"]) body,html:not([lang="fa"]):not([lang="ar"
           <button id="pk-test-openai" type="button">تست OpenAI</button>
         </div>
         <p class="hint" id="pk-status" style="margin-top:8px"></p>
-      </div>
-
       <div class="card custom-management-card" id="custom-providers" style="margin-top:14px">
           <div class="custom-intro">
             <div class="custom-intro-icon">＋</div>
@@ -525,14 +445,98 @@ html:not([lang="fa"]):not([lang="ar"]) body,html:not([lang="fa"]):not([lang="ar"
           </div>
           <p class="hint" id="cp-status" style="margin-top:8px"></p>
       </div>
+          </div>
+        </div></details>
+        <details class="card bento-card fold" open id="translate"><summary><h3 class="bento-title">دوبله هوشمند</h3><span class="fold-chev" aria-hidden="true"></span></summary><div class="fold-body">
+        <p class="notice bento-note">اگر کلید Gemini خودت را داری، دوبله با همان کلید انجام می‌شود و از کیف پول کم نمی‌شود. بدون کلید Gemini، دوبله از سرور Subify انجام می‌شود و طبق قیمت تعیین‌شده از کیف پول حساب می‌شود.</p>
+          <div class="grid">
+        <div class="field"><label for="engine">موتور دوبله</label><select id="engine"><option value="live">Live Translate</option><option value="chunked">Chunked fallback</option></select></div>
+        <div class="field"><label for="lrnNative">زبان بومی من</label>
+            <select id="lrnNative"><option value="fa">فارسی</option><option value="en">انگلیسی</option><option value="ar">عربی</option><option value="tr">ترکی</option><option value="es">اسپانیایی</option><option value="fr">فرانسوی</option><option value="de">آلمانی</option><option value="it">ایتالیایی</option><option value="pt">پرتغالی</option><option value="ru">روسی</option><option value="ja">ژاپنی</option><option value="ko">کره‌ای</option><option value="zh">چینی</option><option value="hi">هندی</option></select>
+            <div class="hint">زیرنویس، دوبله و توضیح گرامر به این زبان ترجمه می‌شن.</div></div>
+        <details class="field wide adv-box"><summary>تنظیمات پیشرفته: مدل‌ها و زمان ضبط</summary><div class="grid">
+        <div class="field"><label for="liveModel">مدل Live</label><select id="liveModel"><option value="gemini-3.5-live-translate-preview">gemini-3.5-live-translate-preview</option></select></div>
+        <div class="field"><label for="liveVoice">صدای Live</label><select id="liveVoice"><option value="auto">Auto، هماهنگ با گوینده</option><option value="Charon">Charon</option><option value="Puck">Puck</option><option value="Fenrir">Fenrir</option><option value="Orus">Orus</option><option value="Leda">Leda</option><option value="Kore">Kore</option><option value="Aoede">Aoede</option><option value="Zephyr">Zephyr</option></select></div>
+        <div class="field"><label for="sttModel">مدل تشخیص (STT)</label><select id="sttModel"><option value="gemini-3.5-flash">gemini-3.5-flash (پیش‌فرض)</option><option value="gemini-3-flash">gemini-3-flash</option><option value="gemini-3.1-flash-lite">gemini-3.1-flash-lite</option></select><div class="hint">پیش‌فرض روی gemini-3.5-flash قرار دارد.</div></div>
+        <div class="field"><label for="ttsModel">مدل صدا (TTS)</label><select id="ttsModel"><option value="gemini-3.1-flash-tts-preview">gemini-3.1-flash-tts-preview (پیش‌فرض)</option><option value="gemini-2.5-flash-preview-tts">gemini-2.5-flash-preview-tts</option></select><div class="hint">پیش‌فرض روی gemini-3.1-flash-tts-preview قرار دارد.</div></div>
+        <div class="field"><label for="recordMaxSeconds">حداکثر ضبط، دقیقه</label><input id="recordMaxSeconds" type="number" min="5" max="240" step="5"></div>
+        </div></details>
+        <div class="field check"><input id="autoFallback" type="checkbox"><label for="autoFallback">اگر Live در دسترس نبود، خودکار به Chunked برود</label></div>
+        <div class="field check"><input id="recordSession" type="checkbox"><label for="recordSession">جلسهٔ دوبله برای خروجی ذخیره شود</label></div>
+        <div class="field check wide"><input id="skipPersian" type="checkbox"><label for="skipPersian">اگر منبع فارسی است، دوبله انجام نشود</label></div>
+        <div class="field wide"><label for="skipLangs">زبان‌هایی که بلدی (کد، جدا با ویرگول، مثلاً en, es). دوبله نمی‌شوند.</label><input id="skipLangs" type="text" dir="ltr" placeholder="en, es"></div>
+        <div class="field"><label for="subtitleDomain">حوزه‌ی ویدیو برای ترجمه</label><select id="subtitleDomain"><option value="general">عمومی</option><option value="software">مهندسی نرم‌افزار</option><option value="medicine">پزشکی</option><option value="law">حقوق</option><option value="slang">عامیانه و اسلنگ</option></select></div>
+        <div class="actions wide dash-actions-row"><button id="saveBtn" class="primary" type="button">ذخیره تنظیمات</button><span id="saved" class="saved">ذخیره شد</span></div>
+          </div>
+        </div></details>
+        <details class="card bento-card fold" open id="vocab-review"><summary><h3 class="bento-title">واژه‌نامه</h3><span class="fold-chev" aria-hidden="true"></span></summary><div class="fold-body">
+        <div class="notice">همهٔ اعداد زیر از داده‌های ذخیره‌شدهٔ همین دستگاه خوانده می‌شن و چیزی تخمین زده نمی‌شه. زمان تماشای ویدیو اندازه‌گیری نمی‌شه، پس نشان داده نمی‌شه.</div>
+        <div id="lrnStats" class="grid" style="margin-top:12px"></div>
+        <div class="divider"></div>
+        <div class="grid">
+          <div class="field"><label>زبان‌های لغت‌ها</label><div id="lrnLangs">…</div></div>
+        </div>
+        <div class="divider"></div>
+        <div class="field"><label>آخرین لغت‌های ذخیره‌شده</label><div id="lrnRecent">…</div></div>
+        </div></details>
       </div>
+    </section>
+    <section class="dash-panel" data-panel="learning" id="learning">
+      <div class="panel-title"><h2>یادگیری</h2><p>مرور لغت‌های ذخیره‌شده و تنظیمات یادگیری. دکمهٔ «یادگیری» توی پاپ‌آپ افزونه مستقیم صفحهٔ مرور لغت‌ها رو باز می‌کنه.</p></div>
+      <div class="section" id="learn-tools">
+        <h2>یادگیری و ابزارها</h2>
+        <div class="card">
+          <p class="hint">این ابزارها را از همین‌جا باز کن.</p>
+          <p class="learn-tools-lang"><span>زبان یادگیری فعلی</span> <b id="toolsLangView">…</b></p>
+          <div class="quick-links">
+            <a href="learn.html" target="_blank" rel="noopener"><span>یادگیری و مرور لغت</span><small>لغت‌های ذخیره‌شده را با مرور هوشمند یاد بگیر و خروجی Anki بگیر.</small></a>
+            <a href="storyboard.html" target="_blank" rel="noopener"><span>Storyboard</span><small>صحنه‌های ترجمه‌شدهٔ ویدیو را کنار هم نگه دار.</small></a>
+            <a href="roleplay.html" target="_blank" rel="noopener"><span>نقش‌آفرینی</span><small>با یک نقش، گفت‌وگوی واقعی تمرین کن.</small></a>
+            <a href="writer.html" target="_blank" rel="noopener"><span>نوشتن از ویدیو</span><small>از روی ویدیو بنویس و نوشته‌ات را اصلاح بگیر.</small></a>
+            <a href="shadow.html" target="_blank" rel="noopener"><span>تمرین تلفظ</span><small>جمله را بشنو و همان‌طور تکرار کن.</small></a>
+            <a href="chat.html" target="_blank" rel="noopener"><span>گفت‌وگو با ویدیو</span><small>دربارهٔ ویدیو سؤال بپرس و جواب بگیر.</small></a>
+            <a href="summary.html" target="_blank" rel="noopener"><span>خلاصهٔ ویدیو</span><small>خلاصه و لغت‌های مهم ویدیو را بگیر.</small></a>
+          </div>
+        </div>
+      </div>
+      <div class="section"><div class="quick-links"><a href="learn.html" target="_blank" rel="noopener"><span>مرور لغت‌ها</span><small>صفحهٔ کامل لغت‌ها و مرور</small></a></div></div>
+
+      <div class="section" id="learning-settings"><h2>تنظیمات یادگیری</h2><div class="card">
+        <div class="notice">این تنظیمات روی زیرنویس سایت‌های پشتیبانی‌شده اعمال می‌شن. لغت‌های ذخیره‌شده طبق وضعیت مرورشان هایلایت می‌شن؛ «تازه» یعنی هنوز یک‌بار هم مرور نشده.</div>
+        <div class="field wide" style="margin-bottom:12px" id="presets"><span class="hint">پیش‌تنظیم‌ها: یک بار بزن و حالت یادگیری، سطح، حوزهٔ ویدیو و صدای اصلی دوبله با هم تنظیم می‌شن و همان لحظه ذخیره می‌شن.</span><div class="actions"><button type="button" data-preset="student">دانشجو</button><button type="button" data-preset="beginner">تازه‌کار</button><button type="button" data-preset="series">سریال و فیلم</button></div></div><div class="grid" style="margin-top:12px">
+          <div class="field"><label for="lrnSmart">حالت تماشا (Smart Watching)</label>
+            <select id="lrnSmart">
+              <option value="relaxed">آرام (تماشای عادی)</option>
+              <option value="learning">یادگیری (هایلایت + پخش دوباره)</option>
+              <option value="active">فعال، یادگیری + توقف بعد از هر جمله</option>
+              <option value="study">مطالعه، یادگیری + توقف روی جمله‌ای که لغت مرور دارد</option>
+            </select><div class="hint" id="lrnSmartNote">حالت فعال روی پخش زنده کار می‌کند. با مکث، زیرنویس‌ها متوقف می‌شوند و اگر ویدیو قابل مکث باشد، پخش هم مکث می‌شود.</div></div>
+          <div class="field"><label for="lrnHighlight">هایلایت لغت‌های ذخیره‌شده</label>
+            <select id="lrnHighlight">
+              <option value="off">بدون هایلایت</option>
+              <option value="saved">همهٔ لغت‌های ذخیره‌شده</option>
+              <option value="new">تازه‌ها (هنوز مرور نشده)</option>
+              <option value="learning">در حال یادگیری</option>
+              <option value="mastered">یادگرفته‌شده</option>
+              <option value="spotlight">نوبت مرور</option>
+            </select><div class="hint"><span class="kw">نوبت مرور</span>: لغت‌هایی که امروز وقت مرورشون رسیده.</div></div>
+          <div class="field"><label for="lrnSpeed">سرعت پخش دوبارهٔ جمله</label>
+            <select id="lrnSpeed"><option value="0.75">۰٫۷۵×</option><option value="0.85">۰٫۸۵×</option><option value="1">۱×</option></select></div>
+          <div class="field"><label class="check-row" for="lrnReplay"><input type="checkbox" id="lrnReplay"><span>دکمهٔ «پخش دوباره» کنار هر جمله</span></label></div>
+          <div class="field wide"><label class="check-row" for="lrnPause"><input type="checkbox" id="lrnPause"><span>فقط در حالت فعال: بعد از هر جمله متوقف شو</span></label></div>
+          <div class="field"><label for="lrnTarget">زبان ویدیو (زبانی که یاد می‌گیری)</label>
+            <select id="lrnTarget"><option value="">یکی را انتخاب کن</option><option value="fa">فارسی</option><option value="en">انگلیسی</option><option value="ar">عربی</option><option value="tr">ترکی</option><option value="es">اسپانیایی</option><option value="fr">فرانسوی</option><option value="de">آلمانی</option><option value="it">ایتالیایی</option><option value="pt">پرتغالی</option><option value="ru">روسی</option><option value="ja">ژاپنی</option><option value="ko">کره‌ای</option><option value="zh">چینی</option><option value="hi">هندی</option></select>
+            <div class="hint">هایلایت لغت‌ها و دکمهٔ گرامر فقط روی زیرنویس این زبان فعال می‌شن.</div></div>
+          <div class="field"><label for="lrnCefr">سطح CEFR</label>
+            <select id="lrnCefr"><option value="A1">A1</option><option value="A2">A2</option><option value="B1">B1</option><option value="B2">B2</option><option value="C1">C1</option><option value="C2">C2</option></select></div>
+          <div class="field"><label for="lrnExplain">زبان توضیح گرامر</label>
+            <select id="lrnExplain"><option value="fa">فارسی</option><option value="en">انگلیسی</option><option value="ar">عربی</option><option value="tr">ترکی</option><option value="es">اسپانیایی</option><option value="fr">فرانسوی</option><option value="de">آلمانی</option><option value="it">ایتالیایی</option><option value="pt">پرتغالی</option><option value="ru">روسی</option><option value="ja">ژاپنی</option><option value="ko">کره‌ای</option><option value="zh">چینی</option><option value="hi">هندی</option></select></div>
+        </div>
+        <div class="hint" id="lrnSaved" style="margin-top:8px"></div>
+      </div></div>
     </section>
     <section class="dash-panel" data-panel="account" id="account">
       <div class="panel-title"><h2>حساب و پشتیبانی</h2><p>ورود، تیکت پشتیبانی، حریم خصوصی، گزارش فنی و نسخهٔ افزونه.</p></div>
-      <div class="section">
-        <div id="sfy-account-host"><div class="card"><span class="hint">در حال بررسی حساب…</span></div></div>
-        <div class="card" style="margin-top:12px"><div id="sfy-ext-status" class="sfy-status-list"><span class="hint">در حال بررسی…</span></div></div>
-      </div>
       <div class="section"><h2>این نسخه</h2><div class="card">
         <div class="notice">این نسخه برای Google Chrome است. دوبلهٔ صدای همان تب را هم در همین نسخه انجام می‌دهد.</div>
         <div class="kv-grid" style="margin-top:14px">
