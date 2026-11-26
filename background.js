@@ -730,11 +730,13 @@ async function ensureOffscreen() {
 
 // ---------- start / stop ----------
 
-async function startDubbing(tabId) {
+async function startDubbing(tabId, opts = {}) {
   try {
     await browser.storage.session.set({ pd_log: [], pd_cues: [] });
     const baseSettings = await getSettings();
-    if (dubWalletMode(baseSettings)) {
+    // fromAudio ("بله، بساز" in wallet mode): capture the tab's audio and send the clips to Subify Server's speech to text.
+    const walletStt = opts.fromAudio === true && dubWalletMode(baseSettings);
+    if (dubWalletMode(baseSettings) && !walletStt) {
       // Wallet dubbing: the tab's page player speaks the subtitle lines (subtitle-overlay.js). No capture engine runs.
       await setState({ tabId, error: "", active: true, startedAt: Date.now(), queueDepth: 0, level: 0 });
       await browser.storage.local.set({ subify_dubbing_enabled: true });
@@ -743,7 +745,9 @@ async function startDubbing(tabId) {
     }
     // dubbingAudioEnabled:false = "captions only" — see offscreen.js's playLiveAudio().
     const settings = { ...baseSettings, dubbingEnabled: baseSettings.dubbingAudioEnabled !== false };
-    if (!settings.apiKey) {
+    // Captions only, chunked capture, no key: the clips are transcribed by handleChunk's wallet branch.
+    if (walletStt) Object.assign(settings, { dubbingEnabled: false, engine: "chunked", walletStt: true });
+    if (!walletStt && !settings.apiKey) {
       await setState({ error: DUB_KEY_TEXT });
       await log("No API key configured", "error");
       browser.runtime.openOptionsPage();
@@ -754,7 +758,7 @@ async function startDubbing(tabId) {
     let host = "";
     try { host = new URL(tab.url).hostname.replace(/^www\./, ""); } catch (e) {}
     await setState({ tabId, host, title: tab.title || "", error: "", startedAt: Date.now(),
-                     lastText: "", latency: 0, latAvg: 0, latSamples: 0 });
+                     lastText: "", latency: 0, latAvg: 0, latSamples: 0, walletStt });
     await log(`Starting on ${host || "tab"}`);
 
     if (tab.audible === false) {
@@ -786,6 +790,8 @@ async function startDubbing(tabId) {
     await browser.storage.local.set({ subify_subtitle_enabled: true });
     browser.tabs.sendMessage(tabId, { type: "subify-enable-subtitles" }).catch(() => {});
 
+    // The page speaks the lines it gets back from speech to text (subtitle-overlay.js walletDub).
+    if (walletStt) browser.tabs.sendMessage(tabId, { type: "subify-wallet-dub-toggle", enabled: true }).catch(() => {});
     await browser.storage.local.set({ subify_dubbing_enabled: true });
     await setState({ active: true });
     browser.action.setBadgeText({ text: "فا" });
@@ -841,6 +847,35 @@ async function subifyDubSpeech(msg) {
     const buf = await res.arrayBuffer();
     if (!buf.byteLength) throw subifyFreeAiError("empty");
     return { mp3B64: subifyBytesToB64(buf), model: res.headers.get("X-Sfy-Tts-Model") || "" };
+  } catch (e) {
+    if (e && e.code) throw e;
+    throw subifyFreeAiError("network");
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+// Speech to text for wallet build-from-audio: one captured clip through auth/audio.php (billed per minute on the server).
+// Returns the text, which may be empty. Errors carry a code of SUBIFY_FREE_AI_TEXT.
+const SUBIFY_STT_ERROR_CODES = { insufficient_balance: "dub_balance", trial_budget: "trial_budget", price_unset: "price_unset", busy: "busy", member_limit: "quota", global_limit: "capacity" };
+async function subifyTranscribe(wavB64, title, source) {
+  const ctl = new AbortController();
+  const timer = setTimeout(() => ctl.abort(), 60000);
+  try {
+    const res = await fetch(SUBIFY_SITE + "/auth/audio.php?action=transcribe", {
+      method: "POST",
+      signal: ctl.signal,
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ audio_base64: String(wavB64 || ""), mime: "audio/wav", title: String(title || "").slice(0, 120), source: String(source || "").slice(0, 120) })
+    });
+    if (!res.ok) {
+      let code = SUBIFY_FREE_AI_STATUS_CODES[res.status] || "failed";
+      try { const j = await res.json(); if (j && SUBIFY_STT_ERROR_CODES[j.error]) code = SUBIFY_STT_ERROR_CODES[j.error]; } catch (_) {}
+      throw subifyFreeAiError(subifyFreeAiCode(code));
+    }
+    const j = await res.json();
+    return String(j?.text || "").trim();
   } catch (e) {
     if (e && e.code) throw e;
     throw subifyFreeAiError("network");
@@ -1471,6 +1506,17 @@ async function handleChunk(msg) {
   await setState({ queueDepth: (st.queueDepth || 0) + 1 });
 
   try {
+    if (st.walletStt) {
+      // Wallet build-from-audio: Subify Server transcribes the clip (billed per minute there). The text becomes a caption,
+      // and the page translates and dubs it. The source makes a repeated clip of this session a single charge.
+      const text = await subifyTranscribe(msg.wavB64, st.title, "stt:" + st.startedAt + ":" + Math.round(msg.startSec * 1000));
+      await recordStats({ chunks: 1, seconds: msg.seconds });
+      if (text) {
+        await setState({ lastText: text });
+        if (st.tabId != null) browser.tabs.sendMessage(st.tabId, { type: "subify-generated-subtitle-cue", start: msg.startSec, end: msg.startSec + msg.seconds, text }).catch(() => {});
+      }
+      return;
+    }
     await log(`Sending ${msg.seconds.toFixed(1)}s to ${settings.sttModel}…`);
     const { lang, gender, source, translation } = await withModelFallback(settings, "sttModel", STT_FALLBACKS,
       (m) => transcribeAndTranslate(msg.wavB64, settings, m));
@@ -1519,7 +1565,13 @@ async function handleChunk(msg) {
     await setState({ lastText: fa, lastVoice: voice });
     await addCue(msg.startSec, msg.startSec + msg.seconds, fa);
   } catch (e) {
-    const m = String(e.message || e);
+    // The wallet is empty or the speech price is not set: the capture stops and the reason shows in the popup.
+    if (e && (e.code === "dub_balance" || e.code === "price_unset")) {
+      await stopDubbing(e.code === "dub_balance" ? "wallet balance is empty" : "speech price not set");
+      await setState({ error: SUBIFY_FREE_AI_TEXT[e.code] });
+      return;
+    }
+    const m = e && SUBIFY_FREE_AI_TEXT[e.code] ? SUBIFY_FREE_AI_TEXT[e.code] : String(e.message || e);
     await log("Pipeline error: " + m, "error");
     await setState({ error: m.slice(0, 200) });
     await recordStats({ errors: 1 });
@@ -1925,7 +1977,9 @@ const SUBIFY_FREE_AI_TEXT = {
   parse_error: "پاسخ هوش مصنوعی خوانده نشد؛ همین بخش دوباره ترجمه می‌شود",
   balance_empty: "اعتبار Subify تمام شد و ترجمه‌ی بقیه‌ی زیرنویس متوقف شد. کیف پول را شارژ کن، سپس دوباره امتحان کن",
   model_not_allowed: "این مدل برای حساب تو فعال نیست؛ در تنظیمات مدل دیگری انتخاب کن",
-  dub_balance: "اعتبار کیف پول برای دوبله تمام شد؛ کیف پول را شارژ کن، سپس دوباره امتحان کن"
+  dub_balance: "اعتبار کیف پول برای دوبله تمام شد؛ کیف پول را شارژ کن، سپس دوباره امتحان کن",
+  price_unset: "قیمت تشخیص گفتار هنوز در پنل مدیریت تنظیم نشده؛ به پشتیبانی Subify خبر بده",
+  busy: "تشخیص گفتار الان شلوغ است؛ چند ثانیه دیگر دوباره امتحان کن"
 };
 const SUBIFY_FREE_AI_STATUS_CODES = { 401: "auth", 402: "quota", 403: "disabled", 429: "capacity", 502: "upstream", 503: "capacity", 504: "upstream" };
 const SUBIFY_FREE_AI_HOLD_MS = 60000;
@@ -3039,7 +3093,7 @@ browser.runtime.onMessage.addListener((msg, sender, sendResponse) => {
         const tabId = Number.isInteger(Number(msg.tabId)) && msg.tabId != null ? Number(msg.tabId) : Number(sender?.tab?.id);
         if (!Number.isInteger(tabId)) throw new Error("تب فعال پیدا نشد");
         if (msg.enabled) {
-          await startDubbing(tabId);
+          await startDubbing(tabId, { fromAudio: msg.fromAudio === true });
           const st = await getState();
           sendResponse({ ok: st.active, state: st, error: st.error || "" });
         } else {

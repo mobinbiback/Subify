@@ -407,7 +407,6 @@ function setSafeHTML(el, html) {
         state.firefoxDubScheduled.clear();
       }
       state.video = video;
-      if (isFirefoxRuntime() && state.firefoxDubEnabled) firefoxDubApplyDucking();
       bindVideoEvents(video);
       let player = video?.closest(".html5-video-player") || document.querySelector(".html5-video-player") || null;
       if (!player && video) {
@@ -836,19 +835,13 @@ function setSafeHTML(el, html) {
         headers: { Accept: 'application/json, text/xml, text/vtt, */*' }
       });
       const body = await res.text();
-      if (!res.ok || !body.trim()) throw new Error(`timedtext HTTP ${res.status}`);
       let cues = [];
-      const trimmed = body.trim();
-      if (trimmed.startsWith('{')) {
-        try { cues = parseJson3(trimmed); } catch (_) {}
+      if (res.ok && body.trim()) {
+        try { cues = parseCaptionBody(body); } catch (_) {}
       }
-      if (!cues.length && trimmed.startsWith('<')) {
-        try { cues = parseXml(trimmed); } catch (_) {}
-      }
-      if (!cues.length && /^WEBVTT/i.test(trimmed)) {
-        try { cues = parseVtt(trimmed); } catch (_) {}
-      }
-      if (!cues.length) throw new Error('timedtext returned no cues');
+      // Empty or unreadable (no web PO token): the ANDROID client's track for the same language and kind.
+      if (!cues.length) cues = await androidFallbackCues(state.videoId || getVideoIdFromUrl(), state.capturedCaptionLang, new URL(url).searchParams.get('kind') || '');
+      if (!cues.length) throw new Error(`timedtext HTTP ${res.status}`);
       if (session !== state.session) return;
       const key = withTargetLang(`${state.videoId}|captured|${url}`);
       const old = new Map(state.translations);
@@ -2730,11 +2723,13 @@ function setSafeHTML(el, html) {
   function parseXml(text) {
     const doc = new DOMParser().parseFromString(text, "text/xml");
     if (doc.querySelector("parsererror")) throw new Error("invalid XML caption response");
-    const nodes = [...doc.querySelectorAll("text")];
+    // <transcript><text start dur> (seconds), or srv3 <timedtext><body><p t d> (milliseconds; words in <s t>).
+    const srv3 = !doc.querySelector("text");
+    const nodes = [...doc.querySelectorAll(srv3 ? "p" : "text")];
     if (!nodes.length) return [];
     return normalizeCues(nodes.map(n => {
-      const start = Number(n.getAttribute("start") || 0);
-      const dur = Number(n.getAttribute("dur") || 0);
+      const start = srv3 ? Number(n.getAttribute("t") || 0) / 1000 : Number(n.getAttribute("start") || 0);
+      const dur = srv3 ? Number(n.getAttribute("d") || 0) / 1000 : Number(n.getAttribute("dur") || 0);
       const words=[];const segs=[...n.querySelectorAll(":scope > s")];if(segs.length){for(let i=0;i<segs.length;i++){const raw=clean(segs[i].textContent||"");if(!raw)continue;const rel=Number(segs[i].getAttribute("t")),a=Number.isFinite(rel)?start+rel/1000:start,next=i+1<segs.length?Number(segs[i+1].getAttribute("t")):NaN,b=Number.isFinite(next)?start+next/1000:start+Math.max(.15,dur||2.5),toks=raw.match(/\S+\s*/g)||[raw];toks.forEach((tok,ti)=>words.push({text:tok,start:a+(b-a)*ti/toks.length,end:a+(b-a)*(ti+1)/toks.length}));}}return { start, end: start + Math.max(0.15, dur || 2.5), text: n.textContent || "", words };
     }));
   }
@@ -2759,6 +2754,51 @@ function setSafeHTML(el, html) {
       cues.push({ start, end, text: textLines.join(" ") });
     }
     return normalizeCues(cues);
+  }
+
+  // One caption answer in any of its forms: JSON3, XML (legacy <text> or srv3 <p>) or WebVTT. Throws on broken JSON or XML.
+  function parseCaptionBody(body) {
+    const t = String(body || "").trim();
+    if (t.startsWith("{")) return parseJson3(t);
+    if (t.startsWith("<")) return parseXml(t);
+    if (/^WEBVTT/i.test(t)) return parseVtt(t);
+    return [];
+  }
+
+  // Asks page-hook.js (MAIN world, where INNERTUBE_API_KEY lives) for this video's caption tracks as the ANDROID client.
+  // Empty after 8 seconds or when the hook is absent.
+  function androidCaptionTracks(videoId) {
+    return new Promise((resolve) => {
+      const finish = (tracks) => {
+        clearTimeout(timer);
+        window.removeEventListener("subify-youtube-android-tracks", onReply);
+        resolve(Array.isArray(tracks) ? tracks : []);
+      };
+      const onReply = (e) => {
+        let tracks = [];
+        try { tracks = JSON.parse(String(e.detail || "")).tracks || []; } catch (_) {}
+        finish(tracks);
+      };
+      const timer = setTimeout(() => finish([]), 8000);
+      window.addEventListener("subify-youtube-android-tracks", onReply);
+      window.dispatchEvent(new CustomEvent("subify-youtube-get-android-tracks", { detail: videoId }));
+    });
+  }
+
+  // Cues from the ANDROID client's track in the same language and kind. YouTube answers the web client with an empty 200
+  // when the request has no web PO token; the ANDROID client's signed URL needs none. Empty when there is no such track.
+  async function androidFallbackCues(videoId, languageCode, kind) {
+    if (!videoId) return [];
+    try {
+      const tracks = await androidCaptionTracks(videoId);
+      const pick = tracks.find(t => t.languageCode === languageCode && (t.kind || "") === (kind || "")) || tracks.find(t => t.languageCode === languageCode);
+      if (!pick?.baseUrl) return [];
+      const res = await fetch(buildTrackUrl(pick, "json3"), { credentials: "include", cache: "no-store" });
+      return parseCaptionBody(await res.text());
+    } catch (e) {
+      log("ANDROID caption fallback failed", e);
+      return [];
+    }
   }
 
   async function fetchTrack(track) {
@@ -2820,6 +2860,7 @@ function setSafeHTML(el, html) {
             lastError = e;
           }
         }
+        if (!cues?.length) cues = await androidFallbackCues(state.videoId || getVideoIdFromUrl(), track.languageCode || "", String(track.kind || (track.isAutoGenerated ? "asr" : "")));
         if (!cues?.length) throw lastError || new Error("YouTube caption track contains no cues");
         state.trackCache.set(cacheKey, cues);
       }
@@ -3246,6 +3287,15 @@ function setSafeHTML(el, html) {
       try { source.stop(0); } catch (_) {}
     }
     state.firefoxDubSources.clear();
+    firefoxDubRestoreVolume(state.video);
+  }
+
+  // Starts one dub line. The original video is ducked only while the line is audible: from its start to its end.
+  function firefoxDubStartLine(ctx, source, when, offset) {
+    source.onended = () => { state.firefoxDubSources.delete(source); if (!state.firefoxDubSources.size) firefoxDubRestoreVolume(state.video); };
+    try { source.start(when, offset); } catch (_) { return; }
+    state.firefoxDubSources.add(source);
+    setTimeout(() => { if (state.firefoxDubSources.has(source)) firefoxDubApplyDucking(); }, Math.max(0, when - ctx.currentTime) * 1000);
   }
 
   async function firefoxDubEnsureAudio() {
@@ -3294,10 +3344,7 @@ function setSafeHTML(el, html) {
     const fitRate = buffer.duration > duration * 1.15 ? Math.min(1.75, buffer.duration / duration) : 1;
     source.playbackRate.value = Math.max(0.75, Math.min(1.75, baseRate * fitRate));
     source.connect(state.firefoxDubGain);
-    state.firefoxDubSources.add(source);
-    source.onended = () => state.firefoxDubSources.delete(source);
-    const delay = Math.max(0, Number(cue.start) - now);
-    try { source.start(ctx.currentTime + delay); } catch (_) { return; }
+    firefoxDubStartLine(ctx, source, ctx.currentTime + Math.max(0, Number(cue.start) - now));
   }
 
   // Same rule as background.js dubWalletMode(): the Wallet switch, or no personal key with Subify Server as the provider.
@@ -3372,10 +3419,8 @@ function setSafeHTML(el, html) {
     source.buffer = buffer;
     source.playbackRate.value = Math.max(0.75, Math.min(1.75, Number(state.settings?.playbackRate || 1)));
     source.connect(state.firefoxDubGain);
-    state.firefoxDubSources.add(source);
-    source.onended = () => state.firefoxDubSources.delete(source);
     const wait = Math.max(0, Number(cue.start) - now);
-    try { source.start(ctx.currentTime + wait, wait > 0 ? 0 : late); } catch (_) {}
+    firefoxDubStartLine(ctx, source, ctx.currentTime + wait, wait > 0 ? 0 : late);
   }
 
   async function firefoxDubRequestCue(cue, fa, session) {
@@ -3432,8 +3477,8 @@ function setSafeHTML(el, html) {
 
   // Firefox cannot capture/separate the tab's original audio from speech. The original
   // track is kept low (not muted), so background music stays audible under the dub.
-  // Applied whenever a video is present, so it also works when dubbing was enabled
-  // before the player's <video> existed (page load).
+  // Applied only while a dub line plays (firefoxDubStartLine) and restored between lines,
+  // on stop and on error.
   // Level for the original video while a dub plays: the popup slider (pd_settings.duckLevel), 0.3 by default.
   function firefoxDubDuckLevel() {
     const v = Number(state.firefoxDuckLevel);
@@ -3462,7 +3507,6 @@ function setSafeHTML(el, html) {
     if (!isFirefoxRuntime()) return;
     state.firefoxDubEnabled = true;
     state.firefoxDubAudioEnabled = state.settings?.dubbingAudioEnabled !== false;
-    firefoxDubApplyDucking();
     void firefoxDubEnsureAudio().catch(() => {});
     firefoxDubPump(Number(state.video?.currentTime || 0));
   }
@@ -4662,7 +4706,7 @@ browser.runtime.onMessage.addListener((msg)=>{
       const duck = Number(changes.pd_settings.newValue?.duckLevel);
       if (Number.isFinite(duck)) {
         state.firefoxDuckLevel = duck;
-        if (state.firefoxDubEnabled && state.video) firefoxDubApplyDucking();
+        if (state.firefoxDubOriginalVolume !== null) firefoxDubApplyDucking();
       }
     }
     if (changes.subify_settings || changes.subify_subtitle_enabled) void loadSettings();

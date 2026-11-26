@@ -257,6 +257,27 @@
     window.dispatchEvent(new CustomEvent('subify-youtube-player-response', { detail: JSON.stringify(reply) }));
   });
 
+  // Empty caption answers (no web PO token) are retried with the player API as the ANDROID client. It runs here because the
+  // INNERTUBE_API_KEY is on the page. Answers with the tracks of this video only, or none when the call fails.
+  window.addEventListener('subify-youtube-get-android-tracks', (event) => {
+    const videoId = String(event?.detail || '');
+    const reply = (tracks) => window.dispatchEvent(new CustomEvent('subify-youtube-android-tracks', { detail: JSON.stringify({ videoId, tracks }) }));
+    let key = '';
+    try { key = String(window.ytcfg?.get?.('INNERTUBE_API_KEY') || window.ytcfg?.data_?.INNERTUBE_API_KEY || ''); } catch (_) {}
+    if (!videoId || !key) { reply([]); return; }
+    nativeFetch.call(window, `/youtubei/v1/player?key=${encodeURIComponent(key)}&prettyPrint=false`, {
+      method: 'POST',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        context: { client: { clientName: 'ANDROID', clientVersion: '20.10.38', hl: 'en', gl: 'US' } },
+        videoId, contentCheckOk: true, racyCheckOk: true
+      })
+    }).then((r) => r.json()).then(
+      (j) => reply(j?.videoDetails?.videoId === videoId ? slimTracks(j?.captions?.playerCaptionsTracklistRenderer?.captionTracks) : []),
+      () => reply([]));
+  });
+
   installResourceObserver();
   scanResourceTiming();
   // Small, low-frequency safety net. This is deliberately not a hot loop and

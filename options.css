@@ -1,0 +1,14 @@
+/* Tactile redesign tokens (sub-ify.site): flat #07070A / #0E0D14 in dark, #F6F4F9 / #FFFFFF in light, accent #8167FB,
+   1px hairlines, tabular numbers. Loaded after the page's own styles, so it wins at equal specificity. */
+:root{color-scheme:dark;--bg:#07070A;--surface:#0E0D14;--surface2:#13121B;--surface3:#0B0A11;--border:rgba(255,255,255,.08);--ink:#F6F4F9;--muted:#A29EB2;--accent:#8167FB;--accent-ink:#B9ABFF;--accent-soft:rgba(129,103,251,.14);--focus-ring:#8167FB;--shadow:none}
+:root[data-theme="light"]{color-scheme:light;--bg:#F6F4F9;--surface:#FFFFFF;--surface2:#FFFFFF;--surface3:#F1EEF7;--border:rgba(23,20,35,.10);--ink:#17141F;--muted:#5F5A6E;--accent:#8167FB;--accent-ink:#6A4FE8;--accent-soft:rgba(129,103,251,.10);--focus-ring:#6A4FE8;--shadow:none}
+html:root,body{background:var(--bg)!important}
+body::before,body::after{display:none!important}
+.card{background:var(--surface)!important;border:1px solid var(--border)!important;border-radius:14px!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.03)!important;backdrop-filter:none!important;-webkit-backdrop-filter:none!important}
+:root[data-theme="light"] .card{box-shadow:none!important}
+.kv-grid,.kv,#dbToday,input[type="number"]{font-variant-numeric:tabular-nums}
+button.primary,.actions .primary{background:var(--accent)!important;border-color:transparent!important;color:#fff!important;box-shadow:none!important}
+:root[data-theme="light"] button.primary,:root[data-theme="light"] .actions .primary{background:var(--accent-ink)!important}
+button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible,summary:focus-visible,a:focus-visible{outline:2px solid var(--focus-ring);outline-offset:2px}
+@media (prefers-reduced-motion:reduce){*,*::before,*::after{transition:none!important;animation:none!important}}
+:root[data-theme="light"] body{background:var(--bg)!important}
